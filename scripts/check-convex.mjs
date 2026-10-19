@@ -1,9 +1,8 @@
 /**
  * Verifikasi wiring tanpa deployment Convex.
  *
- * Convex hanya meng-generate `convex/_generated/api.js` setelah ada project,
- * jadi tanpa akun kita tidak bisa build frontend. Yang BISA diverifikasi:
- * setiap referensi `api.x.y` / `internal.x.y` menunjuk ke fungsi yang benar-benar
+ * Helper runtime API di-commit agar frontend bisa dibangun tanpa codegen awal.
+ * Pemeriksaan ini memastikan setiap referensi `api.x.y` / `internal.x.y` menunjuk ke fungsi yang benar-benar
  * di-export modul Convex yang bersangkutan.
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";

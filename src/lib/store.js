@@ -12,16 +12,31 @@ const K = {
   token: "bap.token",
   cache: "bap.cache.bootstrap",
   draft: (id) => `bap.draft.${id}`,
+  detail: (id) => `bap.cache.detail.${id}`,
+  backup: (id) => `bap.draft.backup.${id}`,
 };
 
 export function bacaToken() {
-  return localStorage.getItem(K.token) || "";
+  try {
+    return localStorage.getItem(K.token) || "";
+  } catch {
+    return "";
+  }
 }
 export function simpanToken(t) {
-  localStorage.setItem(K.token, t);
+  try {
+    localStorage.setItem(K.token, t);
+    return true;
+  } catch {
+    return false;
+  }
 }
 export function hapusToken() {
-  localStorage.removeItem(K.token);
+  try {
+    localStorage.removeItem(K.token);
+  } catch {
+    /* memory session can still end */
+  }
 }
 
 export function simpanCache(data) {
@@ -33,17 +48,25 @@ export function simpanCache(data) {
 }
 export function bacaCache() {
   try {
-    return JSON.parse(localStorage.getItem(K.cache) || "null");
+    const data = JSON.parse(localStorage.getItem(K.cache) || "null");
+    return Array.isArray(data?.peserta) && Array.isArray(data?.pertemuan)
+      ? data
+      : null;
   } catch {
     return null;
   }
 }
 
 export function simpanDraf(pertemuanId, { baseRevision, statuses }) {
-  localStorage.setItem(
-    K.draft(pertemuanId),
-    JSON.stringify({ baseRevision, statuses, ts: Date.now() })
-  );
+  try {
+    localStorage.setItem(
+      K.draft(pertemuanId),
+      JSON.stringify({ baseRevision, statuses, ts: Date.now() }),
+    );
+    return true;
+  } catch {
+    return false;
+  }
 }
 export function bacaDraf(pertemuanId) {
   try {
@@ -53,14 +76,56 @@ export function bacaDraf(pertemuanId) {
   }
 }
 export function hapusDraf(pertemuanId) {
-  localStorage.removeItem(K.draft(pertemuanId));
+  try {
+    localStorage.removeItem(K.draft(pertemuanId));
+  } catch {
+    /* preserve on storage failure */
+  }
+}
+
+export function bacaDetail(id) {
+  try {
+    return JSON.parse(localStorage.getItem(K.detail(id)) || "null");
+  } catch {
+    return null;
+  }
+}
+
+export function simpanDetail(id, detail) {
+  try {
+    localStorage.setItem(K.detail(id), JSON.stringify(detail));
+  } catch {
+    /* optional cache */
+  }
+}
+
+export function cadangkanDraf(id, draf) {
+  try {
+    localStorage.setItem(
+      K.backup(id),
+      JSON.stringify({ ...draf, ts: Date.now() }),
+    );
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** "2026-09-28" -> "Senin / 28 September 2026" (sama dengan server). */
 const HARI = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 const BULAN = [
-  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+  "Januari",
+  "Februari",
+  "Maret",
+  "April",
+  "Mei",
+  "Juni",
+  "Juli",
+  "Agustus",
+  "September",
+  "Oktober",
+  "November",
+  "Desember",
 ];
 export function hariTanggal(iso) {
   const [y, m, d] = iso.split("-").map(Number);

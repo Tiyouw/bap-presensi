@@ -1,0 +1,93 @@
+/* BAP Praktikum / Kontras. UI tokens; do not apply to the official DOCX template. */
+:root {
+  color-scheme: light;
+  --bap-bg: #ffffff;
+  --bap-surface: #f3f4f1;
+  --bap-text: #17231e;
+  --bap-muted: #4d5c52;
+  --bap-border: #cbd3cb;
+  --bap-control-border: #78877d;
+  --bap-accent: #213e2e;
+  --bap-on-accent: #f2ffd8;
+  --bap-accent-soft: #eef5df;
+  --bap-h-text: #275b39;
+  --bap-h-bg: #eef5df;
+  --bap-a-text: #a53139;
+  --bap-a-bg: #fbeaec;
+  --bap-s-text: #82600b;
+  --bap-s-bg: #fbf2d8;
+  --bap-i-text: #285ca0;
+  --bap-i-bg: #e9f1fb;
+  --bap-font-sans:
+    "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  --bap-font-mono: Consolas, "SFMono-Regular", Menlo, monospace;
+  --bap-space-1: 4px;
+  --bap-space-2: 8px;
+  --bap-space-3: 12px;
+  --bap-space-4: 16px;
+  --bap-space-5: 20px;
+  --bap-space-6: 24px;
+  --bap-space-8: 32px;
+  --bap-radius-control: 3px;
+  --bap-radius-badge: 2px;
+  --bap-radius-overlay: 8px;
+  --bap-touch-min: 48px;
+  --bap-button-height: 52px;
+  --bap-row-min: 76px;
+  --bap-workspace-max: 760px;
+  --bap-dialog-max: 480px;
+  --bap-motion-fast: 140ms;
+  --bap-motion-sheet: 180ms;
+}
+
+/* System preference applies only when no explicit theme is selected. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+    color-scheme: dark;
+    --bap-bg: #151717;
+    --bap-surface: #262a28;
+    --bap-text: #f7faf6;
+    --bap-muted: #bac8bc;
+    --bap-border: #4a554d;
+    --bap-control-border: #829187;
+    --bap-accent: #c7ec6a;
+    --bap-on-accent: #1d3015;
+    --bap-accent-soft: #344422;
+    --bap-h-text: #c7ec6a;
+    --bap-h-bg: #344422;
+    --bap-a-text: #ffb3b8;
+    --bap-a-bg: #4a2b31;
+    --bap-s-text: #f0d58b;
+    --bap-s-bg: #443c23;
+    --bap-i-text: #accfff;
+    --bap-i-bg: #273c56;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bap-bg: #151717;
+  --bap-surface: #262a28;
+  --bap-text: #f7faf6;
+  --bap-muted: #bac8bc;
+  --bap-border: #4a554d;
+  --bap-control-border: #829187;
+  --bap-accent: #c7ec6a;
+  --bap-on-accent: #1d3015;
+  --bap-accent-soft: #344422;
+  --bap-h-text: #c7ec6a;
+  --bap-h-bg: #344422;
+  --bap-a-text: #ffb3b8;
+  --bap-a-bg: #4a2b31;
+  --bap-s-text: #f0d58b;
+  --bap-s-bg: #443c23;
+  --bap-i-text: #accfff;
+  --bap-i-bg: #273c56;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --bap-motion-fast: 0ms;
+    --bap-motion-sheet: 0ms;
+  }
+}

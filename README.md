@@ -11,6 +11,9 @@ di-commit — data hidup di deployment Convex, dimasukkan lewat env
 `BAP_MAHASISWA_CSV` (Vercel build) atau file lokal `data/bap-mahasiswa.csv`
 (gitignored). Bentuknya lihat `data/mahasiswa.csv.example`.
 
+- Pedoman UI Kontras: [`DESIGN.md`](DESIGN.md)
+- Perubahan UI, screenshot sintetis, dan verifikasi: [`docs/UI-UPDATE.md`](docs/UI-UPDATE.md)
+
 ## Status
 
 Dipakai di kelas (production). Rencana fase 2: ekspor xlsx + matriks rekap.
@@ -71,10 +74,15 @@ Data 16 pertemuan + peserta diisi otomatis app saat pertama dibuka
 1. Vercel → **Marketplace** → Convex → install & provision.
 2. Import repo ini. Build command (sudah di `vercel.json`):
    ```
-   node scripts/embed-peserta.mjs && npx convex codegen && npx convex deploy --cmd 'npm run build' --cmd-url-env-var-name VITE_CONVEX_URL
+   node scripts/embed-peserta.mjs && npx convex deploy --cmd 'npm run build' --cmd-url-env-var-name VITE_CONVEX_URL
    ```
-   `codegen &&` di depan itu wajib: `convex deploy` menjalankan `--cmd`
-   SEBELUM codegen, sedangkan `convex/_generated/` tidak di-commit.
+   Helper runtime `convex/_generated/api.js` di-commit agar frontend dapat dibangun
+   sebelum codegen milik `convex deploy`. File ini hanya referensi fungsi dan
+   tidak berisi data peserta atau kredensial. Jangan menambahkan `convex codegen`
+   terpisah di depan: perintah itu tidak mendukung preview deploy key.
+   Generated lain tetap diabaikan, dan `convex deploy` meregenerasinya seperti biasa.
+   Lihat [panduan Convex untuk Vercel](https://docs.convex.dev/production/hosting/vercel)
+   dan [anjuran version control generated code](https://docs.convex.dev/understanding/best-practices/other-recommendations#check-generated-code-into-version-control).
 3. Env:
    - Vercel: `BAP_MAHASISWA_CSV` = isi CSV `nim,nama,golongan` (data peserta)
    - Convex: `BAP_PASS_HASH` = hasil `node scripts/hash-password.mjs "…"`
@@ -89,6 +97,17 @@ Preview deployment per PR butuh Preview deploy key terpisah — untuk app
 npm test        # logika form/nomor/hari + logika handler (ctx tiruan) + wiring
 npm run test:fase0   # generate 4 contoh BAP (0/12/13/25 tidak hadir) + verifikasi
 ```
+
+Regresi UI memakai data sintetis dan API fixture lokal; tidak perlu roster asli
+atau kredensial Convex:
+
+```bash
+npm ci
+npx playwright install chromium
+npm run test:ui
+```
+
+Lihat `docs/UI-UPDATE.md` untuk cakupan dan batas pengujian.
 
 ## Setelah template berubah
 
