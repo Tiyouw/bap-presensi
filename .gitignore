@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env
+.env.local
+convex/_generated/
+out/
+*.log
+.DS_Store
+
+# DATA PRIBADI — tidak pernah masuk repo publik.
+# 93 peserta sudah ter-seed di Convex; untuk dev lokal & deployment baru,
+# isi data/bap-mahasiswa.csv (lihat data/mahasiswa.csv.example) lalu jalankan
+# node scripts/embed-peserta.mjs — atau set env BAP_MAHASISWA_CSV di Vercel.
+data/bap-mahasiswa.csv
+data/bap-sumber-asli.docx
+convex/lib/pesertaData.js
