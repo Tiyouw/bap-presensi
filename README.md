@@ -11,6 +11,9 @@ di-commit — data hidup di deployment Convex, dimasukkan lewat env
 `BAP_MAHASISWA_CSV` (Vercel build) atau file lokal `data/bap-mahasiswa.csv`
 (gitignored). Bentuknya lihat `data/mahasiswa.csv.example`.
 
+- Pedoman UI Kontras: [`DESIGN.md`](DESIGN.md)
+- Perubahan UI, screenshot sintetis, dan verifikasi: [`docs/UI-UPDATE.md`](docs/UI-UPDATE.md)
+
 ## Status
 
 Dipakai di kelas (production). Rencana fase 2: ekspor xlsx + matriks rekap.
@@ -89,6 +92,17 @@ Preview deployment per PR butuh Preview deploy key terpisah — untuk app
 npm test        # logika form/nomor/hari + logika handler (ctx tiruan) + wiring
 npm run test:fase0   # generate 4 contoh BAP (0/12/13/25 tidak hadir) + verifikasi
 ```
+
+Regresi UI memakai data sintetis dan API fixture lokal; tidak perlu roster asli
+atau kredensial Convex:
+
+```bash
+npm ci
+npx playwright install chromium
+npm run test:ui
+```
+
+Lihat `docs/UI-UPDATE.md` untuk cakupan dan batas pengujian.
 
 ## Setelah template berubah
 

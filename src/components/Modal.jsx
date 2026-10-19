@@ -1,0 +1,90 @@
+import { useEffect, useId, useRef } from "react";
+import { createPortal } from "react-dom";
+
+export default function Modal({
+  title,
+  children,
+  onClose,
+  busy = false,
+  wide = false,
+}) {
+  const titleId = useId();
+  const ref = useRef(null);
+  const closeRef = useRef(onClose);
+  const busyRef = useRef(busy);
+  closeRef.current = onClose;
+  busyRef.current = busy;
+
+  useEffect(() => {
+    const previous = document.activeElement;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    ref.current?.querySelector("button:not(:disabled)")?.focus();
+    const keydown = (event) => {
+      if (event.key === "Escape" && !busyRef.current) closeRef.current();
+      if (event.key !== "Tab") return;
+      const focusable = [
+        ...ref.current.querySelectorAll(
+          "button:not(:disabled), input:not(:disabled), select:not(:disabled), a[href]",
+        ),
+      ];
+      if (!focusable.length) {
+        event.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (
+        event.shiftKey &&
+        (document.activeElement === first ||
+          !ref.current.contains(document.activeElement))
+      ) {
+        event.preventDefault();
+        last.focus();
+      } else if (
+        !event.shiftKey &&
+        (document.activeElement === last ||
+          !ref.current.contains(document.activeElement))
+      ) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", keydown);
+    return () => {
+      document.body.style.overflow = overflow;
+      document.removeEventListener("keydown", keydown);
+      if (previous?.isConnected) previous.focus();
+    };
+  }, []);
+
+  return createPortal(
+    <div
+      className="modal-backdrop"
+      onClick={(event) => {
+        if (event.target === event.currentTarget && !busy) onClose();
+      }}
+    >
+      <section
+        ref={ref}
+        className={`modal${wide ? " modal--wide" : ""}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+      >
+        <header className="modal-header">
+          <h2 id={titleId}>{title}</h2>
+          <button
+            className="button button--quiet"
+            onClick={onClose}
+            disabled={busy}
+          >
+            Tutup
+          </button>
+        </header>
+        {children}
+      </section>
+    </div>,
+    document.body,
+  );
+}

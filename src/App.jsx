@@ -1,21 +1,61 @@
-import { useEffect, useState } from "react";
+import { Component, useEffect, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api.js";
-
 import Login from "./screens/Login.jsx";
 import Pertemuan from "./screens/Pertemuan.jsx";
 import Presensi from "./screens/Presensi.jsx";
+import { Header, Notice } from "./components/Layout.jsx";
+import {
+  bacaCache,
+  bacaToken,
+  hapusToken,
+  simpanCache,
+  simpanToken,
+} from "./lib/store.js";
+import { useNetwork } from "./lib/useNetwork.js";
 
-import { bacaCache, bacaToken, hapusToken, simpanCache } from "./lib/store.js";
+class SessionBoundary extends Component {
+  state = { error: null };
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  render() {
+    if (!this.state.error) return this.props.children;
+    const text = String(
+      this.state.error?.data || this.state.error?.message || "",
+    );
+    const auth = /TOKEN_|TANPA_TOKEN/.test(text);
+    return (
+      <>
+        <Header />
+        <main className="page recovery-page">
+          <p className="eyebrow">BAP Praktikum</p>
+          <h1>{auth ? "Masuk kembali" : "Data belum dapat dimuat"}</h1>
+          <p className="lede">
+            {auth
+              ? "Sesi masuk sudah berakhir. Draf presensi tetap ada di perangkat ini."
+              : "Periksa koneksi, lalu muat ulang halaman. Draf presensi tetap ada di perangkat ini."}
+          </p>
+          <button
+            className="button button--primary"
+            onClick={
+              auth ? this.props.onMasukUlang : () => window.location.reload()
+            }
+          >
+            {auth ? "Ke halaman masuk" : "Muat ulang halaman"}
+          </button>
+        </main>
+      </>
+    );
+  }
+}
 
-export default function App() {
-  const [token, setToken] = useState(bacaToken());
+function SessionApp({ token, onKeluar }) {
   const [dipilih, setDipilih] = useState(null);
-  const [cache, setCache] = useState(bacaCache());
-
-  // Query bootstrap: satu panggilan berisi 16 pertemuan + 93 peserta.
-  // Saat offline query mengembalikan undefined -> pakai cache localStorage.
-  const bootstrap = useQuery(api.bootstrap.get, token ? { token } : "skip");
+  const [cache, setCache] = useState(bacaCache);
+  const [seedError, setSeedError] = useState(false);
+  const network = useNetwork();
+  const bootstrap = useQuery(api.bootstrap.get, { token });
   const seed = useMutation(api.seed.jalan);
 
   useEffect(() => {
@@ -25,47 +65,62 @@ export default function App() {
     }
   }, [bootstrap]);
 
-  // Data kosong = deployment baru yang belum di-seed. Panggil seed otomatis;
-  // query bootstrap reaktif, jadi daftar muncul sendiri setelah seed selesai.
   useEffect(() => {
-    if (token && bootstrap && bootstrap.peserta.length === 0) {
-      seed().catch(() => {});
-    }
-  }, [token, bootstrap, seed]);
-
-  if (!token) {
-    return (
-      <Login
-        onMasuk={(t) => {
-          localStorage.setItem("bap.token", t);
-          setToken(t);
-        }}
-      />
-    );
-  }
+    if (bootstrap?.peserta.length === 0 && network.online)
+      seed().catch(() => setSeedError(true));
+  }, [bootstrap?.peserta.length, network.online, seed]);
 
   const data = bootstrap || cache;
-
-  if (dipilih) {
+  const pertemuan =
+    dipilih && (data?.pertemuan.find((p) => p.id === dipilih.id) || dipilih);
+  if (pertemuan)
     return (
       <Presensi
+        key={pertemuan.id}
         token={token}
-        pertemuan={dipilih}
+        pertemuan={pertemuan}
         peserta={data?.peserta || []}
+        network={network}
         onKembali={() => setDipilih(null)}
       />
     );
-  }
 
   return (
-    <Pertemuan
-      data={data}
-      online={Boolean(bootstrap)}
-      onPilih={setDipilih}
-      onKeluar={() => {
-        hapusToken();
-        setToken("");
-      }}
-    />
+    <>
+      {seedError && (
+        <Notice kind="error">
+          Data kelas belum berhasil disiapkan. Periksa koneksi lalu muat ulang
+          halaman.
+        </Notice>
+      )}
+      <Pertemuan
+        data={data}
+        network={network}
+        onPilih={setDipilih}
+        onKeluar={onKeluar}
+      />
+    </>
+  );
+}
+
+export default function App() {
+  const [token, setToken] = useState(bacaToken);
+  const keluar = () => {
+    hapusToken();
+    setToken("");
+  };
+  if (!token)
+    return (
+      <Login
+        onMasuk={(value) => {
+          simpanToken(value);
+          setToken(value);
+        }}
+      />
+    );
+  return (
+    <SessionBoundary key={token} onMasukUlang={keluar}>
+      <SessionApp token={token} onKeluar={keluar} />
+    </SessionBoundary>
   );
 }
