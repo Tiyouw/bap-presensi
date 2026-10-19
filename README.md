@@ -74,10 +74,15 @@ Data 16 pertemuan + peserta diisi otomatis app saat pertama dibuka
 1. Vercel → **Marketplace** → Convex → install & provision.
 2. Import repo ini. Build command (sudah di `vercel.json`):
    ```
-   node scripts/embed-peserta.mjs && npx convex codegen && npx convex deploy --cmd 'npm run build' --cmd-url-env-var-name VITE_CONVEX_URL
+   node scripts/embed-peserta.mjs && npx convex deploy --cmd 'npm run build' --cmd-url-env-var-name VITE_CONVEX_URL
    ```
-   `codegen &&` di depan itu wajib: `convex deploy` menjalankan `--cmd`
-   SEBELUM codegen, sedangkan `convex/_generated/` tidak di-commit.
+   Helper runtime `convex/_generated/api.js` di-commit agar frontend dapat dibangun
+   sebelum codegen milik `convex deploy`. File ini hanya referensi fungsi dan
+   tidak berisi data peserta atau kredensial. Jangan menambahkan `convex codegen`
+   terpisah di depan: perintah itu tidak mendukung preview deploy key.
+   Generated lain tetap diabaikan, dan `convex deploy` meregenerasinya seperti biasa.
+   Lihat [panduan Convex untuk Vercel](https://docs.convex.dev/production/hosting/vercel)
+   dan [anjuran version control generated code](https://docs.convex.dev/understanding/best-practices/other-recommendations#check-generated-code-into-version-control).
 3. Env:
    - Vercel: `BAP_MAHASISWA_CSV` = isi CSV `nim,nama,golongan` (data peserta)
    - Convex: `BAP_PASS_HASH` = hasil `node scripts/hash-password.mjs "…"`

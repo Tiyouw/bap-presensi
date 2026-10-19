@@ -10,7 +10,13 @@ Presensi menampilkan nama dan NIM, pencarian keduanya, counter empat status, fil
 
 Keadaan draf lokal, menunggu server, terkunci, proses BAP, BAP siap, dan gagal unduh dibedakan. BAP diunduh sebagai Blob dengan nama `.docx`, tanpa membuka tab baru. Perubahan revisi server tidak menghapus draf secara reaktif. Detail sesi dicache agar presensi yang sudah dibuka bisa ditampilkan lagi tanpa menunggu query baru.
 
-Skema, autentikasi server, transaksi, template, dan generator Word tidak diubah. Build command Vercel tetap seperti sebelumnya.
+Skema, autentikasi server, transaksi, template, dan generator Word tidak diubah.
+
+Preview Vercel pertama gagal sebelum frontend dibangun karena `convex codegen`
+terpisah tidak mendukung preview deploy key. Helper runtime resmi
+`convex/_generated/api.js` sekarang di-commit (tanpa data atau kredensial), lalu
+build menjalankan `convex deploy --cmd 'npm run build'` langsung setelah embed
+peserta. Pengaturan akun, key, dan data production tidak diubah.
 
 ## Bukti tampilan
 

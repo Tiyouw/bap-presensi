@@ -2,7 +2,8 @@ node_modules/
 dist/
 .env
 .env.local
-convex/_generated/
+convex/_generated/*
+!convex/_generated/api.js
 out/
 *.log
 .DS_Store
