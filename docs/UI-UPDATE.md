@@ -22,6 +22,20 @@ peserta. Pengaturan akun, key, dan data production tidak diubah.
 
 Gambar dan seluruh fixture pengujian memakai nama serta NIM **sintetis**. Pengujian tidak membaca roster asli atau seed yang dihasilkan deployment. Status kehadiran bukan catatan kelas sebenarnya.
 
+### Sebelum–sesudah
+
+Versi sebelum diambil dari commit `df6317bac13fb838064e3bf922833503998dedee`
+dengan kode UI asli, fixture sintetis yang sama, dan viewport yang sama.
+Gambar desktop memakai 1280 × 900 px; gambar HP memakai 390 × 844 px.
+Login dan pertemuan direkam sepanjang halaman, sedangkan presensi merekam viewport.
+
+| Layar | Sebelum | Sesudah |
+| --- | --- | --- |
+| Login desktop | ![Login sebelum](ui-preview/before-login-desktop.png) | ![Login sesudah](ui-preview/login-desktop.png) |
+| Pertemuan desktop | ![Pertemuan sebelum](ui-preview/before-pertemuan-desktop.png) | ![Pertemuan sesudah](ui-preview/pertemuan-desktop.png) |
+| Presensi HP | ![Presensi HP sebelum](ui-preview/before-presensi-mobile.png) | ![Presensi HP sesudah](ui-preview/presensi-mobile-light.png) |
+| Presensi desktop | ![Presensi desktop sebelum](ui-preview/before-presensi-desktop.png) | ![Presensi desktop sesudah](ui-preview/presensi-desktop.png) |
+
 ### Presensi HP
 
 ![Presensi HP terang](ui-preview/presensi-mobile-light.png)
