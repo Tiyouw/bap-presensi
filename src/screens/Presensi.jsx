@@ -57,6 +57,7 @@ export default function Presensi({
   peserta,
   network,
   onKembali,
+  onHelp,
 }) {
   const detail = useQuery(api.sesi.detail, {
     token,
@@ -388,16 +389,17 @@ export default function Presensi({
     : () => setModal({ kind: "review" });
   const primaryDisabled = Boolean(
     sibuk ||
-    !network.online ||
-    konflik ||
-    !known ||
-    !peserta.length ||
-    (!terkunci && !detail),
+      !network.online ||
+      konflik ||
+      !known ||
+      !peserta.length ||
+      (!terkunci && !detail),
   );
 
   return (
     <div className="attendance-layout" ref={layoutRef}>
       <Header
+        onHelp={onHelp}
         onKembali={() => {
           if (dirty && !drafAman) setModal({ kind: "unsaved" });
           else onKembali();

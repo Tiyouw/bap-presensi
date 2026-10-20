@@ -1525,6 +1525,200 @@ button:active:not(:disabled) {
     animation: none !important;
   }
 }
+
+/* Optional guidance and print preparation share the existing dialog system. */
+.help-button {
+  width: 48px;
+  flex-shrink: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+.guide-steps,
+.guide-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.guide-steps {
+  margin: 20px 0;
+}
+.guide-steps .filter-button {
+  min-width: 48px;
+}
+.guide-content h3 {
+  font-size: 1.375rem;
+  margin-bottom: 16px;
+}
+.guide-content > p {
+  font-size: 0.9375rem;
+}
+.guide-example {
+  min-height: 84px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  background: var(--bap-surface);
+  padding: 16px;
+  margin-bottom: 20px;
+}
+.guide-example strong,
+.guide-example small {
+  display: block;
+}
+.guide-example small {
+  color: var(--bap-muted);
+  font-size: 0.75rem;
+}
+.guide-example-number {
+  font: 2rem var(--bap-font-mono);
+  color: var(--bap-accent);
+}
+.guide-hint {
+  color: var(--bap-muted);
+  border-top: 1px solid var(--bap-border);
+  padding-top: 16px;
+}
+.guide-actions {
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+.guide-actions > .button:first-child {
+  margin-right: auto;
+}
+.guide-footnote {
+  color: var(--bap-muted);
+  font-size: 0.75rem;
+  margin: 16px 0 0;
+}
+.guide-print-help {
+  border-top: 1px solid var(--bap-border);
+  padding-top: 8px;
+  margin: 20px 0;
+  font-size: 0.875rem;
+}
+.guide-print-help summary {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 600;
+  gap: 8px;
+}
+.guide-print-help summary::before {
+  content: "+";
+  font: 1rem var(--bap-font-mono);
+}
+.guide-print-help[open] summary::before {
+  content: "−";
+}
+.guide-print-help p {
+  color: var(--bap-muted);
+  margin: 8px 0;
+}
+.meeting-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  border-block: 1px solid var(--bap-border);
+  padding: 12px 0;
+  margin-bottom: 24px;
+}
+.meeting-tools p {
+  margin: 0;
+  flex: 1 1 200px;
+}
+.print-selection-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 16px;
+}
+.print-selection-heading h3 {
+  font-size: 1rem;
+  margin: 0;
+}
+.print-selection {
+  border: 0;
+  padding: 0;
+  margin: 8px 0 24px;
+  min-width: 0;
+}
+.print-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 76px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--bap-border);
+  cursor: pointer;
+}
+.print-choice input {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  margin: 0;
+  accent-color: var(--bap-accent);
+}
+.print-choice strong {
+  display: block;
+  font-size: 0.875rem;
+}
+.print-choice small {
+  display: block;
+  color: var(--bap-muted);
+  font-size: 0.75rem;
+}
+.print-choice-meta {
+  margin-left: auto;
+  font-size: 0.75rem;
+  text-align: right;
+  color: var(--bap-muted);
+  flex-shrink: 0;
+}
+.print-plan h3 {
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+.print-sheets {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 12px;
+}
+.print-sheet-slots {
+  border: 1px solid var(--bap-control-border);
+  border-radius: 3px;
+  background: var(--bap-surface);
+}
+.print-sheet-slots > span {
+  display: block;
+  padding: 12px;
+  font-size: 0.8125rem;
+  min-height: 64px;
+}
+.print-sheet-slots > span + span {
+  border-top: 1px dashed var(--bap-control-border);
+}
+.print-sheet-slots small {
+  display: block;
+  color: var(--bap-muted);
+  font-size: 0.75rem;
+}
+@media (max-width: 560px) {
+  .app-header-inner--workspace .theme-select {
+    display: none;
+  }
+  .guide-actions {
+    gap: 4px;
+  }
+  .guide-actions .button {
+    padding-inline: 12px;
+  }
+}
 @media (max-height: 600px) {
   .roster-tools {
     position: static;

@@ -13,6 +13,8 @@ import {
   simpanToken,
 } from "./lib/store.js";
 import { useNetwork } from "./lib/useNetwork.js";
+import Guide from "./components/Guide.jsx";
+import { panduanSudahDilihat, tutupPanduan } from "./lib/guide.js";
 
 class SessionBoundary extends Component {
   state = { error: null };
@@ -54,6 +56,8 @@ function SessionApp({ token, onKeluar }) {
   const [dipilih, setDipilih] = useState(null);
   const [cache, setCache] = useState(bacaCache);
   const [seedError, setSeedError] = useState(false);
+  const [guide, setGuide] = useState(null);
+  const [autoGuideChecked, setAutoGuideChecked] = useState(false);
   const network = useNetwork();
   const bootstrap = useQuery(api.bootstrap.get, { token });
   const seed = useMutation(api.seed.jalan);
@@ -71,34 +75,50 @@ function SessionApp({ token, onKeluar }) {
   }, [bootstrap?.peserta.length, network.online, seed]);
 
   const data = bootstrap || cache;
+  useEffect(() => {
+    if (!data?.peserta.length || autoGuideChecked) return;
+    setAutoGuideChecked(true);
+    if (!panduanSudahDilihat()) setGuide("first");
+  }, [data, autoGuideChecked]);
+  const closeGuide = () => {
+    tutupPanduan();
+    setGuide(null);
+  };
   const pertemuan =
     dipilih && (data?.pertemuan.find((p) => p.id === dipilih.id) || dipilih);
-  if (pertemuan)
-    return (
-      <Presensi
-        key={pertemuan.id}
-        token={token}
-        pertemuan={pertemuan}
-        peserta={data?.peserta || []}
-        network={network}
-        onKembali={() => setDipilih(null)}
-      />
-    );
-
   return (
     <>
-      {seedError && (
-        <Notice kind="error">
-          Data kelas belum berhasil disiapkan. Periksa koneksi lalu muat ulang
-          halaman.
-        </Notice>
+      {pertemuan ? (
+        <Presensi
+          key={pertemuan.id}
+          token={token}
+          pertemuan={pertemuan}
+          peserta={data?.peserta || []}
+          network={network}
+          onKembali={() => setDipilih(null)}
+          onHelp={() => setGuide("help")}
+        />
+      ) : (
+        <>
+          {seedError && (
+            <Notice kind="error">
+              Data kelas belum berhasil disiapkan. Periksa koneksi lalu muat
+              ulang halaman.
+            </Notice>
+          )}
+          <Pertemuan
+            data={data}
+            network={network}
+            onPilih={setDipilih}
+            onKeluar={onKeluar}
+            onHelp={() => setGuide("help")}
+            token={token}
+          />
+        </>
       )}
-      <Pertemuan
-        data={data}
-        network={network}
-        onPilih={setDipilih}
-        onKeluar={onKeluar}
-      />
+      {guide && (
+        <Guide key={guide} firstTime={guide === "first"} onClose={closeGuide} />
+      )}
     </>
   );
 }

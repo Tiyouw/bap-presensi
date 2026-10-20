@@ -29,10 +29,10 @@ export function statusAwal(peserta, presensi = []) {
 export function drafValid(draf, peserta) {
   return Boolean(
     draf &&
-    Number.isFinite(draf.baseRevision) &&
-    draf.statuses &&
-    peserta.length > 0 &&
-    peserta.every((p) => LABEL[draf.statuses[p.id]]),
+      Number.isFinite(draf.baseRevision) &&
+      draf.statuses &&
+      peserta.length > 0 &&
+      peserta.every((p) => LABEL[draf.statuses[p.id]]),
   );
 }
 
@@ -70,6 +70,10 @@ export function pesanGalat(err) {
     return "BAP sedang diproses. Kamu dapat memeriksanya lagi sebentar.";
   if (text.includes("GENERATE_GAGAL"))
     return "BAP gagal dibuat. Presensi tetap tersimpan; coba buat BAP lagi.";
+  if (text.includes("PAKET_BERUBAH"))
+    return "Presensi berubah atau dibuka kuncinya. Periksa pilihan terbaru, lalu unduh paket lagi.";
+  if (text.includes("PAKET_GAGAL"))
+    return "Paket cetak belum berhasil dibuat. Pilihan tetap ada; coba lagi.";
   return "Permintaan belum berhasil. Periksa koneksi dan coba lagi. Draf tetap ada di perangkat ini.";
 }
 
@@ -77,6 +81,20 @@ export async function unduhDokumen(url, fileName) {
   const response = await fetch(url);
   if (!response.ok) throw new Error("Unduhan gagal");
   const blob = await response.blob();
+  unduhBlob(blob, fileName);
+}
+
+export function unduhPaket(base64, fileName) {
+  const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+  unduhBlob(
+    new Blob([bytes], {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    }),
+    fileName,
+  );
+}
+
+function unduhBlob(blob, fileName) {
   const localUrl = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = localUrl;

@@ -102,6 +102,22 @@ export function useQuery(reference, args) {
         presensi: server.presensi[args.pertemuanId] || [],
       };
     if (name === "bap:forSesi") return server.docs[args.pertemuanId] || null;
+    if (name === "bap:ringkasanCetak")
+      return server.pertemuan
+        .filter((p) => p.tipe === "REGULER" && p.status === "KUNCI")
+        .map((p) => {
+          const jumlahAbsen = (server.presensi[p.id] || []).filter(
+            (r) => r.status !== "HADIR",
+          ).length;
+          return {
+            id: p.id,
+            nomor: p.nomor,
+            tanggal: p.tanggal,
+            revision: p.revision,
+            jumlahAbsen,
+            jumlahForm: Math.max(1, Math.ceil(jumlahAbsen / 12)),
+          };
+        });
     return null;
   }, [tick, name, args === "skip", args?.pertemuanId, args?.token]);
 }
@@ -168,6 +184,26 @@ export function useAction(reference) {
         server.docs[meeting.id] = result;
         publish();
         return result;
+      }
+      if (name === "bapNode:paketCetak") {
+        if (generationFails) throw { data: "PAKET_GAGAL" };
+        if (
+          args.items.some((item) => {
+            const p = server.pertemuan.find((p) => p.id === item.pertemuanId);
+            return !p || p.status !== "KUNCI" || p.revision !== item.revision;
+          })
+        )
+          throw { data: "PAKET_BERUBAH" };
+        return {
+          base64: btoa("Print download transport fixture"),
+          fileName: "BAP_PPB_P01-02_2-form-folio.docx",
+          revisions: args.items.map((item) => ({
+            numero: 0,
+            nomor: server.pertemuan.find((p) => p.id === item.pertemuanId)
+              .nomor,
+            revision: item.revision,
+          })),
+        };
       }
       return null;
     },

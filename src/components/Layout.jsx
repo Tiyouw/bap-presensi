@@ -6,6 +6,7 @@ export function Header({
   onKembali,
   onBap,
   onUndo,
+  onHelp,
   undoDisabled,
   busy,
 }) {
@@ -31,6 +32,16 @@ export function Header({
           <Brand />
         )}
         <div className="header-actions">
+          {onHelp && (
+            <button
+              className="button button--quiet help-button"
+              onClick={onHelp}
+              aria-label="Bantuan"
+              title="Bantuan"
+            >
+              <span aria-hidden="true">?</span>
+            </button>
+          )}
           {onUndo && (
             <button
               className="button button--quiet"
