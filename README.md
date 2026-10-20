@@ -108,6 +108,8 @@ npm run test:ui
 ```
 
 Lihat `docs/UI-UPDATE.md` untuk cakupan dan batas pengujian.
+Panduan awal, paket cetak, bukti sebelum–sesudah, dan hasil render Word dijelaskan
+di [docs/GUIDE-PRINT.md](docs/GUIDE-PRINT.md).
 
 ## Setelah template berubah
 
@@ -120,9 +122,9 @@ npm run test:fase0
 
 ## Keputusan desain penting
 
-- **Satu form per halaman** — halaman F4 (21,5 × 33 cm) muat 2 form tepat tanpa
-  sisa, jadi satu nama panjang yang terbungkus 2 baris mendorong baris terakhir
-  form ke-2 ke halaman berikutnya. Dibuktikan lewat render nyata.
+- **Arsip satu form per halaman; paket cetak hingga dua form per folio** — pilih
+  pertemuan terkunci di Siapkan cetak. Nama panjang dapat membuat satu form pindah
+  utuh ke halaman berikutnya. Font dan tabel tidak diperkecil atau dipotong.
 - **Nomor 1–12 diisi generator** — baris data diulang loop, tidak bisa pre-printed.
 - **Simpan & kunci satu transaksi** — tanpa itu BAP bisa digenerate dari data
   setengah jadi.

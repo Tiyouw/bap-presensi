@@ -11,6 +11,7 @@ import assert from "node:assert/strict";
 import { simpanDanKunciLogic, bukaKunciLogic, detailLogic } from "../convex/lib/sesiLogic.js";
 import { klaimLogic, bahanGenerateLogic, KLAIM_HIDUP_MS } from "../convex/lib/bapLogic.js";
 import { TEMPLATE_VERSION } from "../convex/lib/auth.js";
+import { bahanPaketLogic, ringkasanCetakLogic } from "../convex/lib/printLogic.js";
 
 // ---------- ctx tiruan ----------
 const INDEX = {
@@ -302,5 +303,104 @@ await cek("detail mengembalikan presensi tersimpan + status kunci", async () => 
   assert.equal(d.presensi.length, 3);
   assert.equal(d.presensi.filter((b) => b.status === "IZIN").length, 1);
 });
+
+console.log("paket cetak:");
+await cek(
+  "snapshot paket: token wajib, pilihan kosong/dobel/batas ditolak",
+  async () => {
+    const { ctx, token, pertemuanId } = await siapkan();
+    await assert.rejects(
+      bahanPaketLogic(ctx, { token: "palsu", items: [] }),
+      (e) => e.data === "TOKEN_TIDAK_DIKENAL",
+    );
+    await assert.rejects(
+      ringkasanCetakLogic(ctx, { token: "palsu" }),
+      (e) => e.data === "TOKEN_TIDAK_DIKENAL",
+    );
+    await assert.rejects(
+      bahanPaketLogic(ctx, { token, items: [] }),
+      (e) => e.data === "PILIH_PERTEMUAN",
+    );
+    const item = { pertemuanId, revision: 0 };
+    await assert.rejects(
+      bahanPaketLogic(ctx, { token, items: [item, item] }),
+      (e) => e.data === "PERTEMUAN_DOBEL",
+    );
+    await assert.rejects(
+      bahanPaketLogic(ctx, { token, items: Array(15).fill(item) }),
+      (e) => e.data === "PILIH_PERTEMUAN",
+    );
+  },
+);
+await cek(
+  "snapshot paket menolak sesi terbuka, revisi lama, dan ujian",
+  async () => {
+    const { ctx, token, ids, pertemuanId } = await siapkan();
+    await assert.rejects(
+      bahanPaketLogic(ctx, { token, items: [{ pertemuanId, revision: 0 }] }),
+      (e) => e.data === "PAKET_BERUBAH",
+    );
+    await simpanDanKunciLogic(ctx, {
+      token,
+      pertemuanId,
+      baseRevision: 0,
+      statuses: status(ids, () => "HADIR"),
+    });
+    await assert.rejects(
+      bahanPaketLogic(ctx, { token, items: [{ pertemuanId, revision: 0 }] }),
+      (e) => e.data === "PAKET_BERUBAH",
+    );
+    await ctx.db.patch(pertemuanId, { tipe: "UTS" });
+    await assert.rejects(
+      bahanPaketLogic(ctx, { token, items: [{ pertemuanId, revision: 1 }] }),
+      (e) => e.data === "UTS_UAS_TANPA_BAP",
+    );
+  },
+);
+await cek(
+  "ringkasan & snapshot hanya terkunci, jumlah form benar, urut nomor tanpa menulis data",
+  async () => {
+    const { ctx, token, ids, pertemuanId } = await siapkan({ peserta: 13 });
+    await simpanDanKunciLogic(ctx, {
+      token,
+      pertemuanId,
+      baseRevision: 0,
+      statuses: status(ids, () => "ALPHA"),
+    });
+    await ctx.db.patch(pertemuanId, { nomor: 3 });
+    const second = await ctx.db.insert("pertemuan", {
+      nomor: 1,
+      tipe: "REGULER",
+      tanggal: "2026-08-31",
+      tempat: "F6",
+      status: "KUNCI",
+      revision: 2,
+    });
+    const before = JSON.stringify([...ctx.tabel]);
+    const summary = await ringkasanCetakLogic(ctx, { token });
+    assert.deepEqual(
+      summary.map((p) => [p.nomor, p.jumlahForm]),
+      [
+        [1, 1],
+        [3, 2],
+      ],
+    );
+    const snapshot = await bahanPaketLogic(ctx, {
+      token,
+      items: [
+        { pertemuanId, revision: 1 },
+        { pertemuanId: second, revision: 2 },
+      ],
+    });
+    assert.deepEqual(
+      snapshot.map((b) => [b.pertemuan.nomor, b.jumlahAbsen]),
+      [
+        [1, 0],
+        [3, 13],
+      ],
+    );
+    assert.equal(JSON.stringify([...ctx.tabel]), before);
+  },
+);
 
 console.log(`\n${lulus} pemeriksaan lulus`);

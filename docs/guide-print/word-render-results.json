@@ -1,0 +1,58 @@
+{
+  "engine": "Microsoft Word ExportAsFixedFormat",
+  "paperMm": [
+    215,
+    330
+  ],
+  "syntheticDataOnly": true,
+  "cases": [
+    {
+      "case": "dua-pertemuan",
+      "pages": 1,
+      "formsPerPage": [
+        2
+      ],
+      "studentNames": 5,
+      "passed": true
+    },
+    {
+      "case": "ganjil",
+      "pages": 2,
+      "formsPerPage": [
+        2,
+        1
+      ],
+      "studentNames": 25,
+      "passed": true
+    },
+    {
+      "case": "lanjutan",
+      "pages": 2,
+      "formsPerPage": [
+        2,
+        1
+      ],
+      "studentNames": 13,
+      "passed": true
+    },
+    {
+      "case": "nama-panjang",
+      "pages": 2,
+      "formsPerPage": [
+        1,
+        1
+      ],
+      "studentNames": 24,
+      "passed": true
+    },
+    {
+      "case": "satu-form",
+      "pages": 1,
+      "formsPerPage": [
+        1
+      ],
+      "studentNames": 0,
+      "passed": true
+    }
+  ]
+}

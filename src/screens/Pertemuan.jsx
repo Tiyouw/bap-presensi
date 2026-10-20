@@ -7,13 +7,22 @@ import {
 } from "../components/Layout.jsx";
 import { bacaDraf, hariTanggal } from "../lib/store.js";
 import { hariIni, KELAS } from "../lib/presensi.js";
+import PrintPack from "../components/PrintPack.jsx";
 
-export default function Pertemuan({ data, network, onPilih, onKeluar }) {
+export default function Pertemuan({
+  data,
+  network,
+  onPilih,
+  onKeluar,
+  onHelp,
+  token,
+}) {
   const [filter, setFilter] = useState("semua");
+  const [printOpen, setPrintOpen] = useState(false);
   if (!data || data.peserta.length === 0)
     return (
       <>
-        <Header onKeluar={onKeluar} />
+        <Header onKeluar={onKeluar} onHelp={onHelp} />
         {!network.online && (
           <div className="page">
             <Notice kind="warning">
@@ -52,7 +61,7 @@ export default function Pertemuan({ data, network, onPilih, onKeluar }) {
 
   return (
     <>
-      <Header onKeluar={onKeluar} />
+      <Header onKeluar={onKeluar} onHelp={onHelp} />
       <main className="page meetings-page">
         <div className="page-context">
           <span>{KELAS.semester}</span>
@@ -72,6 +81,17 @@ export default function Pertemuan({ data, network, onPilih, onKeluar }) {
             <strong>{String(dikunci).padStart(2, "0")}</strong>
             <span>dari {reguler.length} terkunci</span>
           </span>
+        </div>
+        <div className="meeting-tools">
+          <p className="muted">
+            Gabungkan BAP beberapa pertemuan untuk menghemat kertas.
+          </p>
+          <button
+            className="button button--outline"
+            onClick={() => setPrintOpen(true)}
+          >
+            Siapkan cetak <span aria-hidden="true">↗</span>
+          </button>
         </div>
         {!network.online && (
           <Notice kind="warning">
@@ -205,6 +225,13 @@ export default function Pertemuan({ data, network, onPilih, onKeluar }) {
           <span>UTS dan UAS tidak memiliki BAP.</span>
         </footer>
       </main>
+      {printOpen && (
+        <PrintPack
+          token={token}
+          network={network}
+          onClose={() => setPrintOpen(false)}
+        />
+      )}
     </>
   );
 }

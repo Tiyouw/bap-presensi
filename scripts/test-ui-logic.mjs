@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { PESERTA } from "./ui/data-fixture.js";
+import { panduanSudahDilihat, tutupPanduan } from "../src/lib/guide.js";
 import {
   cariPeserta,
   drafValid,
@@ -65,6 +66,9 @@ assert.deepEqual(
 );
 values.set("bap.draft.P2", "malformed");
 assert.equal(bacaDraf("P2"), null);
+assert.equal(panduanSudahDilihat(), false);
+values.set("bap.guide.dismissed.v1", "1");
+assert.equal(panduanSudahDilihat(), true);
 globalThis.localStorage = {
   getItem() {
     throw new Error("storage blocked");
@@ -76,6 +80,13 @@ globalThis.localStorage = {
 assert.equal(bacaToken(), "");
 assert.equal(simpanDraf("P1", { baseRevision: 0, statuses }), false);
 assert.equal(cadangkanDraf("P1", { baseRevision: 0, statuses }), false);
+assert.equal(panduanSudahDilihat(), false);
+tutupPanduan();
+assert.equal(
+  panduanSudahDilihat(),
+  true,
+  "guide stays dismissed in memory when storage is blocked",
+);
 console.log(
   "UI logic OK: status kelas penuh, pencarian nama/NIM, draf tidak lengkap/rusak, cadangan, storage penuh, dan pesan kegagalan.",
 );

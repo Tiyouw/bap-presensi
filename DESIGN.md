@@ -62,7 +62,15 @@ Draf dan rincian sesi dicache per pertemuan. Detail terkunci yang belum pernah d
 
 ## Batas cakupan
 
-Tidak ada perubahan skema atau generator Word. Logo aplikasi tidak masuk kop BAP resmi. Format cetak tetap template prodi. Tidak menambah layar rekap/pengaturan yang backend-nya belum tersedia.
+Logo aplikasi tidak masuk kop BAP resmi. Format cetak tetap template prodi.
+Unduhan arsip memakai generator satu form per halaman. Siapkan cetak memakai
+generator paket terpisah, hingga dua form per folio, hanya dari pertemuan reguler
+terkunci dan revisi tervalidasi. Lihat `docs/GUIDE-PRINT.md`. Tidak menambah layar
+rekap/pengaturan yang backend-nya belum tersedia.
+
+Panduan awal dapat dilewati dan hanya muncul sekali per browser. Tombol Bantuan
+(?) membuka ulang panduan tanpa mengubah data. Hindari tour yang memaksa pengguna
+mengisi presensi sungguhan atau membuka ulang panduan setiap login.
 
 Metadata kelas sementara dikumpulkan dalam `KELAS` di `src/lib/presensi.js`, mengikuti konfigurasi yang sudah dipakai backend saat ini. Jika API kelas kelak tersedia, ganti sumber itu sekali; jangan menyebarkan literal mata kuliah ke komponen.
 

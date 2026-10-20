@@ -42,7 +42,12 @@ async function startServer() {
   throw new Error("UI harness startup timed out: " + output);
 }
 
-async function session(width = 390, theme = "light", loggedIn = true) {
+async function session(
+  width = 390,
+  theme = "light",
+  loggedIn = true,
+  firstTime = false,
+) {
   const context = await browser.newContext({
     viewport: { width, height: width >= 1024 ? 900 : 844 },
     colorScheme: theme,
@@ -51,13 +56,14 @@ async function session(width = 390, theme = "light", loggedIn = true) {
   const page = await context.newPage();
   currentPage = page;
   await page.addInitScript(
-    ({ loggedIn }) => {
+    ({ loggedIn, firstTime }) => {
       if (!localStorage.getItem("ui-qa.initialized")) {
         localStorage.setItem("ui-qa.initialized", "1");
         if (loggedIn) localStorage.setItem("bap.token", "ui-test-token");
+        if (!firstTime) localStorage.setItem("bap.guide.dismissed.v1", "1");
       }
     },
-    { loggedIn },
+    { loggedIn, firstTime },
   );
   await page.route("https://example.test/bap.docx", (route) =>
     route.fulfill({
@@ -93,6 +99,43 @@ function done(name) {
 (async () => {
   await startServer();
   browser = await chromium.launch({ headless: true });
+  // A genuine first visit is tested separately; regression sessions below have
+  // already dismissed guidance, just like a returning operator.
+  let first = await session(390, "light", true, true);
+  await first.page
+    .getByRole("heading", { name: "Panduan singkat", exact: true })
+    .waitFor();
+  await first.page.screenshot({ path: path.join(shots, "guide-mobile.png") });
+  await first.page.getByRole("button", { name: "Lewati", exact: true }).click();
+  await first.page.reload();
+  await first.page.locator(".meeting-row").last().waitFor();
+  assert.equal(await first.page.getByRole("dialog").count(), 0);
+  await first.page.screenshot({
+    path: path.join(shots, "meetings-mobile.png"),
+    fullPage: true,
+  });
+  await first.page
+    .getByRole("button", { name: "Bantuan", exact: true })
+    .click();
+  await first.page.getByRole("button", { name: "Lanjut", exact: true }).click();
+  await first.page
+    .getByRole("heading", { name: "Cukup tandai yang tidak hadir" })
+    .waitFor();
+  await first.page.getByRole("button", { name: "Lanjut", exact: true }).click();
+  await first.page
+    .getByRole("button", { name: "Selesai", exact: true })
+    .click();
+  await openP3(first.page);
+  await first.page
+    .getByRole("button", { name: "Bantuan", exact: true })
+    .click();
+  await first.page.keyboard.press("Escape");
+  assert.equal(await first.page.getByRole("dialog").count(), 0);
+  assert.equal(await first.page.evaluate(() => window.__qa.calls.length), 0);
+  await first.context.close();
+  done(
+    "first-use guide can be skipped, stays dismissed after reload, reopens from help without data mutations",
+  );
   let { page, context } = await session(1280, "light", false);
   await page.screenshot({
     path: path.join(shots, "login-desktop.png"),
@@ -410,6 +453,60 @@ function done(name) {
   await page.getByRole("button", { name: "Ke halaman masuk" }).click();
   await page.locator(".login-form").waitFor();
   done("expired-session recovery preserves draft");
+  await context.close();
+
+  ({ page, context } = await session());
+  await page.evaluate(() => window.__qa.advance("p2"));
+  await page
+    .getByRole("button", { name: "Siapkan cetak", exact: false })
+    .click();
+  assert.equal(await page.getByRole("checkbox").count(), 2);
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Unduh paket cetak (.docx)", exact: true })
+      .isDisabled(),
+    true,
+  );
+  await page.getByRole("button", { name: "Pilih semua", exact: true }).click();
+  assert.equal(await page.locator(".print-sheets li").count(), 1);
+  await page.screenshot({ path: path.join(shots, "print-mobile.png") });
+  await page.evaluate(() => window.__qa.failGeneration(true));
+  await page
+    .getByRole("button", { name: "Unduh paket cetak (.docx)", exact: true })
+    .click();
+  await page
+    .getByText("Paket cetak belum berhasil dibuat.", { exact: false })
+    .waitFor();
+  assert.equal(await page.getByRole("checkbox", { checked: true }).count(), 2);
+  await page.evaluate(() => window.__qa.failGeneration(false));
+  const printDownload = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "Unduh paket cetak (.docx)", exact: true })
+    .click();
+  assert.equal(
+    (await printDownload).suggestedFilename(),
+    "BAP_PPB_P01-02_2-form-folio.docx",
+  );
+  assert.equal(context.pages().length, 1);
+  await page.getByText("Paket diunduh dari revisi", { exact: false }).waitFor();
+  await page.evaluate(() => window.__qa.setConnected(false));
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Unduh paket cetak (.docx)", exact: true })
+      .isDisabled(),
+    true,
+  );
+  await page.keyboard.press("Escape");
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.evaluate(() => window.__qa.setConnected(true));
+  await page
+    .getByRole("button", { name: "Siapkan cetak", exact: false })
+    .click();
+  await page.getByRole("button", { name: "Pilih semua", exact: true }).click();
+  await page.screenshot({ path: path.join(shots, "print-desktop.png") });
+  done(
+    "print package selects only locked meetings, plans two forms, retries failures, downloads without popup, blocks offline",
+  );
   await context.close();
 
   fs.writeFileSync(
