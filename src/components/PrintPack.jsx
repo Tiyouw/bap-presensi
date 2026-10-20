@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import PdfPreview from "./PdfPreview.jsx";
+import { useEffect, useMemo, useState } from "react";
 import { useAction, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api.js";
 import { susunPaket } from "../../bap-shared/printPlan.js";
@@ -16,10 +17,11 @@ export default function PrintPack({
   selected,
   onSelectionChange: setSelected,
   contextMeeting,
+  kelasId,
 }) {
   const available = useQuery(
     api.bap.ringkasanCetak,
-    network.online ? { token } : "skip",
+    network.online ? { token, kelasId } : "skip",
   );
   const generate = useAction(api.bapNode.paketCetak);
   const ready = usePageReady(
@@ -30,10 +32,23 @@ export default function PrintPack({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(null);
+  const [format, setFormat] = useState("pdf");
+  const [preview, setPreview] = useState(null);
+  useEffect(
+    () => () => {
+      if (preview?.url) URL.revokeObjectURL(preview.url);
+    },
+    [preview],
+  );
   const chosen = useMemo(
     () => (available || []).filter((p) => selected.includes(p.id)),
     [available, selected],
   );
+  const selectionKey = chosen.map((p) => `${p.id}:${p.revision}`).join(",");
+  useEffect(() => {
+    setPreview(null);
+    setSuccess(null);
+  }, [selectionKey]);
   const plan = susunPaket(chosen);
   const formCount = plan.flat().length;
   const toggle = (id) => {
@@ -52,8 +67,19 @@ export default function PrintPack({
       revision: p.revision,
     }));
     try {
-      const result = await generate({ token, items });
-      unduhPaket(result.base64, result.fileName);
+      const result = await generate({ token, kelasId, items, format });
+      if (format === "pdf")
+        setPreview({
+          url: URL.createObjectURL(
+            new Blob(
+              [Uint8Array.from(atob(result.base64), (c) => c.charCodeAt(0))],
+              { type: "application/pdf" },
+            ),
+          ),
+          pages: result.pageCount,
+          fileName: result.fileName,
+        });
+      else unduhPaket(result.base64, result.fileName);
       setSuccess(result.revisions);
     } catch (err) {
       setError(pesanGalat(err));
@@ -146,7 +172,7 @@ export default function PrintPack({
               <p className="muted">
                 Perkiraan {plan.length} lembar folio. Form lanjutan ikut
                 dihitung; nama yang panjang dapat menambah halaman. Periksa
-                pratinjau Word sebelum mencetak.
+                preview PDF atau pratinjau Word sebelum mencetak.
               </p>
               <ol className="print-sheets">
                 {plan.map((sheet, i) => (
@@ -177,9 +203,22 @@ export default function PrintPack({
         </>
       )}
       {error && <Notice kind="error">{error}</Notice>}
+      {preview && (
+        <section className="mg-print-preview">
+          <h3>Preview paket · {preview.pages} halaman</h3>
+          <PdfPreview title="Preview paket PDF" url={preview.url} />
+          <a
+            className="button button--primary"
+            href={preview.url}
+            download={preview.fileName}
+          >
+            Unduh paket PDF
+          </a>
+        </section>
+      )}
       {success && (
         <Notice>
-          Paket diunduh dari revisi{" "}
+          Paket dibuat dari revisi{" "}
           {success.map((p) => `P${p.nomor}: r${p.revision}`).join(", ")}. Jika
           presensi dikoreksi setelah ini, unduh paket baru.
         </Notice>
@@ -197,12 +236,30 @@ export default function PrintPack({
         </p>
       </details>
       <div className="modal-actions">
+        <label className="mg-field">
+          <span>Format paket</span>
+          <select
+            value={format}
+            onChange={(e) => {
+              setFormat(e.target.value);
+              setPreview(null);
+            }}
+            disabled={busy}
+          >
+            <option value="pdf">PDF — preview sebelum cetak</option>
+            <option value="docx">Word (.docx)</option>
+          </select>
+        </label>
         <button
           className="button button--primary button--full"
           disabled={!ready || busy || !network.online || !chosen.length}
           onClick={download}
         >
-          {busy ? "Menyiapkan paket…" : "Unduh paket cetak (.docx)"}
+          {busy
+            ? "Menyiapkan paket…"
+            : format === "pdf"
+              ? "Buat preview paket PDF"
+              : "Unduh paket cetak (.docx)"}
         </button>
       </div>
     </Modal>

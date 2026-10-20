@@ -3,8 +3,22 @@ import Modal from "./Modal.jsx";
 
 const STEPS = [
   {
+    title: "Siapkan kelas sekali, lanjutkan kapan saja",
+    text: "Buka Tambah kelas untuk mengatur mata kuliah, dosen, semester, dan asdos. Masukkan mahasiswa melalui Excel/CSV atau satu per satu, susun jadwal, lalu preview dan terbitkan template BAP. Aktifkan kelas setelah diperiksa.",
+    hint: "Gunakan pencarian di navbar atau ⌘K pada Mac / Ctrl+K pada Windows untuk mencari kelas, mahasiswa, dan fitur.",
+    visual: (
+      <>
+        <strong>Kelas</strong>
+        <span>→</span>
+        <span>Mahasiswa</span>
+        <span>→</span>
+        <span>Jadwal & template</span>
+      </>
+    ),
+  },
+  {
     title: "Pilih pertemuan yang benar",
-    text: "Periksa nomor dan tanggal sebelum membuka presensi. Praktikum hanya minggu 2–7 dan 9–15. Minggu 1 teori, 8 UTS, dan 16 UAS tanpa BAP praktikum.",
+    text: "Periksa nomor dan tanggal sebelum membuka presensi. Jadwal mengikuti kelas yang dipilih. Teori, UTS, UAS, dan Libur tidak memakai BAP praktikum.",
     hint: "Belum dikunci berarti presensi masih bisa diubah.",
     visual: (
       <>
@@ -56,7 +70,7 @@ export default function Guide({ firstTime, onClose }) {
     >
       <p className="modal-description">
         {firstTime
-          ? "Tiga langkah sebelum mulai. Bisa dilewati dan dibuka lagi lewat tombol Bantuan (?)."
+          ? "Panduan sebelum mulai. Bisa dilewati dan dibuka lagi lewat tombol Bantuan (?)."
           : "Baca langkah yang dibutuhkan. Membuka panduan tidak mengubah presensi."}
       </p>
       <nav className="guide-steps" aria-label="Langkah panduan">
@@ -86,8 +100,9 @@ export default function Guide({ firstTime, onClose }) {
           <summary>Mencetak dua pertemuan per folio</summary>
           <p>
             Buka Siapkan cetak di halaman pertemuan. Pilih presensi yang sudah
-            terkunci, lalu unduh paket Word. Dua form disusun dari atas ke bawah
-            tanpa mengecilkan halaman penuh.
+            terkunci, lalu buat preview paket PDF atau unduh paket Word.
+            Pertemuan harus dari kelas yang sama. Dua form disusun dari atas ke
+            bawah tanpa mengecilkan halaman penuh.
           </p>
           <p>
             Buka di Word dan periksa pratinjau. Gunakan ukuran kertas sesuai

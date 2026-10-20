@@ -4,11 +4,19 @@ import { panduanSudahDilihat, tutupPanduan } from "../src/lib/guide.js";
 import { adaPraktikum, tipePertemuan } from "../bap-shared/jadwal.js";
 
 const weeks = Array.from({ length: 16 }, (_, i) => ({
-  nomor: i + 1, tipe: i === 7 ? "UTS" : i === 15 ? "UAS" : "REGULER",
+  nomor: i + 1,
+  tipe: i === 7 ? "UTS" : i === 15 ? "UAS" : "REGULER",
 }));
-assert.deepEqual(weeks.filter(adaPraktikum).map((p) => p.nomor), [2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15]);
+assert.deepEqual(
+  weeks.filter(adaPraktikum).map((p) => p.nomor),
+  [2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15],
+);
 assert.equal(tipePertemuan(weeks[0]), "TEORI");
-assert.equal(weeks[0].tipe, "REGULER", "normalizing does not mutate legacy records");
+assert.equal(
+  weeks[0].tipe,
+  "REGULER",
+  "normalizing does not mutate legacy records",
+);
 import {
   cariPeserta,
   drafValid,
@@ -35,11 +43,11 @@ assert.deepEqual(hitungStatus(peserta, statuses), {
   IZIN: 1,
 });
 assert.equal(cariPeserta(peserta, "A", "").length, 23);
-assert.equal(cariPeserta(peserta, "SEMUA", " demo00002 ")[0].nama, "Bima Demo");
-assert.equal(cariPeserta(peserta, "SEMUA", "ALT000001").length, 1);
+assert.equal(cariPeserta(peserta, null, " demo00002 ")[0].nama, "Bima Demo");
+assert.equal(cariPeserta(peserta, null, "ALT000001").length, 1);
 assert.equal(cariPeserta(peserta, "A", "alt000001").length, 0);
 assert.equal(
-  cariPeserta(peserta, "SEMUA", "ALYA").every((p) =>
+  cariPeserta(peserta, null, "ALYA").every((p) =>
     p.nama.toLowerCase().includes("alya"),
   ),
   true,
@@ -98,3 +106,10 @@ assert.equal(
 console.log(
   "UI logic OK: status kelas penuh, pencarian nama/NIM, draf tidak lengkap/rusak, cadangan, storage penuh, dan pesan kegagalan.",
 );
+
+const freeGroups = [
+  { id: "g1", nim: "DEMO1", nama: "Nama Demo", golongan: "SEMUA" },
+  { id: "g2", nim: "DEMO2", nama: "Nama Kedua", golongan: "A" },
+];
+assert.equal(cariPeserta(freeGroups, null, "").length, 2);
+assert.equal(cariPeserta(freeGroups, "SEMUA", "").length, 1);

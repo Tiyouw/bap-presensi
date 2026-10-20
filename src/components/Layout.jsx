@@ -1,6 +1,8 @@
 import Brand from "./Brand.jsx";
 import { ThemeSelect } from "./Theme.jsx";
 import { SkeletonRows } from "./Loading.jsx";
+import { useContext } from "react";
+import { WorkspaceContext } from "../lib/ScopedStorage.jsx";
 
 export function Header({
   onKeluar,
@@ -11,6 +13,46 @@ export function Header({
   undoDisabled,
   busy,
 }) {
+  const workspace = useContext(WorkspaceContext);
+  if (workspace)
+    return onKembali || onBap || onUndo ? (
+      <div className="mg-local-toolbar">
+        {onKembali && (
+          <button
+            className="button button--quiet"
+            disabled={busy}
+            onClick={onKembali}
+          >
+            ← Pertemuan
+          </button>
+        )}
+        <div>
+          {onUndo && (
+            <button
+              className="button button--quiet"
+              disabled={undoDisabled || busy}
+              onClick={onUndo}
+            >
+              Urungkan
+            </button>
+          )}
+          {onBap && (
+            <button className="button button--quiet" onClick={onBap}>
+              BAP
+            </button>
+          )}
+          {onHelp && (
+            <button
+              className="button button--quiet"
+              onClick={onHelp}
+              aria-label="Bantuan"
+            >
+              ?
+            </button>
+          )}
+        </div>
+      </div>
+    ) : null;
   return (
     <header className="app-header">
       <div

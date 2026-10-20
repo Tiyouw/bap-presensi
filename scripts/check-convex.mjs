@@ -33,7 +33,7 @@ for (const f of files) {
   if (!rel.startsWith("convex") && f.startsWith(join(ROOT, "convex")) && rel.endsWith(".js")) {
     const nama = rel.replace(/\.js$/, "");
     const isi = readFileSync(f, "utf8");
-    const nama_fungsi = [...isi.matchAll(/export const (\w+) = (query|mutation|action|internalQuery|internalMutation|internalAction)\(/g)]
+    const nama_fungsi = [...isi.matchAll(/export\s+const\s+(\w+)\s*=\s*(query|mutation|action|internalQuery|internalMutation|internalAction)\(/g)]
       .map((m) => m[1]);
     if (nama_fungsi.length) ekspor.set(nama, new Set(nama_fungsi));
   }

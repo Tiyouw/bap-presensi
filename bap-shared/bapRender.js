@@ -12,6 +12,7 @@
  *  - nomor "1." selalu dicetak, termasuk saat sel nama kosong
  */
 import { createReport } from "docx-templates";
+import { configurableTemplate } from "./documentMeta.js";
 
 export const ROWS_PER_FORM = 6;
 export const SLOTS_PER_FORM = 12;
@@ -56,6 +57,7 @@ export function buildBapData(input) {
   const judul = `SEMESTER ${input.semester} TAHUN AKADEMIK ${input.tahunAkademik}`;
   const forms = buildForms(input.absen || []);
   forms.forEach((f, i) => {
+    if (input.documentMeta) f.meta = input.documentMeta;
     f.judul = i === 0 ? judul : `${judul} (lanjutan)`;
     // satu form per halaman; form terakhir tanpa page break (hindari halaman kosong)
     f.pageBreak = i !== forms.length - 1;
@@ -75,10 +77,14 @@ export function buildBapData(input) {
  * @returns {Promise<Uint8Array>} docx
  */
 export async function renderBap(template, input) {
+  const prepared = input.documentMeta
+    ? await configurableTemplate(template)
+    : null;
   return createReport({
-    template,
+    template: prepared?.bytes || template,
     data: buildBapData(input),
     cmdDelimiter: ["+++", "+++"],
     processLineBreaks: true,
+    ...(prepared ? { additionalJsContext: { logo: prepared.logo } } : {}),
   });
 }

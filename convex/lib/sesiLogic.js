@@ -1,100 +1,70 @@
 import { ConvexError } from "convex/values";
-import { requireSesi } from "./auth.js";
-import { adaPraktikum, tipePertemuan } from "../../bap-shared/jadwal.js";
-
-/**
- * Logika transaksi presensi. Dipisah dari `convex/sesi.js` supaya bisa diuji
- * tanpa deployment Convex (lihat scripts/test-handlers.mjs) — dua invarian di
- * sini pernah jadi temuan review: simpan+kunci harus atomik, dan revisi basi
- * harus DITOLAK, bukan menimpa.
- */
-
-export async function detailLogic(ctx, { token, pertemuanId }) {
-  await requireSesi(ctx, token);
-  const pertemuan = await ctx.db.get(pertemuanId);
-  if (!pertemuan) throw new ConvexError("PERTEMUAN_TIDAK_ADA");
-  const baris = await ctx.db
-    .query("presensi")
-    .withIndex("by_pertemuan", (q) => q.eq("pertemuanId", pertemuanId))
-    .take(200);
-  return {
-    pertemuan: {
-      id: pertemuan._id,
-      nomor: pertemuan.nomor,
-      tipe: tipePertemuan(pertemuan),
-      tanggal: pertemuan.tanggal,
-      tempat: pertemuan.tempat,
-      status: pertemuan.status,
-      revision: pertemuan.revision,
-      dikunciPada: pertemuan.dikunciPada ?? null,
-    },
-    presensi: baris.map((b) => ({ pesertaId: b.pesertaId, status: b.status })),
-  };
-}
-
+import { requireMeeting, audit } from "./access.js";
+import { classSnapshot, readableDetail } from "./classLogic.js";
+export const detailLogic = readableDetail;
 export async function simpanDanKunciLogic(ctx, args) {
-  await requireSesi(ctx, args.token);
-
-  const pertemuan = await ctx.db.get(args.pertemuanId);
-  if (!pertemuan) throw new ConvexError("PERTEMUAN_TIDAK_ADA");
-  if (!adaPraktikum(pertemuan)) throw new ConvexError("TANPA_PRAKTIKUM");
-  if (pertemuan.revision !== args.baseRevision) throw new ConvexError("KONFLIK_REVISI");
-
-  const peserta = await ctx.db.query("peserta").take(200);
-  const terdaftar = new Set(peserta.map((p) => p._id));
-  const dikirim = new Set();
+  const { meeting: p, user } = await requireMeeting(
+    ctx,
+    args.token,
+    args.pertemuanId,
+    true,
+  );
+  if (p.tipe !== "REGULER") throw new ConvexError("TANPA_PRAKTIKUM");
+  if (p.revision !== args.baseRevision) throw new ConvexError("KONFLIK_REVISI");
+  if (p.status !== "TERBUKA") throw new ConvexError("SUDAH_DIKUNCI");
+  const snapshot = p.snapshot || (await classSnapshot(ctx, p.kelasId, p)),
+    registered = new Set(snapshot.peserta.map((p) => p.id)),
+    sent = new Set();
+  if (!registered.size) throw new ConvexError("PESERTA_KURANG");
   for (const s of args.statuses) {
-    if (!terdaftar.has(s.pesertaId)) throw new ConvexError("PESERTA_ASING");
-    if (dikirim.has(s.pesertaId)) throw new ConvexError("PESERTA_DOBEL");
-    dikirim.add(s.pesertaId);
+    if (!registered.has(s.pesertaId)) throw new ConvexError("PESERTA_ASING");
+    if (sent.has(s.pesertaId)) throw new ConvexError("PESERTA_DOBEL");
+    if (!["HADIR", "ALPHA", "SAKIT", "IZIN"].includes(s.status))
+      throw new ConvexError("STATUS_TIDAK_VALID");
+    sent.add(s.pesertaId);
   }
-  if (dikirim.size !== terdaftar.size) throw new ConvexError("PESERTA_KURANG");
-
-  const lama = await ctx.db
+  if (sent.size !== registered.size) throw new ConvexError("PESERTA_KURANG");
+  const old = await ctx.db
     .query("presensi")
-    .withIndex("by_pertemuan", (q) => q.eq("pertemuanId", args.pertemuanId))
-    .take(200);
-  for (const b of lama) await ctx.db.delete(b._id);
-  for (const s of args.statuses) {
-    await ctx.db.insert("presensi", {
-      pertemuanId: args.pertemuanId,
-      pesertaId: s.pesertaId,
-      status: s.status,
-    });
-  }
-
-  const revision = pertemuan.revision + 1;
-  await ctx.db.patch(args.pertemuanId, {
+    .withIndex("by_pertemuan", (q) => q.eq("pertemuanId", p._id))
+    .collect();
+  for (const row of old) await ctx.db.delete(row._id);
+  for (const row of args.statuses)
+    await ctx.db.insert("presensi", { ...row, pertemuanId: p._id });
+  const revision = p.revision + 1;
+  await ctx.db.patch(p._id, {
     status: "KUNCI",
     revision,
     dikunciPada: Date.now(),
+    snapshot,
   });
-
-  const tidakHadir = args.statuses.filter((s) => s.status !== "HADIR").length;
-  await ctx.db.insert("audit", {
-    pertemuanId: args.pertemuanId,
-    pada: Date.now(),
-    jenis: "SIMPAN_KUNCI",
-    ringkas: `revisi ${pertemuan.revision} -> ${revision}; ${tidakHadir} tidak hadir`,
-  });
-
+  await audit(
+    ctx,
+    user,
+    "SIMPAN_KUNCI",
+    `Revisi ${revision}; ${args.statuses.filter((s) => s.status !== "HADIR").length} tidak hadir`,
+    p.kelasId,
+    p._id,
+  );
   return { ok: true, revision };
 }
-
 export async function bukaKunciLogic(ctx, args) {
-  await requireSesi(ctx, args.token);
-  const pertemuan = await ctx.db.get(args.pertemuanId);
-  if (!pertemuan) throw new ConvexError("PERTEMUAN_TIDAK_ADA");
-  if (!adaPraktikum(pertemuan)) throw new ConvexError("TANPA_PRAKTIKUM");
-  if (pertemuan.status !== "KUNCI") return { ok: true, revision: pertemuan.revision };
-
-  await ctx.db.patch(args.pertemuanId, { status: "TERBUKA" });
-  await ctx.db.insert("audit", {
-    pertemuanId: args.pertemuanId,
-    pada: Date.now(),
-    jenis: "BUKA_KUNCI",
-    ringkas: `dibuka dari revisi ${pertemuan.revision}`,
-  });
-  // revision tidak dinaikkan: revisi baru lahir saat disimpan lagi.
-  return { ok: true, revision: pertemuan.revision };
+  const { meeting: p, user } = await requireMeeting(
+    ctx,
+    args.token,
+    args.pertemuanId,
+    true,
+  );
+  if (p.tipe !== "REGULER") throw new ConvexError("TANPA_PRAKTIKUM");
+  if (p.status !== "KUNCI") return { ok: true, revision: p.revision };
+  await ctx.db.patch(p._id, { status: "TERBUKA" });
+  await audit(
+    ctx,
+    user,
+    "BUKA_KUNCI",
+    `Revisi ${p.revision}`,
+    p.kelasId,
+    p._id,
+  );
+  return { ok: true, revision: p.revision };
 }

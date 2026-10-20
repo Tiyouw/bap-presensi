@@ -8,25 +8,40 @@
     "build": "vite build",
     "preview": "vite preview",
     "codegen": "convex codegen",
-    "seed": "convex run seed:jalan",
-    "test": "node scripts/test-logic.mjs && node scripts/test-handlers.mjs && node scripts/check-convex.mjs && node scripts/test-ui-logic.mjs && node scripts/test-print.mjs",
+    "test": "node scripts/test-logic.mjs && node scripts/test-handlers.mjs && node scripts/check-convex.mjs && node scripts/test-ui-logic.mjs && node scripts/test-print.mjs && node scripts/test-management-unit.mjs",
     "test:fase0": "node scripts/test-fase0.js",
-    "test:ui": "node scripts/ui/run.cjs",
-    "embed": "node scripts/embed-template.mjs && node scripts/embed-peserta.mjs",
-    "hash-password": "node scripts/hash-password.mjs"
+    "test:ui": "node scripts/ui/management.cjs && node scripts/ui/faults.cjs && node scripts/ui/pdf.cjs && node scripts/ui/responsive.cjs",
+    "embed": "node scripts/embed-template.mjs",
+    "hash-password": "node scripts/hash-password.mjs",
+    "test:backend": "node scripts/test-management.mjs",
+    "test:documents": "node scripts/test-documents-v2.mjs",
+    "test:faults": "node scripts/ui/faults.cjs",
+    "test:pdf-ui": "node scripts/ui/pdf.cjs",
+    "test:responsive": "node scripts/ui/responsive.cjs"
   },
   "dependencies": {
+    "@pdf-lib/fontkit": "^1.1.1",
     "@xmldom/xmldom": "^0.9.12",
     "convex": "^1.47.0",
     "docx-templates": "4.15.0",
+    "exceljs": "^4.4.0",
     "jszip": "^3.10.2",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.4.299",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "xlsx": "^0.18.5"
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
     "playwright": "1.62.1",
-    "vite": "^5.4.11"
+    "vite": "^6.4.4"
+  },
+  "overrides": {
+    "exceljs": {
+      "uuid": "^11.1.1"
+    }
+  },
+  "engines": {
+    "node": ">=22.13.0 <23 || >=24"
   }
 }

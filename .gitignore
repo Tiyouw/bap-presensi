@@ -4,6 +4,7 @@ dist/
 .env.local
 convex/_generated/*
 !convex/_generated/api.js
+!convex/_generated/server.js
 out/
 *.log
 .DS_Store

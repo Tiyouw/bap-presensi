@@ -5,6 +5,8 @@ import { ConnectionStatus, Header, Notice } from "../components/Layout.jsx";
 import Modal from "../components/Modal.jsx";
 import { RefreshHint, SkeletonRows } from "../components/Loading.jsx";
 import { usePageReady } from "../lib/usePageReady.js";
+import { useScopedStore } from "../lib/ScopedStorage.jsx";
+import { registerNavigationGuard } from "../lib/navigation.js";
 import {
   bacaDetail,
   bacaDraf,
@@ -27,15 +29,15 @@ import {
   URUT_STATUS,
 } from "../lib/presensi.js";
 
-function initialState(pertemuan, peserta) {
-  const cached = bacaDetail(pertemuan.id);
+function initialState(pertemuan, peserta, store) {
+  const cached = store.bacaDetail(pertemuan.id);
   // Bootstrap can be newer than a cached detail: never roll its revision back.
   const cacheMatches =
     cached?.pertemuan?.revision === pertemuan.revision &&
     cached?.pertemuan?.status === pertemuan.status &&
     Array.isArray(cached.presensi);
   const record = pertemuan;
-  const draft = bacaDraf(pertemuan.id);
+  const draft = store.bacaDraf(pertemuan.id);
   const valid = drafValid(draft, peserta);
   const useDraft =
     valid &&
@@ -61,7 +63,15 @@ export default function Presensi({
   onKembali,
   onHelp,
   onPrint,
+  kelas,
+  readOnly = false,
 }) {
+  const store = useScopedStore();
+  const { simpanDetail, bacaDraf, simpanDraf, hapusDraf, cadangkanDraf } =
+    store;
+  const classInfo = kelas
+    ? { nama: kelas.matkulNama, kode: kelas.matkulKode }
+    : KELAS;
   const detail = useQuery(api.sesi.detail, {
     token,
     pertemuanId: pertemuan.id,
@@ -73,7 +83,7 @@ export default function Presensi({
   const simpanKunci = useMutation(api.sesi.simpanDanKunci);
   const bukaKunci = useMutation(api.sesi.bukaKunci);
   const generate = useAction(api.bapNode.generate);
-  const [initial] = useState(() => initialState(pertemuan, peserta));
+  const [initial] = useState(() => initialState(pertemuan, peserta, store));
   const pageReady = usePageReady(
     Boolean(detail) || !network.online,
     pertemuan.id,
@@ -85,7 +95,7 @@ export default function Presensi({
   const [known, setKnown] = useState(initial.known);
   const [konflik, setKonflik] = useState(initial.conflict);
   const [mode, setMode] = useState("ALPHA");
-  const [gol, setGol] = useState("SEMUA");
+  const [gol, setGol] = useState(null);
   const [cari, setCari] = useState("");
   const [riwayat, setRiwayat] = useState([]);
   const [toast, setToast] = useState(null);
@@ -98,6 +108,23 @@ export default function Presensi({
       : "",
   );
   const [drafAman, setDrafAman] = useState(true);
+  useEffect(
+    () =>
+      registerNavigationGuard(() =>
+        sibuk
+          ? {
+              block: true,
+              message: "Tunggu proses selesai sebelum berpindah halaman.",
+            }
+          : dirty && !drafAman
+            ? {
+                message:
+                  "Draf belum tersimpan karena penyimpanan perangkat penuh. Tetap tinggalkan halaman dan buang perubahan?",
+              }
+            : null,
+      ),
+    [sibuk, dirty, drafAman],
+  );
   const [generated, setGenerated] = useState(null);
   const [docPending, setDocPending] = useState(false);
   const dirtyRef = useRef(initial.dirty);
@@ -118,7 +145,7 @@ export default function Presensi({
   }, [pageReady]);
 
   const terkunci = record.status === "KUNCI";
-  const canEdit = !terkunci && !sibuk && !konflik && known;
+  const canEdit = !readOnly && !terkunci && !sibuk && !konflik && known;
   const daftar = useMemo(
     () => cariPeserta(peserta, gol, cari),
     [peserta, gol, cari],
@@ -147,7 +174,7 @@ export default function Presensi({
   const bapUsang = Boolean(
     bapAda?.url && (!terkunci || bapAda.revision !== record.revision),
   );
-  const fileName = `BAP_${KELAS.kode}_P${String(record.nomor).padStart(2, "0")}_${record.tanggal}_r${record.revision}.docx`;
+  const fileName = `BAP_${classInfo.kode}_P${String(record.nomor).padStart(2, "0")}_${record.tanggal}_r${record.revision}.docx`;
 
   useEffect(() => {
     if (!detail) return;
@@ -312,7 +339,12 @@ export default function Presensi({
       dirtyRef.current = false;
       setRiwayat([]);
       hapusDraf(pertemuan.id);
-      simpanDetail(pertemuan.id, { pertemuan: nextRecord, presensi: statuses });
+      simpanDetail(pertemuan.id, {
+        pertemuan: nextRecord,
+        presensi: statuses,
+        peserta,
+        kelas,
+      });
       setInfo("Presensi tersimpan dan terkunci. Menyiapkan BAP…");
       await buatBap(); // Generator failures never turn a successful save into a failed save.
     } catch (error) {
@@ -326,7 +358,7 @@ export default function Presensi({
   }
 
   async function bukaKuncinya() {
-    if (!network.online || operationRef.current) return;
+    if (readOnly || !network.online || operationRef.current) return;
     operationRef.current = "unlock";
     setSibuk("buka");
     setGalat("");
@@ -396,11 +428,12 @@ export default function Presensi({
     : () => setModal({ kind: "review" });
   const primaryDisabled = Boolean(
     sibuk ||
-      !network.online ||
-      konflik ||
-      !known ||
-      !peserta.length ||
-      (!terkunci && !detail),
+    !network.online ||
+    konflik ||
+    !known ||
+    !peserta.length ||
+    (!terkunci && (!detail || readOnly)),
+    // readOnly still permits downloads of locked attendance.
   );
 
   if (!pageReady)
@@ -438,7 +471,7 @@ export default function Presensi({
         <RefreshHint value={detail} pending={!detail && network.online} />
         <div className="attendance-heading">
           <div>
-            <p className="eyebrow">{KELAS.nama}</p>
+            <p className="eyebrow">{classInfo.nama}</p>
             <h1>PRESENSI</h1>
             <p className="attendance-date">
               {hariTanggal(record.tanggal).replace(" / ", ", ")}{" "}
@@ -519,7 +552,7 @@ export default function Presensi({
             </div>
             <button
               className="button button--outline"
-              disabled={!network.online || Boolean(sibuk) || !known}
+              disabled={readOnly || !network.online || Boolean(sibuk) || !known}
               onClick={() => setModal({ kind: "unlock" })}
             >
               Buka kunci
@@ -557,14 +590,18 @@ export default function Presensi({
         <section className="roster-section" aria-label="Presensi mahasiswa">
           <div className="roster-tools">
             <div className="group-filters" aria-label="Filter golongan">
-              {["SEMUA", ...golongan].map((g) => (
+              {[null, ...golongan].map((g) => (
                 <button
-                  key={g}
+                  key={g === null ? "all" : `gol:${g}`}
                   className={`filter-button${gol === g ? " is-active" : ""}`}
                   aria-pressed={gol === g}
                   onClick={() => setGol(g)}
                 >
-                  {g === "SEMUA" ? "Semua" : g}
+                  {g === null
+                    ? "Semua"
+                    : g.toLocaleUpperCase("id-ID") === "SEMUA"
+                      ? `Gol. ${g}`
+                      : g}
                 </button>
               ))}
             </div>
@@ -603,7 +640,7 @@ export default function Presensi({
           <div className="roster-label">
             <span>
               Mahasiswa <span className="roster-count">{daftar.length}</span>
-              {gol !== "SEMUA" && <span> · Golongan {gol}</span>}
+              {gol !== null && <span> · Golongan {gol}</span>}
             </span>
             <span>{terkunci ? "Tersimpan" : "Status"}</span>
           </div>
@@ -649,7 +686,7 @@ export default function Presensi({
                   className="button button--outline"
                   onClick={() => {
                     setCari("");
-                    setGol("SEMUA");
+                    setGol(null);
                   }}
                 >
                   Hapus pencarian
@@ -838,7 +875,7 @@ export default function Presensi({
           <div className="modal-actions">
             <button
               className="button button--primary button--full"
-              disabled={!network.online || Boolean(sibuk)}
+              disabled={readOnly || !network.online || Boolean(sibuk)}
               onClick={bukaKuncinya}
             >
               {sibuk ? "Membuka kunci…" : "Buka kunci & koreksi"}
@@ -966,6 +1003,38 @@ export default function Presensi({
                 onClick={() => setModal({ kind: "review" })}
               >
                 Periksa presensi
+              </button>
+            )}
+            {terkunci && (
+              <button
+                className="button button--outline button--full"
+                disabled={Boolean(sibuk) || !network.online}
+                onClick={async () => {
+                  setSibuk("pdf");
+                  setGalat("");
+                  try {
+                    const result = await generate({
+                      token,
+                      pertemuanId: pertemuan.id,
+                      format: "pdf",
+                    });
+                    if (result.status !== "READY")
+                      throw Error("PDF sedang diproses. Coba lagi sebentar.");
+                    await unduhDokumen(
+                      result.url,
+                      fileName.replace(/\.docx$/, ".pdf"),
+                    );
+                    setInfo(
+                      "PDF siap diunduh. Periksa preview sebelum mencetak.",
+                    );
+                  } catch (e) {
+                    setGalat(pesanGalat(e));
+                  } finally {
+                    setSibuk("");
+                  }
+                }}
+              >
+                Unduh PDF
               </button>
             )}
             <button

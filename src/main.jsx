@@ -5,6 +5,7 @@ import App from "./App.jsx";
 import { ThemeProvider } from "./components/Theme.jsx";
 import Brand from "./components/Brand.jsx";
 import "./styles.css";
+import "./management.css";
 
 const url = import.meta.env.VITE_CONVEX_URL;
 const client = url ? new ConvexReactClient(url) : null;

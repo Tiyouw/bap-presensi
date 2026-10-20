@@ -2,6 +2,7 @@ import JSZip from "jszip";
 import { createReport } from "docx-templates";
 import { buildBapData } from "./bapRender.js";
 import { DOMParser, XMLSerializer } from "@xmldom/xmldom";
+import { configurableTemplate } from "./documentMeta.js";
 
 const W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 const children = (el, local) =>
@@ -91,6 +92,14 @@ export function keepFormsTogether(xml) {
             `w:${side}`,
             String(Number(indent.getAttribute(`w:${side}`) || 0) + 572),
           );
+        for (const tabs of children(pPr, "tabs"))
+          for (const stop of children(tabs, "tab"))
+            if (stop.hasAttribute("w:pos"))
+              stop.setAttributeNS(
+                W,
+                "w:pos",
+                String(Number(stop.getAttribute("w:pos")) + 572),
+              );
       }
       if (
         part.localName === "tbl" &&
@@ -136,7 +145,10 @@ export function buildPrintData(inputs) {
 
 /** Reuse the corrected official form, changing only metadata scope and pagination. */
 export async function renderPrintPack(template, inputs) {
-  const zip = await JSZip.loadAsync(template);
+  const prepared = inputs.some((i) => i.documentMeta)
+    ? await configurableTemplate(template)
+    : null;
+  const zip = await JSZip.loadAsync(prepared?.bytes || template);
   let xml = await zip.file("word/document.xml").async("string");
   for (const field of ["mataKuliah", "hariTanggal", "tempat", "semGol"])
     xml = xml.replaceAll(`+++${field}+++`, `+++$f.${field}+++`);
@@ -146,6 +158,7 @@ export async function renderPrintPack(template, inputs) {
     data: buildPrintData(inputs),
     cmdDelimiter: ["+++", "+++"],
     processLineBreaks: true,
+    ...(prepared ? { additionalJsContext: { logo: prepared.logo } } : {}),
   });
   const output = await JSZip.loadAsync(result);
   output.file(

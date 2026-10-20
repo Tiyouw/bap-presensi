@@ -7,6 +7,7 @@ export default function Modal({
   onClose,
   busy = false,
   wide = false,
+  initialFocusSelector,
 }) {
   const titleId = useId();
   const ref = useRef(null);
@@ -19,13 +20,15 @@ export default function Modal({
     const previous = document.activeElement;
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    ref.current?.querySelector("button:not(:disabled)")?.focus();
+    ref.current
+      ?.querySelector(initialFocusSelector || "button:not(:disabled)")
+      ?.focus();
     const keydown = (event) => {
       if (event.key === "Escape" && !busyRef.current) closeRef.current();
       if (event.key !== "Tab") return;
       const focusable = [
         ...ref.current.querySelectorAll(
-          "button:not(:disabled), input:not(:disabled), select:not(:disabled), a[href]",
+          "button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href]",
         ),
       ];
       if (!focusable.length) {

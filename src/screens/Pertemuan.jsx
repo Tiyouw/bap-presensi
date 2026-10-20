@@ -9,6 +9,7 @@ import { bacaDraf, hariTanggal } from "../lib/store.js";
 import { hariIni, KELAS } from "../lib/presensi.js";
 import { RefreshHint } from "../components/Loading.jsx";
 import { usePageReady } from "../lib/usePageReady.js";
+import { useScopedStore } from "../lib/ScopedStorage.jsx";
 
 export default function Pertemuan({
   data,
@@ -19,8 +20,15 @@ export default function Pertemuan({
   onPrint,
   freshData,
 }) {
+  const { bacaDraf } = useScopedStore();
+  const classInfo = data?.kelas
+    ? {
+        nama: data.kelas.matkulNama,
+        semester: `${data.kelas.semester} ${data.kelas.tahunAkademik}`,
+      }
+    : KELAS;
   const [filter, setFilter] = useState("semua");
-  const ready = usePageReady(Boolean(data?.peserta.length), "meetings");
+  const ready = usePageReady(Boolean(data), "meetings");
   if (!ready)
     return (
       <>
@@ -67,18 +75,18 @@ export default function Pertemuan({
       <main className="page meetings-page page-enter">
         <RefreshHint value={freshData} pending={!freshData && network.online} />
         <div className="page-context">
-          <span>{KELAS.semester}</span>
+          <span>{classInfo.semester}</span>
           <ConnectionStatus network={network} />
         </div>
         <div className="page-heading">
           <div>
-            <p className="eyebrow">{KELAS.nama}</p>
+            <p className="eyebrow">{classInfo.nama}</p>
             <h1>
               Pertemuan<span className="heading-dot">.</span>
             </h1>
             <p className="lede">
-              Praktikum minggu 2–7 dan 9–15. Pilih pertemuan untuk mengisi
-              presensi atau mengunduh BAP.
+              Pilih pertemuan praktikum untuk mengisi presensi atau mengunduh
+              BAP.
             </p>
           </div>
           <span className="page-counter">
@@ -179,7 +187,9 @@ export default function Pertemuan({
                           ? "Teori saja"
                           : p.tipe === "UTS"
                             ? "Ujian tengah semester"
-                            : "Ujian akhir semester"
+                            : p.tipe === "LIBUR"
+                              ? "Libur"
+                              : "Ujian akhir semester"
                         : `Pertemuan ${p.nomor}`}
                       {p.tanggal === today && (
                         <span className="today-label">Hari ini</span>
@@ -187,14 +197,18 @@ export default function Pertemuan({
                     </strong>
                     <span>
                       {hariTanggal(p.tanggal).replace(" / ", ", ")}
-                      {!exam && <span className="meeting-place"> · {p.tempat}</span>}
+                      {!exam && (
+                        <span className="meeting-place"> · {p.tempat}</span>
+                      )}
                     </span>
                   </span>
                   <span
                     className={`session-badge${p.status === "KUNCI" && !exam ? " session-badge--locked" : ""}`}
                   >
                     {exam
-                      ? p.tipe === "TEORI" ? "Tanpa praktikum" : "Tidak ada BAP"
+                      ? p.tipe === "TEORI"
+                        ? "Tanpa praktikum"
+                        : "Tidak ada BAP"
                       : status(p)}
                   </span>
                   {!exam && (
@@ -227,7 +241,7 @@ export default function Pertemuan({
           <span>
             {data.peserta.length} mahasiswa · {reguler.length} sesi praktikum
           </span>
-          <span>Minggu 1 teori · 8 UTS · 16 UAS. Tidak ada BAP praktikum.</span>
+          <span>Teori, ujian, dan libur tidak memiliki BAP praktikum.</span>
         </footer>
       </main>
     </>

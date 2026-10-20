@@ -1,4 +1,4 @@
-export const MAX_PRINT_MEETINGS = 13;
+export const MAX_PRINT_MEETINGS = 100;
 
 export function jumlahForm(jumlahAbsen) {
   return Math.max(1, Math.ceil(jumlahAbsen / 12));
