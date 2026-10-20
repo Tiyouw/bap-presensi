@@ -18,7 +18,10 @@ Status: PR/preview untuk review; **belum di-merge atau dimigrasikan ke produksi*
    cocokkan kolom, periksa preview dan konfirmasi. Baris invalid/duplikat memblokir
    impor; pembaruan nama/golongan memerlukan persetujuan. Impor tidak menghapus
    peserta yang tidak ada di file. Batas 5 MB/2000 baris. Simpan NIM sebagai teks
-   di Excel agar nol awal tidak hilang.
+   di Excel agar nol awal tidak hilang. Susunan yang disarankan: satu baris header
+   **NIM, Nama, Golongan**, lalu satu mahasiswa per baris; hindari judul golongan
+   atau header berulang di tengah tabel. Pembaca mendukung namespace XML Excel
+   dengan prefix maupun tanpa prefix.
 4. **Jadwal**: buat mingguan atau tambah satu pertemuan. Pilih Praktikum/TEORI/UTS/
    UAS/LIBUR. Kelas baru boleh praktikum minggu1. Preset PPB: teori1, praktikum2–7/
    9–15, UTS8, UAS16. Periksa sebelum menyimpan.

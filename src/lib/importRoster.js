@@ -57,9 +57,11 @@ export async function readRosterFile(file) {
   if (/\.csv$/i.test(file.name))
     return [sheetData(file.name, parseCsv(await file.text()))];
   if (!/\.xlsx$/i.test(file.name)) throw Error("Gunakan file .xlsx atau .csv.");
-  const ExcelJS = (await import("exceljs")).default,
+  const [{ default: ExcelJS }, { normalizeXlsxNamespaces }] = await Promise.all([
+      import("exceljs"), import("./xlsxNamespaces.js"),
+    ]),
     workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(await file.arrayBuffer());
+  await workbook.xlsx.load(await normalizeXlsxNamespaces(await file.arrayBuffer()));
   return workbook.worksheets.map((sheet) => {
     const table = [];
     sheet.eachRow({ includeEmpty: false }, (r) => {

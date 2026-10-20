@@ -8,7 +8,7 @@ Base screenshot: `70c7dbbb4fddf6e78362a41213e052eb1268d1ee`.
 | --- | --- |
 | AUTH-01–04 | `test-management.mjs`: login, akun baru/wajib ganti, revoke sesi, operator, promosi langsung, nonaktif, last-admin, pemulihan sekali pakai. `test-handlers.mjs`: token/ACL. `setup-management.mjs`: bootstrap internal dan output privat. |
 | CLS-01–04 | Backend nyata dua kelas, ACL, aktivasi, arsip dan proteksi tulis; UI wizard/draf/jadwal minggu1 dan LIBUR; helper tanggal; salin kelas/pengaturan melalui API/UI. |
-| ROS-01–03 | Unit CSV multiline/semicolon/BOM, XLSX sheet/format nol awal, mapping, duplicate/update; UI preview/commit/error; backend impor atomik dan optimistic revision. |
+| ROS-01–03 | Unit CSV multiline/semicolon/BOM, XLSX sheet/format nol awal dan namespace XML dengan/tanpa prefix, mapping, duplicate/update; UI preview/commit/error; backend impor atomik dan optimistic revision. |
 | ATT-01–05 | Invariant transaksi atomik/foreign ID/duplicate/revision; backend frozen snapshot setelah roster/dosen/template berubah, buka kunci/refresh/relock dan arsip lama; UI undo/draf reload/offline/lock/download. Storage scope akun/kelas/pertemuan. |
 | DOC-01–05 | Generator dinamis Word/PDF, backend preview/publish/format/idempotensi/unduhan berizin/paket satu kelas; fixture render 0/12/13/25/93, kop/dosen/nama panjang dan unicode Latin. |
 | NAV-01–04 | Chromium/WebKit real-backend: Cmd/Ctrl+K, hasil berkonteks, keyboard/deep link/Back; viewport320/390/768/1280 dua tema/reduced motion, onboarding/skip/logout. |
@@ -69,6 +69,13 @@ Output privat/sintetis: `out/management/documents/results.json`,
 backup/credential untuk mereproduksi fixture dokumen.
 
 ## Batas verifikasi
+
+Pembaca XLSX menormalkan nama elemen SpreadsheetML sebelum dibaca ExcelJS.
+Uji regresi mencakup beberapa prefix, prefix hanya pada worksheet, teks sel yang
+menyerupai XML, atribut namespace ekstensi, beberapa sheet, format nol awal,
+serta penolakan ZIP/XML rusak. File biasa diteruskan tanpa ditulis ulang.
+Chromium dan WebKit menguji unggah, preview dan konfirmasi impor XLSX berprefix
+dengan tiga mahasiswa sintetis, serta penolakan NIM duplikat dari CSV.
 
 WebKit otomatis di Windows bukan perangkat Mac fisik, VoiceOver atau printer
 fisik. PDF/Word dapat memecah halaman berbeda pada konten panjang; periksa format

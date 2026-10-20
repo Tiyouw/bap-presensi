@@ -34,6 +34,7 @@ async function noOverflow(p) {
 (async () => {
   const { ConvexHttpClient } = await import("convex/browser"),
     { api } = await import("../../convex/_generated/api.js");
+  const { prefixedRosterFile } = await import("../xlsx-fixture.mjs");
   const backend = new ConvexHttpClient("https://doting-horse-423.convex.cloud");
   const token = (
     await backend.action(api.authNode.login, { username: "admin.qa", password })
@@ -135,19 +136,18 @@ async function noOverflow(p) {
       true,
     );
     await page.getByLabel("File mahasiswa (maksimum 5 MB)").setInputFiles({
-      name: "mahasiswa.csv",
-      mimeType: "text/csv",
-      buffer: Buffer.from(
-        "NIM,Nama,Golongan\n00001,Alya Demo,X\n00002,Bima Demo,Y\n00003,Citra Demo,X",
-      ),
+      name: "mahasiswa.xlsx",
+      mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      buffer: Buffer.from(await prefixedRosterFile()),
     });
     await page
       .getByRole("button", { name: "Konfirmasi impor 3 mahasiswa" })
       .click();
     await page.getByText("00001 · Gol. X", { exact: true }).waitFor();
+    await page.getByText("00003 · Gol. X", { exact: true }).waitFor();
     ok(
       name,
-      "CSV mapping/preview, duplicate error blocks commit, leading-zero NIM retained",
+      "CSV duplicate guard and prefixed XLSX mapping/preview/import; leading-zero NIM retained",
     );
     await page.getByRole("link", { name: "Jadwal", exact: true }).click();
     await page.getByLabel("Tanggal mulai", { exact: true }).fill("2026-10-20");

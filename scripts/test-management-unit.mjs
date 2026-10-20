@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
 import ExcelJS from "exceljs";
+import JSZip from "jszip";
+import { DOMParser } from "@xmldom/xmldom";
+import { prefixSpreadsheetParts } from "./xlsx-fixture.mjs";
+import { normalizeXlsxNamespaces } from "../src/lib/xlsxNamespaces.js";
 import {
   normalizeRoster,
   previewRoster,
@@ -53,6 +57,36 @@ const mapping = suggestMapping(tables[0].headers),
     { nim: "00012", nama: "Alya Lama", golongan: "X" },
   ]);
 assert.equal(preview[0].action, "Perbarui");
+// Valid namespace aliases must not make XLSX files fail or silently lose rows.
+const literalName = "Nama x:literal & <x:tag> Demo";
+sheet.addRow(["00013", literalName, "Pagi"]);
+const plain = await wb.xlsx.writeBuffer();
+assert.equal(await normalizeXlsxNamespaces(plain), plain, "Canonical files are not rewritten");
+for (const [prefix, worksheetOnly] of [["x", false], ["ss", false], ["s0", true]]) {
+  const bytes = await prefixSpreadsheetParts(plain, prefix, { worksheetOnly });
+  const decoded = await readRosterFile(new File([bytes], "prefixed.xlsx"));
+  assert.equal(decoded.length, 2);
+  assert.equal(decoded[0].rows.length, 2);
+  assert.equal(decoded[0].rows[0]["0"], "00012");
+  assert.equal(decoded[0].rows[1]["0"], "00013");
+  assert.equal(decoded[0].rows[1]["1"], literalName, "Literal XML-looking text is not edited");
+  assert.equal(decoded[0].rows[1]["2"], "Pagi");
+}
+const extensionZip = await JSZip.loadAsync(await prefixSpreadsheetParts(plain));
+let extensionXml = await extensionZip.file("xl/worksheets/sheet1.xml").async("string");
+extensionXml = extensionXml.replace("<x:worksheet ", '<x:worksheet xmlns:demo="urn:bap:demo" ')
+  .replace("</x:worksheet>", '<x:extLst><x:ext uri="demo"><demo:note demo:value="x:keep">x:literal</demo:note></x:ext></x:extLst></x:worksheet>');
+extensionZip.file("xl/worksheets/sheet1.xml", extensionXml);
+const kept = await JSZip.loadAsync(await normalizeXlsxNamespaces(await extensionZip.generateAsync({type:"uint8array"})));
+const extensionDoc = new DOMParser().parseFromString(await kept.file("xl/worksheets/sheet1.xml").async("string"),"text/xml");
+const note = extensionDoc.getElementsByTagNameNS("urn:bap:demo","note")[0];
+assert.equal(note.textContent, "x:literal");
+assert.equal(note.getAttributeNS("urn:bap:demo","value"), "x:keep");
+await assert.rejects(() => readRosterFile(new File(["broken"],"broken.xlsx")), /File Excel tidak dapat dibaca/);
+const malformed = await JSZip.loadAsync(plain);
+malformed.file("xl/workbook.xml", '<x:workbook xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><x:sheet></x:workbook>');
+const malformedBytes = await malformed.generateAsync({type:"uint8array"});
+await assert.rejects(() => readRosterFile(new File([malformedBytes],"malformed.xlsx")), /File Excel tidak dapat dibaca/);
 assert.throws(() =>
   validateTemplate({
     ...DEFAULT_TEMPLATE,
