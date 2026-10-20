@@ -4,6 +4,10 @@ import { api } from "../../convex/_generated/api.js";
 import Brand from "./Brand.jsx";
 import Modal from "./Modal.jsx";
 import { ThemeSelect } from "./Theme.jsx";
+import Sidebar from "./Sidebar.jsx";
+import WorkspaceIcon from "./WorkspaceIcon.jsx";
+import useSidebar from "../lib/useSidebar.js";
+import "./Sidebar.css";
 import {
   FEATURES,
   classFeatures,
@@ -223,14 +227,13 @@ export default function Workspace({
   kelasId,
 }) {
   const [search, setSearch] = useState(false),
-    [menu, setMenu] = useState(false),
     [profile, setProfile] = useState(false);
+  const navigation = useSidebar({ userId: user.id, path, suspended: search || profile });
   useEffect(() => {
-    if (!profile && !menu) return;
+    if (!profile) return;
     const close = (e) => {
       if (e.key === "Escape") {
         setProfile(false);
-        setMenu(false);
         document.querySelector(".mg-profile-button")?.focus();
       }
     };
@@ -243,7 +246,7 @@ export default function Workspace({
       document.removeEventListener("keydown", close);
       document.removeEventListener("pointerdown", outside);
     };
-  }, [profile, menu]);
+  }, [profile]);
   const apple = /Mac|iPhone|iPad/.test(navigator.platform),
     current = catalog.kelas.find((c) => c.id === kelasId);
   useEffect(() => {
@@ -252,17 +255,21 @@ export default function Workspace({
         (e.metaKey || e.ctrlKey) &&
         e.key.toLowerCase() === "k" &&
         !e.altKey &&
-        !e.isComposing
+        !e.shiftKey &&
+        !e.isComposing &&
+        (search || !navigation.hasDialog())
       ) {
         e.preventDefault();
-        setSearch((s) => !s);
+        if (!e.repeat) {
+          navigation.closeMobile(false);
+          setSearch((s) => !s);
+        }
       }
     };
     document.addEventListener("keydown", key);
     return () => document.removeEventListener("keydown", key);
-  }, []);
+  }, [search]);
   useEffect(() => {
-    setMenu(false);
     setProfile(false);
   }, [path]);
   const nav = [
@@ -275,12 +282,16 @@ export default function Workspace({
   ];
   return (
     <div
-      className={`mg-shell${path.includes("/pertemuan/") ? " mg-shell--attendance" : ""}`}
+      className={`mg-shell mg-shell--nav${path.includes("/pertemuan/") ? " mg-shell--attendance" : ""}`}
+      data-sidebar-pinned={navigation.pinned}
     >
       <a className="mg-skip" href="#workspace-main">
         Lewati navigasi
       </a>
-      <header className="mg-topbar">
+      <header className="mg-topbar" ref={navigation.topbarRef}>
+        <button type="button" className="ws-icon-button mg-mobile-menu" ref={navigation.triggerRef} onClick={navigation.toggleMobile} aria-label="Buka menu utama" aria-controls="workspace-sidebar" aria-expanded={navigation.mobileOpen}>
+          <WorkspaceIcon name="menu" />
+        </button>
         <a
           href="/"
           onClick={(e) => linkClick(e, "/")}
@@ -302,19 +313,13 @@ export default function Workspace({
         </div>
         <button
           className="mg-search-trigger"
+          ref={navigation.searchRef}
           onClick={() => setSearch(true)}
           aria-label="Cari matkul, mahasiswa, atau fitur"
         >
           <SearchIcon />
           <span>Cari di ruang kerja…</span>
           <kbd>{apple ? "⌘" : "Ctrl"} K</kbd>
-        </button>
-        <button
-          className="button button--quiet mg-mobile-menu"
-          onClick={() => setMenu(!menu)}
-          aria-expanded={menu}
-        >
-          Menu
         </button>
         <div className="mg-profile-wrap">
           <button
@@ -356,52 +361,8 @@ export default function Workspace({
           )}
         </div>
       </header>
-      <aside
-        className={`mg-sidebar${menu ? " is-open" : ""}`}
-        aria-label="Navigasi utama"
-      >
-        <p className="eyebrow">Ruang kerja</p>
-        <nav>
-          {nav.map((n) => (
-            <a
-              key={n.path}
-              href={n.path}
-              onClick={(e) => linkClick(e, n.path)}
-              className={
-                n.path === "/"
-                  ? path === "/"
-                    ? "is-active"
-                    : ""
-                  : path.startsWith(n.path)
-                    ? "is-active"
-                    : ""
-              }
-              aria-current={
-                n.path === "/"
-                  ? path === "/"
-                    ? "page"
-                    : undefined
-                  : path.startsWith(n.path)
-                    ? "page"
-                    : undefined
-              }
-            >
-              {n.title}
-            </a>
-          ))}
-        </nav>
-        <div className="mg-sidebar-foot">
-          <span className="muted">
-            Presensi jelas.
-            <br />
-            Arsip tetap terjaga.
-          </span>
-          <button className="button button--quiet" onClick={onHelp}>
-            Bantuan & panduan
-          </button>
-        </div>
-      </aside>
-      <div id="workspace-main" className="mg-workspace" tabIndex="-1">
+      <Sidebar navigation={navigation} nav={nav} path={path} onHelp={onHelp} apple={apple} />
+      <div id="workspace-main" className="mg-workspace" tabIndex="-1" ref={navigation.workspaceRef}>
         {children}
       </div>
       {search && (
