@@ -32,6 +32,8 @@ let connected = read("ui-qa.connected", true);
 let generationFails = false;
 let authExpired = false;
 const calls = [];
+const heldQueries = new Set();
+let requestDelay = 100;
 const publish = () => {
   version++;
   localStorage.setItem("ui-qa.server", JSON.stringify(server));
@@ -42,10 +44,27 @@ const subscribe = (fn) => {
   return () => listeners.delete(fn);
 };
 const current = () => version;
-const wait = () => new Promise((resolve) => setTimeout(resolve, 100));
+const wait = () => new Promise((resolve) => setTimeout(resolve, requestDelay));
 
 window.__qa = {
   calls,
+  holdQuery(name, held = true) {
+    if (held) heldQueries.add(name);
+    else heldQueries.delete(name);
+    publish();
+  },
+  setRequestDelay(ms) {
+    requestDelay = ms;
+  },
+  documentReady(id) {
+    const p = server.pertemuan.find((p) => p.id === id);
+    server.docs[id] = {
+      status: "READY",
+      url: "https://example.test/bap.docx",
+      revision: p.revision,
+    };
+    publish();
+  },
   setConnected(value) {
     connected = value;
     localStorage.setItem("ui-qa.connected", JSON.stringify(value));
@@ -82,7 +101,8 @@ export function useQuery(reference, args) {
   const tick = useSyncExternalStore(subscribe, current);
   const name = getFunctionName(reference);
   return useMemo(() => {
-    if (args === "skip" || !connected) return undefined;
+    if (args === "skip" || !connected || heldQueries.has(name))
+      return undefined;
     if (authExpired || args?.token !== "ui-test-token") {
       const error = new Error("TOKEN_KEDALUWARSA");
       error.data = "TOKEN_KEDALUWARSA";

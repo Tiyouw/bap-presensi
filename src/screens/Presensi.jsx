@@ -3,6 +3,8 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api.js";
 import { ConnectionStatus, Header, Notice } from "../components/Layout.jsx";
 import Modal from "../components/Modal.jsx";
+import { RefreshHint, SkeletonRows } from "../components/Loading.jsx";
+import { usePageReady } from "../lib/usePageReady.js";
 import {
   bacaDetail,
   bacaDraf,
@@ -58,6 +60,7 @@ export default function Presensi({
   network,
   onKembali,
   onHelp,
+  onPrint,
 }) {
   const detail = useQuery(api.sesi.detail, {
     token,
@@ -71,6 +74,10 @@ export default function Presensi({
   const bukaKunci = useMutation(api.sesi.bukaKunci);
   const generate = useAction(api.bapNode.generate);
   const [initial] = useState(() => initialState(pertemuan, peserta));
+  const pageReady = usePageReady(
+    Boolean(detail) || !network.online,
+    pertemuan.id,
+  );
   const [record, setRecord] = useState(initial.record);
   const [status, setStatus] = useState(initial.statuses);
   const [baseRevision, setBase] = useState(initial.base);
@@ -108,7 +115,7 @@ export default function Presensi({
     });
     if (footerRef.current) observer.observe(footerRef.current);
     return () => observer.disconnect();
-  }, []);
+  }, [pageReady]);
 
   const terkunci = record.status === "KUNCI";
   const canEdit = !terkunci && !sibuk && !konflik && known;
@@ -396,6 +403,24 @@ export default function Presensi({
       (!terkunci && !detail),
   );
 
+  if (!pageReady)
+    return (
+      <div className="attendance-layout" ref={layoutRef}>
+        <Header onKembali={onKembali} onHelp={onHelp} />
+        <main className="page attendance-page" aria-busy="true">
+          <p className="eyebrow">Pertemuan {pertemuan.nomor}</p>
+          <h1>Memuat presensi</h1>
+          <SkeletonRows title="Menyiapkan daftar mahasiswa" rows={5} />
+        </main>
+        <footer className="attendance-footer" ref={footerRef}>
+          <div className="attendance-footer-inner" aria-hidden="true">
+            <div className="skeleton skeleton--button" />
+            <div className="skeleton skeleton--button" />
+          </div>
+        </footer>
+      </div>
+    );
+
   return (
     <div className="attendance-layout" ref={layoutRef}>
       <Header
@@ -409,7 +434,8 @@ export default function Presensi({
         undoDisabled={!canEdit || !riwayat.length}
         busy={Boolean(sibuk)}
       />
-      <main className="page attendance-page">
+      <main className="page attendance-page page-enter">
+        <RefreshHint value={detail} pending={!detail && network.online} />
         <div className="attendance-heading">
           <div>
             <p className="eyebrow">{KELAS.nama}</p>
@@ -644,14 +670,23 @@ export default function Presensi({
                 : "Menunggu rincian presensi"}
             </strong>
           </div>
-          <button
-            className="button button--primary"
-            disabled={primaryDisabled}
-            onClick={primaryAction}
-          >
-            {primaryLabel}
-            <span aria-hidden="true">{terkunci ? "↓" : "→"}</span>
-          </button>
+          <div className="attendance-footer-actions">
+            <button
+              className="button button--outline"
+              disabled={Boolean(sibuk)}
+              onClick={() => onPrint(record)}
+            >
+              Siapkan cetak
+            </button>
+            <button
+              className="button button--primary"
+              disabled={primaryDisabled}
+              onClick={primaryAction}
+            >
+              {primaryLabel}
+              <span aria-hidden="true">{terkunci ? "↓" : "→"}</span>
+            </button>
+          </div>
           {!network.online && (
             <p className="footer-hint">
               Mengunci dan mengunduh membutuhkan koneksi.
@@ -939,6 +974,20 @@ export default function Presensi({
               onClick={() => setModal(null)}
             >
               Kembali ke presensi
+            </button>
+            <p className="modal-help">
+              Unduhan di atas untuk satu pertemuan. Gabungkan beberapa BAP lewat
+              Siapkan cetak.
+            </p>
+            <button
+              className="button button--outline button--full"
+              disabled={Boolean(sibuk)}
+              onClick={() => {
+                setModal(null);
+                onPrint(record);
+              }}
+            >
+              Siapkan cetak
             </button>
           </div>
         </Modal>

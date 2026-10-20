@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAction } from "convex/react";
 import { api } from "../../convex/_generated/api.js";
 import Brand from "../components/Brand.jsx";
 import { Header, Notice } from "../components/Layout.jsx";
 import { KELAS } from "../lib/presensi.js";
+import { LoginSplash } from "../components/Loading.jsx";
 
 export default function Login({ onMasuk }) {
   const login = useAction(api.authNode.login);
@@ -11,6 +12,10 @@ export default function Login({ onMasuk }) {
   const [visible, setVisible] = useState(false);
   const [galat, setGalat] = useState("");
   const [sibuk, setSibuk] = useState(false);
+  const inputRef = useRef(null);
+  useEffect(() => {
+    if (galat) inputRef.current?.focus();
+  }, [galat]);
 
   async function kirim(event) {
     event.preventDefault();
@@ -18,7 +23,17 @@ export default function Login({ onMasuk }) {
     setSibuk(true);
     setGalat("");
     try {
-      const hasil = await login({ password });
+      const [hasil] = await Promise.all([
+        login({ password }),
+        new Promise((resolve) =>
+          setTimeout(
+            resolve,
+            window.matchMedia("(prefers-reduced-motion: reduce)").matches
+              ? 0
+              : 350,
+          ),
+        ),
+      ]);
       onMasuk(hasil.token);
     } catch (error) {
       const pesan = String(error?.data || error?.message || error);
@@ -34,6 +49,7 @@ export default function Login({ onMasuk }) {
     }
   }
 
+  if (sibuk) return <LoginSplash title="Memeriksa akses" />;
   return (
     <div className="login-layout">
       <Header />
@@ -71,6 +87,7 @@ export default function Login({ onMasuk }) {
           </label>
           <div className="password-field">
             <input
+              ref={inputRef}
               id="password"
               type={visible ? "text" : "password"}
               value={password}

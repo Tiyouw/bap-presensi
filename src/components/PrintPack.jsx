@@ -6,14 +6,27 @@ import { hariTanggal } from "../lib/store.js";
 import { pesanGalat, unduhPaket } from "../lib/presensi.js";
 import Modal from "./Modal.jsx";
 import { Notice } from "./Layout.jsx";
+import { SkeletonRows, RefreshHint } from "./Loading.jsx";
+import { usePageReady } from "../lib/usePageReady.js";
 
-export default function PrintPack({ token, network, onClose }) {
+export default function PrintPack({
+  token,
+  network,
+  onClose,
+  selected,
+  onSelectionChange: setSelected,
+  contextMeeting,
+}) {
   const available = useQuery(
     api.bap.ringkasanCetak,
     network.online ? { token } : "skip",
   );
   const generate = useAction(api.bapNode.paketCetak);
-  const [selected, setSelected] = useState([]);
+  const ready = usePageReady(
+    available !== undefined || !network.online,
+    "print",
+    180,
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(null);
@@ -54,16 +67,22 @@ export default function PrintPack({ token, network, onClose }) {
         Pilih pertemuan terkunci. Dua form BAP disusun per folio, dari atas ke
         bawah, dengan ukuran tulisan mengikuti template.
       </p>
+      <RefreshHint value={available} pending={network.online && !available} />
+      {contextMeeting && (
+        <p className="print-context">
+          Akses cetak dari Pertemuan {contextMeeting.nomor}. Atur pilihan
+          pertemuan yang ingin digabung di bawah ini. Pertemuan yang belum
+          dikunci belum dapat ikut dicetak.
+        </p>
+      )}
       {!network.online && (
         <Notice kind="warning">
           Sambungkan internet untuk membaca presensi terbaru dan membuat paket
           cetak.
         </Notice>
       )}
-      {network.online && !available && (
-        <p role="status">Memuat pertemuan terkunci…</p>
-      )}
-      {available?.length === 0 && (
+      {!ready && <SkeletonRows title="Memuat pertemuan terkunci" rows={3} />}
+      {ready && available?.length === 0 && (
         <div className="empty-state">
           <h3>Belum ada presensi terkunci</h3>
           <p>
@@ -71,7 +90,7 @@ export default function PrintPack({ token, network, onClose }) {
           </p>
         </div>
       )}
-      {available?.length > 0 && (
+      {ready && available?.length > 0 && (
         <>
           <div className="print-selection-heading">
             <h3>Pertemuan yang dicetak</h3>
@@ -180,7 +199,7 @@ export default function PrintPack({ token, network, onClose }) {
       <div className="modal-actions">
         <button
           className="button button--primary button--full"
-          disabled={busy || !network.online || !chosen.length}
+          disabled={!ready || busy || !network.online || !chosen.length}
           onClick={download}
         >
           {busy ? "Menyiapkan paket…" : "Unduh paket cetak (.docx)"}

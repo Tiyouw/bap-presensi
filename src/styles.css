@@ -1724,3 +1724,171 @@ button:active:not(:disabled) {
     position: static;
   }
 }
+
+/* Brief entry transitions, with cached content kept in place during updates. */
+.page,
+.modal {
+  position: relative;
+}
+.page-enter {
+  animation: page-arrive 180ms ease-out both;
+}
+@keyframes page-arrive {
+  from {
+    opacity: 0.65;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.skeleton {
+  position: relative;
+  overflow: hidden;
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--bap-border),
+    transparent
+  );
+  opacity: 0.55;
+  transform: translateX(-100%);
+  animation: skeleton-pass 1200ms ease-in-out infinite;
+}
+@keyframes skeleton-pass {
+  to {
+    transform: translateX(100%);
+  }
+}
+.skeleton--button {
+  height: 52px;
+}
+.skeleton-region {
+  min-width: 0;
+}
+.refresh-hint {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  opacity: 0;
+  transition: opacity 100ms ease;
+  pointer-events: none;
+}
+.refresh-hint.is-loading {
+  opacity: 1;
+}
+.refresh-hint:not(.is-loading) .skeleton::after {
+  animation: none;
+}
+.refresh-hint .skeleton {
+  height: 100%;
+}
+.login-splash {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+}
+.login-splash-content {
+  max-width: 480px;
+  width: 100%;
+}
+.login-splash-brand {
+  margin-bottom: 40px;
+}
+.login-splash-brand .brand {
+  justify-content: center;
+}
+.login-splash-brand svg {
+  animation: brand-breathe 1500ms ease-in-out infinite;
+}
+.login-splash h1 {
+  font-size: clamp(1.75rem, 6vw, 2.25rem);
+}
+.login-splash .lede {
+  margin-inline: auto;
+}
+.login-loading-track {
+  height: 4px;
+  max-width: 220px;
+  margin: 28px auto 0;
+  background: var(--bap-surface);
+  overflow: hidden;
+  border-radius: 2px;
+}
+.login-loading-track span {
+  display: block;
+  width: 40%;
+  height: 100%;
+  background: var(--bap-accent);
+  animation: loading-pass 1000ms ease-in-out infinite;
+}
+@keyframes loading-pass {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(350%);
+  }
+}
+@keyframes brand-breathe {
+  50% {
+    opacity: 0.55;
+    transform: scale(0.96);
+  }
+}
+.print-context {
+  font-size: 0.8125rem;
+  color: var(--bap-muted);
+  padding-left: 12px;
+  border-left: 2px solid var(--bap-accent);
+}
+.attendance-footer-inner {
+  grid-template-columns: minmax(160px, 1fr) minmax(360px, 1.7fr);
+}
+.attendance-footer-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.35fr);
+  gap: 8px;
+}
+.attendance-footer-actions .button {
+  padding-inline: 12px;
+  gap: 8px;
+  font-size: 0.8125rem;
+}
+@media (max-width: 720px) {
+  .attendance-footer-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 7px;
+  }
+  .attendance-footer .save-summary {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 3px 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-enter,
+  .login-splash-brand svg,
+  .login-loading-track span,
+  .skeleton::after {
+    animation: none !important;
+    transform: none;
+  }
+  .login-loading-track span {
+    width: 100%;
+    opacity: 0.7;
+  }
+}
