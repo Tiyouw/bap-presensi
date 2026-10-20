@@ -521,21 +521,58 @@ textarea {
 }
 .mg-class-body {
   padding: 24px 40px 64px;
-  max-width: 1240px;
-  margin: auto;
+  width: 100%;
   min-width: 0;
 }
-.mg-class-body > .meetings-page {
-  padding: 12px 0;
-  max-width: 860px;
+.mg-class-body > .meetings-page,
+.mg-class-body > .loading-page {
+  padding: 0;
+  width: 100%;
+  max-width: none;
   margin: 0;
 }
-.mg-class-body .meetings-page .page-context,
-.mg-class-body .meetings-page .page-heading .eyebrow {
+.mg-class-body .meetings-page .page-context {
   display: none;
 }
-.mg-class-body .meetings-page .page-heading h1 {
-  font-size: 26px;
+.mg-tab-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 0 24px;
+}
+.mg-tab-heading-copy {
+  min-width: 0;
+}
+.mg-tab-heading h2 {
+  font-size: 22px;
+  line-height: 1.25;
+  letter-spacing: -0.5px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.mg-tab-heading-copy > p {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.65;
+  max-width: 65ch;
+}
+.mg-tab-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+  max-width: 100%;
+}
+.mg-tab-heading .page-counter strong {
+  font-size: 32px;
+}
+.mg-tab-heading .page-counter > span {
+  margin-top: 4px;
+  max-width: none;
+  white-space: nowrap;
 }
 .mg-setup {
   display: flex;
@@ -833,6 +870,10 @@ textarea {
   .mg-settings-grid {
     grid-template-columns: 1fr;
   }
+  .mg-tab-heading {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
   .mg-topbar {
     padding: 0 16px;
     gap: 8px;
@@ -941,6 +982,29 @@ textarea {
   }
   .mg-class-body {
     padding: 20px 16px 48px;
+  }
+  .mg-tab-heading {
+    flex-direction: column;
+  }
+  .mg-tab-heading h2 {
+    font-size: 20px;
+  }
+  .mg-tab-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .mg-tab-actions > .button {
+    flex: 1 1 140px;
+  }
+  .mg-tab-heading--meetings {
+    flex-direction: row;
+    flex-wrap: nowrap;
+  }
+  .mg-tab-heading--meetings .mg-tab-actions {
+    width: auto;
+  }
+  .mg-tab-heading .page-counter strong {
+    font-size: 28px;
   }
   .mg-class-tabs {
     gap: 14px;

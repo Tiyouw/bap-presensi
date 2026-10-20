@@ -1,4 +1,5 @@
 import PdfPreview from "../components/PdfPreview.jsx";
+import ClassTabHeading from "../components/ClassTabHeading.jsx";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useAction } from "convex/react";
 import { api } from "../../convex/_generated/api.js";
@@ -188,39 +189,36 @@ export function Participants({ token, user, data, openImport = false }) {
   }, [target]);
   return (
     <section>
-      <div className="mg-section-heading">
-        <div>
-          <h2>Mahasiswa</h2>
-          <p className="muted">
-            {data.peserta.filter((p) => p.aktif !== false).length} aktif · NIM
-            unik dalam kelas ini
-          </p>
-        </div>
-        {manage && (
-          <div className="mg-inline-actions">
-            <button
-              className="button button--outline"
-              onClick={() => setImporting(true)}
-            >
-              Impor Excel / CSV
-            </button>
-            <button
-              className="button button--primary"
-              onClick={() =>
-                setEdit({
-                  nim: "",
-                  nama: "",
-                  golongan: "A",
-                  aktif: true,
-                  _baseRevision: data.kelas.revision,
-                })
-              }
-            >
-              Tambah mahasiswa
-            </button>
-          </div>
-        )}
-      </div>
+      <ClassTabHeading
+        title="Mahasiswa"
+        description={`${data.peserta.filter((p) => p.aktif !== false).length} aktif · NIM unik dalam kelas ini`}
+        actions={
+          manage && (
+            <>
+              <button
+                className="button button--outline"
+                onClick={() => setImporting(true)}
+              >
+                Impor Excel / CSV
+              </button>
+              <button
+                className="button button--primary"
+                onClick={() =>
+                  setEdit({
+                    nim: "",
+                    nama: "",
+                    golongan: "A",
+                    aktif: true,
+                    _baseRevision: data.kelas.revision,
+                  })
+                }
+              >
+                Tambah mahasiswa
+              </button>
+            </>
+          )
+        }
+      />
       <Feedback task={task} />
       <div className="mg-filter-line">
         <Field
@@ -626,7 +624,10 @@ export function Schedule({ token, data, manage }) {
       .catch(() => {});
   return (
     <section>
-      <h2>Jadwal pertemuan</h2>
+      <ClassTabHeading
+        title="Jadwal pertemuan"
+        description="Jenis dan tanggal mengikuti kelas ini. Praktikum pada minggu 1 diperbolehkan bila dipilih."
+      />
       <RevisionNotice
         base={baseRevision}
         current={data.kelas.revision}
@@ -636,10 +637,6 @@ export function Schedule({ token, data, manage }) {
           task.clear();
         }}
       />
-      <p className="muted">
-        Jenis dan tanggal mengikuti kelas ini. Praktikum pada minggu 1
-        diperbolehkan bila dipilih.
-      </p>
       <Feedback task={task} />
       {manage && (
         <div className="mg-panel">
@@ -838,25 +835,21 @@ export function TemplateEditor({ token, data, manage }) {
   };
   return (
     <section>
-      <div className="mg-section-heading">
-        <div>
-          <h2>Template BAP</h2>
-          <RevisionNotice
-            base={baseRevision}
-            current={data.kelas.revision}
-            onReload={() => {
-              setConfig({ ...DEFAULT_TEMPLATE, ...data.kelas.templateDraft });
-              setBaseRevision(data.kelas.revision);
-              setPreview(null);
-              task.clear();
-            }}
-          />
-          <p className="muted">
-            Versi terbit {data.kelas.templateVersion}. Perubahan berlaku pada
-            sesi berikutnya.
-          </p>
-        </div>
-      </div>
+      <ClassTabHeading
+        title="Template BAP"
+        description={`Versi terbit ${data.kelas.templateVersion}. Perubahan berlaku pada sesi berikutnya.`}
+      >
+        <RevisionNotice
+          base={baseRevision}
+          current={data.kelas.revision}
+          onReload={() => {
+            setConfig({ ...DEFAULT_TEMPLATE, ...data.kelas.templateDraft });
+            setBaseRevision(data.kelas.revision);
+            setPreview(null);
+            task.clear();
+          }}
+        />
+      </ClassTabHeading>
       <Feedback task={task} />
       <div className="mg-template-grid">
         <div>
