@@ -155,12 +155,28 @@ function done(name) {
   await page.getByRole("button", { name: "Masuk ke aplikasi" }).click();
   await page.locator(".meeting-row").last().waitFor();
   assert.equal(await page.locator(".meeting-row").count(), 16);
-  assert.equal(await page.locator(".meeting-row:disabled").count(), 2);
+  assert.equal(await page.locator(".meeting-row:disabled").count(), 3);
+  assert.equal(await page.locator(".meeting-row").filter({ hasText: "Teori saja" }).isDisabled(), true);
+  assert.match(await page.locator(".page-counter").innerText(), /dari 13 terkunci/);
+  assert.match(await page.locator(".page-counter strong").innerText(), /00/);
+  await page.getByRole("button", { name: "Belum dikunci", exact: true }).click();
+  assert.equal(await page.locator(".meeting-row").count(), 13);
+  await page.getByRole("button", { name: "Semua", exact: true }).click();
   await page.screenshot({
     path: path.join(shots, "pertemuan-desktop.png"),
     fullPage: true,
   });
-  done("login error, password visibility, 16 meetings and disabled UTS/UAS");
+  done("16 weeks, 13 practicals, theory/UTS/UAS disabled; legacy locked week 1 excluded from counts and filters");
+  await page.evaluate(() => {
+    localStorage.setItem("bap.draft.p1", JSON.stringify({ legacy: true }));
+    window.__qa.setConnected(false);
+  });
+  await page.reload();
+  await page.locator(".meeting-row").last().waitFor();
+  assert.equal(await page.locator(".meeting-row").filter({ hasText: "Teori saja" }).isDisabled(), true);
+  assert.match(await page.locator(".page-counter").innerText(), /dari 13 terkunci/);
+  assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem("bap.draft.p1"))), { legacy: true });
+  done("old offline bootstrap normalizes week 1 without deleting its local draft");
   await context.close();
 
   for (const width of [320, 360, 390, 414, 768, 1280])
@@ -458,12 +474,13 @@ function done(name) {
   await context.close();
 
   ({ page, context } = await session());
-  await page.evaluate(() => window.__qa.advance("p2"));
+  await page.evaluate(() => { window.__qa.advance("p2"); window.__qa.advance("p4"); });
   await page
     .getByRole("button", { name: "Siapkan cetak", exact: false })
     .click();
   await page.getByRole("checkbox").first().waitFor();
   assert.equal(await page.getByRole("checkbox").count(), 2);
+  assert.equal(await page.getByRole("checkbox", { name: "Cetak pertemuan 1", exact: true }).count(), 0);
   assert.equal(
     await page
       .getByRole("button", { name: "Unduh paket cetak (.docx)", exact: true })
@@ -488,7 +505,7 @@ function done(name) {
     .click();
   assert.equal(
     (await printDownload).suggestedFilename(),
-    "BAP_PPB_P01-02_2-form-folio.docx",
+    "BAP_PPB_P02-04_2-form-folio.docx",
   );
   assert.equal(context.pages().length, 1);
   await page.getByText("Paket diunduh dari revisi", { exact: false }).waitFor();
@@ -517,12 +534,13 @@ function done(name) {
   ({ page, context } = await session(1280, "dark"));
   await page.evaluate(() => {
     window.__qa.advance("p2");
-    window.__qa.documentReady("p1");
+    window.__qa.advance("p4");
+    window.__qa.documentReady("p2");
     window.__qa.holdQuery("sesi:detail");
   });
   await page
     .locator(".meeting-row")
-    .filter({ hasText: "Pertemuan 1" })
+    .filter({ hasText: "Pertemuan 2" })
     .first()
     .click();
   await page
@@ -545,12 +563,12 @@ function done(name) {
   await page.getByRole("checkbox").first().waitFor();
   assert.equal(
     await page
-      .getByRole("checkbox", { name: "Cetak pertemuan 1", exact: true })
+      .getByRole("checkbox", { name: "Cetak pertemuan 2", exact: true })
       .isChecked(),
     true,
   );
   await page
-    .getByRole("checkbox", { name: "Cetak pertemuan 2", exact: true })
+    .getByRole("checkbox", { name: "Cetak pertemuan 4", exact: true })
     .check();
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "BAP", exact: true }).click();
@@ -670,7 +688,7 @@ function done(name) {
   await page.evaluate(() => window.__qa.holdQuery("sesi:detail"));
   await page
     .locator(".meeting-row")
-    .filter({ hasText: "Pertemuan 1" })
+    .filter({ hasText: "Pertemuan 2" })
     .first()
     .click();
   await page
@@ -698,10 +716,11 @@ function done(name) {
   await context.close();
 
   ({ page, context } = await session(390, "dark"));
+  await page.evaluate(() => window.__qa.advance("p2"));
   await page.evaluate(() => window.__qa.setConnected(false));
   await page
     .locator(".meeting-row")
-    .filter({ hasText: "Pertemuan 1" })
+    .filter({ hasText: "Pertemuan 2" })
     .first()
     .click();
   await page

@@ -1,4 +1,4 @@
-import { Component, useEffect, useState } from "react";
+import { Component, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api.js";
 import Login from "./screens/Login.jsx";
@@ -19,6 +19,7 @@ import Modal from "./components/Modal.jsx";
 import PrintPack from "./components/PrintPack.jsx";
 import { LoginSplash } from "./components/Loading.jsx";
 import { usePageReady } from "./lib/usePageReady.js";
+import { adaPraktikum, tipePertemuan } from "../bap-shared/jadwal.js";
 
 class SessionBoundary extends Component {
   state = { error: null };
@@ -83,7 +84,15 @@ function SessionApp({ token, onKeluar, entering, onReady }) {
       seed().catch(() => setSeedError(true));
   }, [bootstrap?.peserta.length, network.online, seed]);
 
-  const data = bootstrap || cache;
+  const source = bootstrap || cache;
+  // Normalize old offline caches too; week 1 must never open as a practical.
+  const data = useMemo(
+    () => source && ({
+      ...source,
+      pertemuan: source.pertemuan.map((p) => ({ ...p, tipe: tipePertemuan(p) })),
+    }),
+    [source],
+  );
   const sessionReady = usePageReady(Boolean(data?.peserta.length), "session");
   useEffect(() => {
     if (!entering || sessionReady) return;
@@ -106,8 +115,10 @@ function SessionApp({ token, onKeluar, entering, onReady }) {
     tutupPanduan();
     setGuide(null);
   };
-  const pertemuan =
+  const selectedMeeting =
     dipilih && (data?.pertemuan.find((p) => p.id === dipilih.id) || dipilih);
+  const pertemuan =
+    selectedMeeting && adaPraktikum(selectedMeeting) ? selectedMeeting : null;
   const openPrint = (meeting = null) => {
     setPrintContext(meeting);
     if (meeting?.status === "KUNCI")

@@ -2,11 +2,12 @@ import { ConvexError } from "convex/values";
 import { requireSesi } from "./auth.js";
 import { bahanGenerateLogic } from "./bapLogic.js";
 import { jumlahForm, MAX_PRINT_MEETINGS } from "../../bap-shared/printPlan.js";
+import { adaPraktikum } from "../../bap-shared/jadwal.js";
 
 export async function ringkasanCetakLogic(ctx, { token }) {
   await requireSesi(ctx, token);
   const pertemuan = (await ctx.db.query("pertemuan").take(32))
-    .filter((p) => p.tipe === "REGULER" && p.status === "KUNCI")
+    .filter((p) => adaPraktikum(p) && p.status === "KUNCI")
     .sort((a, b) => a.nomor - b.nomor);
   return Promise.all(
     pertemuan.map(async (p) => {
@@ -38,7 +39,7 @@ export async function bahanPaketLogic(ctx, { token, items }) {
   for (const item of items) {
     const meeting = await ctx.db.get(item.pertemuanId);
     if (!meeting) throw new ConvexError("PERTEMUAN_TIDAK_ADA");
-    if (meeting.tipe !== "REGULER") throw new ConvexError("UTS_UAS_TANPA_BAP");
+    if (!adaPraktikum(meeting)) throw new ConvexError("TANPA_PRAKTIKUM");
     if (meeting.status !== "KUNCI" || meeting.revision !== item.revision)
       throw new ConvexError("PAKET_BERUBAH");
     result.push(

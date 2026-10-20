@@ -13,7 +13,7 @@ import { PESERTA } from "./lib/pesertaData.js";
 // 16 pertemuan, semua Senin. Pertemuan ke-5 memakai 28 Sep 2026 karena
 // 27 Sep 2026 jatuh pada hari Minggu (cacat template lama).
 const JADWAL = [
-  { nomor: 1, tanggal: "2026-08-31", tipe: "REGULER" },
+  { nomor: 1, tanggal: "2026-08-31", tipe: "TEORI" },
   { nomor: 2, tanggal: "2026-09-07", tipe: "REGULER" },
   { nomor: 3, tanggal: "2026-09-14", tipe: "REGULER" },
   { nomor: 4, tanggal: "2026-09-21", tipe: "REGULER" },

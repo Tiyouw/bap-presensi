@@ -42,7 +42,7 @@ Buka berkas di Word, periksa pratinjau, pilih kertas sesuai ukuran dokumen
 ## Konsistensi data
 
 Satu query internal mengambil seluruh bahan paket dari satu snapshot, setelah
-memvalidasi token, pilihan 1–14 pertemuan unik, tipe reguler, status terkunci, serta
+memvalidasi token, pilihan 1–13 pertemuan unik, tipe praktikum, status terkunci, serta
 revisi yang dipilih. Revisi basi atau sesi yang telah dibuka kuncinya ditolak.
 Paket tidak mengubah presensi, tidak menambah arsip `bapDoc`, dan tidak menyimpan
 file sementara di storage. Action mengirim berkas ke klien sebagai base64 untuk

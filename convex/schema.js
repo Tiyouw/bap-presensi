@@ -5,7 +5,7 @@ import { v } from "convex/values";
  * Skema BAP presensi.
  *
  * Catatan model:
- *  - `pertemuan` = 16 baris (14 reguler + UTS + UAS). BAP hanya untuk REGULER
+ *  - `pertemuan` = 16 minggu (13 praktikum + teori + UTS + UAS). BAP hanya untuk REGULER
  *    yang berstatus KUNCI.
  *  - `presensi` menyimpan 93 baris per pertemuan (satu per peserta), bukan
  *    satu baris per ketidakhadiran: rekap butuh semua status.
@@ -22,7 +22,7 @@ export default defineSchema({
 
   pertemuan: defineTable({
     nomor: v.number(),
-    tipe: v.union(v.literal("REGULER"), v.literal("UTS"), v.literal("UAS")),
+    tipe: v.union(v.literal("REGULER"), v.literal("TEORI"), v.literal("UTS"), v.literal("UAS")),
     tanggal: v.string(), // YYYY-MM-DD, hari diturunkan dari tanggal
     tempat: v.string(),
     status: v.union(v.literal("TERBUKA"), v.literal("KUNCI")),

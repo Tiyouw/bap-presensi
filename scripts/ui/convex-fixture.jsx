@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 import { getFunctionName } from "convex/server";
 import { PESERTA } from "./data-fixture.js";
+import { adaPraktikum } from "../../bap-shared/jadwal.js";
 
 let version = 0;
 const listeners = new Set();
@@ -20,6 +21,7 @@ const initial = {
     nomor: i + 1,
     tanggal: new Date(Date.UTC(2026, 7, 31 + i * 7)).toISOString().slice(0, 10),
     tempat: "F6",
+    // Intentionally keep the old week-1 record locked/REGULER to test compatibility.
     tipe: i === 7 ? "UTS" : i === 15 ? "UAS" : "REGULER",
     status: i === 0 ? "KUNCI" : "TERBUKA",
     revision: i === 0 ? 1 : 0,
@@ -124,7 +126,7 @@ export function useQuery(reference, args) {
     if (name === "bap:forSesi") return server.docs[args.pertemuanId] || null;
     if (name === "bap:ringkasanCetak")
       return server.pertemuan
-        .filter((p) => p.tipe === "REGULER" && p.status === "KUNCI")
+        .filter((p) => adaPraktikum(p) && p.status === "KUNCI")
         .map((p) => {
           const jumlahAbsen = (server.presensi[p.id] || []).filter(
             (r) => r.status !== "HADIR",
@@ -216,7 +218,7 @@ export function useAction(reference) {
           throw { data: "PAKET_BERUBAH" };
         return {
           base64: btoa("Print download transport fixture"),
-          fileName: "BAP_PPB_P01-02_2-form-folio.docx",
+          fileName: `BAP_PPB_P${args.items.map((item) => String(server.pertemuan.find((p) => p.id === item.pertemuanId).nomor).padStart(2, "0")).join("-")}_2-form-folio.docx`,
           revisions: args.items.map((item) => ({
             numero: 0,
             nomor: server.pertemuan.find((p) => p.id === item.pertemuanId)

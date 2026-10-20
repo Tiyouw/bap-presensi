@@ -1,5 +1,6 @@
 import { ConvexError } from "convex/values";
 import { TEMPLATE_VERSION } from "./auth.js";
+import { adaPraktikum } from "../../bap-shared/jadwal.js";
 
 /** PENDING dianggap hidup selama ini; lewatnya boleh diambil alih. */
 export const KLAIM_HIDUP_MS = 120 * 1000;
@@ -15,6 +16,9 @@ export const KLAIM_HIDUP_MS = 120 * 1000;
  * / DIKLAIM (hak render ada di pemanggil).
  */
 export async function klaimLogic(ctx, args, now = Date.now()) {
+  const pertemuan = await ctx.db.get(args.pertemuanId);
+  if (!pertemuan) throw new ConvexError("PERTEMUAN_TIDAK_ADA");
+  if (!adaPraktikum(pertemuan)) throw new ConvexError("TANPA_PRAKTIKUM");
   const lama = await ctx.db
     .query("bapDoc")
     .withIndex("by_key", (q) =>
@@ -57,6 +61,7 @@ export async function klaimLogic(ctx, args, now = Date.now()) {
 export async function bahanGenerateLogic(ctx, { pertemuanId }) {
   const pertemuan = await ctx.db.get(pertemuanId);
   if (!pertemuan) throw new ConvexError("PERTEMUAN_TIDAK_ADA");
+  if (!adaPraktikum(pertemuan)) throw new ConvexError("TANPA_PRAKTIKUM");
   if (pertemuan.status !== "KUNCI") throw new ConvexError("BELUM_DIKUNCI");
 
   const baris = await ctx.db

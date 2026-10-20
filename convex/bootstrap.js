@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server.js";
 import { requireSesi } from "./lib/auth.js";
+import { tipePertemuan } from "../bap-shared/jadwal.js";
 
 /**
  * Satu query untuk semua yang dibutuhkan layar presensi:
@@ -34,7 +35,7 @@ export const get = query({
         .map((p) => ({
           id: p._id,
           nomor: p.nomor,
-          tipe: p.tipe,
+          tipe: tipePertemuan(p),
           tanggal: p.tanggal,
           tempat: p.tempat,
           status: p.status,

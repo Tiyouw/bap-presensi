@@ -1,5 +1,6 @@
 import { ConvexError } from "convex/values";
 import { requireSesi } from "./auth.js";
+import { adaPraktikum, tipePertemuan } from "../../bap-shared/jadwal.js";
 
 /**
  * Logika transaksi presensi. Dipisah dari `convex/sesi.js` supaya bisa diuji
@@ -20,7 +21,7 @@ export async function detailLogic(ctx, { token, pertemuanId }) {
     pertemuan: {
       id: pertemuan._id,
       nomor: pertemuan.nomor,
-      tipe: pertemuan.tipe,
+      tipe: tipePertemuan(pertemuan),
       tanggal: pertemuan.tanggal,
       tempat: pertemuan.tempat,
       status: pertemuan.status,
@@ -36,7 +37,7 @@ export async function simpanDanKunciLogic(ctx, args) {
 
   const pertemuan = await ctx.db.get(args.pertemuanId);
   if (!pertemuan) throw new ConvexError("PERTEMUAN_TIDAK_ADA");
-  if (pertemuan.tipe !== "REGULER") throw new ConvexError("UTS_UAS_TANPA_BAP");
+  if (!adaPraktikum(pertemuan)) throw new ConvexError("TANPA_PRAKTIKUM");
   if (pertemuan.revision !== args.baseRevision) throw new ConvexError("KONFLIK_REVISI");
 
   const peserta = await ctx.db.query("peserta").take(200);
@@ -84,6 +85,7 @@ export async function bukaKunciLogic(ctx, args) {
   await requireSesi(ctx, args.token);
   const pertemuan = await ctx.db.get(args.pertemuanId);
   if (!pertemuan) throw new ConvexError("PERTEMUAN_TIDAK_ADA");
+  if (!adaPraktikum(pertemuan)) throw new ConvexError("TANPA_PRAKTIKUM");
   if (pertemuan.status !== "KUNCI") return { ok: true, revision: pertemuan.revision };
 
   await ctx.db.patch(args.pertemuanId, { status: "TERBUKA" });
