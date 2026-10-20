@@ -13,7 +13,7 @@ Counter dan aksi berada di kanan pada ruang cukup; tombol membungkus di HP.
 ## Reproduksi dan screenshot
 
 `npm run test:class-layout` menjalankan fixture sintetis yang sama di Chromium dan
-WebKit: enam tab × enam viewport × dua tema = 144 keadaan. Pengujian memeriksa
+WebKit: enam tab × enam viewport × dua tema × dua browser = 144 keadaan. Pengujian memeriksa
 penjajaran tepi, jarak dan ukuran judul, lebar Pertemuan, overflow halaman,
 perpindahan tab, dan filter pertemuan. Fixture tidak mengakses backend produksi.
 
