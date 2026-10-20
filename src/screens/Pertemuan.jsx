@@ -77,7 +77,8 @@ export default function Pertemuan({
               Pertemuan<span className="heading-dot">.</span>
             </h1>
             <p className="lede">
-              Pilih pertemuan untuk mengisi presensi atau mengunduh BAP.
+              Praktikum minggu 2–7 dan 9–15. Pilih pertemuan untuk mengisi
+              presensi atau mengunduh BAP.
             </p>
           </div>
           <span className="page-counter">
@@ -174,9 +175,11 @@ export default function Pertemuan({
                   <span className="meeting-copy">
                     <strong>
                       {exam
-                        ? p.tipe === "UTS"
-                          ? "Ujian tengah semester"
-                          : "Ujian akhir semester"
+                        ? p.tipe === "TEORI"
+                          ? "Teori saja"
+                          : p.tipe === "UTS"
+                            ? "Ujian tengah semester"
+                            : "Ujian akhir semester"
                         : `Pertemuan ${p.nomor}`}
                       {p.tanggal === today && (
                         <span className="today-label">Hari ini</span>
@@ -184,13 +187,15 @@ export default function Pertemuan({
                     </strong>
                     <span>
                       {hariTanggal(p.tanggal).replace(" / ", ", ")}
-                      <span className="meeting-place"> · {p.tempat}</span>
+                      {!exam && <span className="meeting-place"> · {p.tempat}</span>}
                     </span>
                   </span>
                   <span
                     className={`session-badge${p.status === "KUNCI" && !exam ? " session-badge--locked" : ""}`}
                   >
-                    {exam ? "Tidak ada BAP" : status(p)}
+                    {exam
+                      ? p.tipe === "TEORI" ? "Tanpa praktikum" : "Tidak ada BAP"
+                      : status(p)}
                   </span>
                   {!exam && (
                     <span className="meeting-arrow" aria-hidden="true">
@@ -220,9 +225,9 @@ export default function Pertemuan({
         </section>
         <footer className="page-footnote">
           <span>
-            {data.peserta.length} mahasiswa · {reguler.length} pertemuan reguler
+            {data.peserta.length} mahasiswa · {reguler.length} sesi praktikum
           </span>
-          <span>UTS dan UAS tidak memiliki BAP.</span>
+          <span>Minggu 1 teori · 8 UTS · 16 UAS. Tidak ada BAP praktikum.</span>
         </footer>
       </main>
     </>

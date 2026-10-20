@@ -4,7 +4,7 @@ import Modal from "./Modal.jsx";
 const STEPS = [
   {
     title: "Pilih pertemuan yang benar",
-    text: "Periksa nomor dan tanggal di daftar pertemuan, lalu buka presensinya. Pertemuan UTS dan UAS tidak memiliki BAP.",
+    text: "Periksa nomor dan tanggal sebelum membuka presensi. Praktikum hanya minggu 2–7 dan 9–15. Minggu 1 teori, 8 UTS, dan 16 UAS tanpa BAP praktikum.",
     hint: "Belum dikunci berarti presensi masih bisa diubah.",
     visual: (
       <>

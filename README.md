@@ -29,7 +29,7 @@ convex/
   sesi.js            detail, simpanDanKunci (atomik), bukaKunci
   bap.js             klaim (bisa pulih), selesai, gagal, forSesi, pesanGagal
   bapNode.js         generate (action "use node") -> docx + sha256 + storage
-  seed.js            16 pertemuan + peserta (idempoten, dipanggil app otomatis)
+  seed.js            16 minggu: 13 praktikum, teori, UTS, UAS + peserta (idempoten)
   lib/               logika transaksi + data template (base64)
 bap-shared/
   bapRender.js       inti algoritma form/nomor + render docx-templates
@@ -68,6 +68,9 @@ npm run dev     # http://localhost:5173
 
 Data 16 pertemuan + peserta diisi otomatis app saat pertama dibuka
 (seed idempoten — hanya mengisi kalau tabel kosong).
+
+Jadwal: minggu 1 teori; minggu 2–7 dan 9–15 praktikum (13 sesi); minggu 8 UTS;
+minggu 16 UAS. [Aturan dan kompatibilitas data lama](docs/JADWAL-PRAKTIKUM.md).
 
 ## Deploy (Vercel + Convex via Marketplace)
 

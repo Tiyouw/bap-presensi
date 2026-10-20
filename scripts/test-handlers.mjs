@@ -181,7 +181,7 @@ await cek("UTS tidak punya BAP", async () => {
       token, pertemuanId, baseRevision: 0,
       statuses: status(ids, () => "HADIR"),
     }),
-    (e) => String(e.data || e.message).includes("UTS_UAS_TANPA_BAP")
+    (e) => String(e.data || e.message).includes("TANPA_PRAKTIKUM")
   );
 });
 
@@ -353,7 +353,7 @@ await cek(
     await ctx.db.patch(pertemuanId, { tipe: "UTS" });
     await assert.rejects(
       bahanPaketLogic(ctx, { token, items: [{ pertemuanId, revision: 1 }] }),
-      (e) => e.data === "UTS_UAS_TANPA_BAP",
+      (e) => e.data === "TANPA_PRAKTIKUM",
     );
   },
 );
@@ -369,7 +369,7 @@ await cek(
     });
     await ctx.db.patch(pertemuanId, { nomor: 3 });
     const second = await ctx.db.insert("pertemuan", {
-      nomor: 1,
+      nomor: 2,
       tipe: "REGULER",
       tanggal: "2026-08-31",
       tempat: "F6",
@@ -381,7 +381,7 @@ await cek(
     assert.deepEqual(
       summary.map((p) => [p.nomor, p.jumlahForm]),
       [
-        [1, 1],
+        [2, 1],
         [3, 2],
       ],
     );
@@ -395,12 +395,37 @@ await cek(
     assert.deepEqual(
       snapshot.map((b) => [b.pertemuan.nomor, b.jumlahAbsen]),
       [
-        [1, 0],
+        [2, 0],
         [3, 13],
       ],
     );
     assert.equal(JSON.stringify([...ctx.tabel]), before);
   },
 );
+
+await cek("minggu teori/ujian menolak simpan, klaim, generate, dan paket; arsip lama tetap utuh", async () => {
+  for (const [nomor, tipe] of [[1, "REGULER"], [1, "TEORI"], [8, "UTS"], [16, "UAS"]]) {
+    const { ctx, token, ids, pertemuanId } = await siapkan();
+    await simpanDanKunciLogic(ctx, {
+      token, pertemuanId, baseRevision: 0, statuses: status(ids, () => "HADIR"),
+    });
+    await klaimLogic(ctx, { pertemuanId, revision: 1 });
+    await ctx.db.patch(pertemuanId, { nomor, tipe });
+    const before = JSON.stringify([...ctx.tabel].map(([table, rows]) => [table, [...rows]]));
+    const reject = (e) => e.data === "TANPA_PRAKTIKUM";
+    await assert.rejects(simpanDanKunciLogic(ctx, {
+      token, pertemuanId, baseRevision: 1, statuses: status(ids, () => "ALPHA"),
+    }), reject);
+    await assert.rejects(klaimLogic(ctx, { pertemuanId, revision: 1 }), reject);
+    await assert.rejects(bukaKunciLogic(ctx, { token, pertemuanId }), reject);
+    await assert.rejects(bahanGenerateLogic(ctx, { pertemuanId }), reject);
+    await assert.rejects(bahanPaketLogic(ctx, { token, items: [{ pertemuanId, revision: 1 }] }), reject);
+    assert.deepEqual(await ringkasanCetakLogic(ctx, { token }), []);
+    const detail = await detailLogic(ctx, { token, pertemuanId });
+    assert.equal(detail.pertemuan.tipe, nomor === 1 ? "TEORI" : tipe);
+    assert.equal(detail.presensi.length, ids.length);
+    assert.equal(JSON.stringify([...ctx.tabel].map(([table, rows]) => [table, [...rows]])), before);
+  }
+});
 
 console.log(`\n${lulus} pemeriksaan lulus`);

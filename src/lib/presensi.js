@@ -62,6 +62,8 @@ export function pesanGalat(err) {
     return "Sesi berakhir. Masuk kembali; draf tetap ada di perangkat ini.";
   if (text.includes("KONFLIK_REVISI"))
     return "Data sudah berubah di perangkat lain. Periksa perubahan sebelum menyimpan.";
+  if (/TANPA_PRAKTIKUM|UTS_UAS_TANPA_BAP/.test(text))
+    return "Minggu teori, UTS, dan UAS tidak memiliki presensi atau BAP praktikum.";
   if (text.includes("BELUM_DIKUNCI"))
     return "Kunci presensi dulu sebelum membuat BAP.";
   if (/PESERTA_KURANG|PESERTA_ASING|PESERTA_DOBEL/.test(text))

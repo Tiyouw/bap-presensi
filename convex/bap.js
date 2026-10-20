@@ -8,6 +8,7 @@ import {
 import { TEMPLATE_VERSION, requireSesi } from "./lib/auth.js";
 import { bahanGenerateLogic, klaimLogic } from "./lib/bapLogic.js";
 import { bahanPaketLogic, ringkasanCetakLogic } from "./lib/printLogic.js";
+import { adaPraktikum } from "../bap-shared/jadwal.js";
 
 export const ringkasanCetak = query({
   args: { token: v.string() },
@@ -86,6 +87,8 @@ export const forSesi = query({
   args: { token: v.string(), pertemuanId: v.id("pertemuan") },
   handler: async (ctx, args) => {
     await requireSesi(ctx, args.token);
+    const meeting = await ctx.db.get(args.pertemuanId);
+    if (!meeting || !adaPraktikum(meeting)) return null;
     const docs = await ctx.db
       .query("bapDoc")
       .withIndex("by_key", (q) => q.eq("pertemuanId", args.pertemuanId))

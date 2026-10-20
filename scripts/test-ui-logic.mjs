@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import { PESERTA } from "./ui/data-fixture.js";
 import { panduanSudahDilihat, tutupPanduan } from "../src/lib/guide.js";
+import { adaPraktikum, tipePertemuan } from "../bap-shared/jadwal.js";
+
+const weeks = Array.from({ length: 16 }, (_, i) => ({
+  nomor: i + 1, tipe: i === 7 ? "UTS" : i === 15 ? "UAS" : "REGULER",
+}));
+assert.deepEqual(weeks.filter(adaPraktikum).map((p) => p.nomor), [2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15]);
+assert.equal(tipePertemuan(weeks[0]), "TEORI");
+assert.equal(weeks[0].tipe, "REGULER", "normalizing does not mutate legacy records");
 import {
   cariPeserta,
   drafValid,
