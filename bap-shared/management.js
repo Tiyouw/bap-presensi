@@ -4,11 +4,13 @@ export const TYPES = ["REGULER", "TEORI", "UTS", "UAS", "LIBUR"];
 export const DEFAULT_TEMPLATE = {
   institusi: "KEMENTERIAN PENDIDIKAN TINGGI, SAINS, DAN TEKNOLOGI",
   unit: "POLITEKNIK NEGERI JEMBER",
-  alamat: "Jalan Mastrip Kotak Pos 164 Jember 68101",
+  jurusan: "JURUSAN BAHASA KOMUNIKASI DAN PARIWISATA",
+  alamat: "Jalan Mastrip Kotak Pos 164 Jember 68101 Telp. (0331) 33353-34 Fax. (0331) 333531",
+  kontak: "Email: politeknik@polije.ac.id; Laman: www.polije.ac.id",
   judul:
     "DAFTAR HADIR PEMBIMBING PRAKTIK LABORATORIUM DAN LAPANG DAN BERITA ACARA PRAKTIK",
-  labelDosen: "Dosen pengampu",
-  labelAsdos: "Asisten dosen",
+  labelDosen: "",
+  labelAsdos: "",
   logo: "",
 };
 export function text(value, label, max = 160, required = true) {
@@ -54,7 +56,7 @@ export function validateTemplate(config) {
       config?.[key] ?? fallback,
       key,
       key === "logo" ? 500000 : key === "judul" ? 240 : 180,
-      key !== "logo" && key !== "alamat",
+      !["logo", "alamat", "jurusan", "kontak", "labelDosen", "labelAsdos"].includes(key),
     );
   }
   if (

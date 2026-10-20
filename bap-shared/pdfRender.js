@@ -3,11 +3,18 @@ import fontkit from "@pdf-lib/fontkit";
 import { FONT_REGULAR, FONT_BOLD } from "./assets/fonts.js";
 import { DEFAULT_LOGO } from "./assets/logo.js";
 import { buildBapData } from "./bapRender.js";
-const MM = 72 / 25.4,
-  WIDTH = 215 * MM,
-  HEIGHT = 330 * MM,
-  MARGIN = 22,
-  GAP = 14;
+// Measurements from the retained official DOCX (twips / 20), not a separate
+// PDF design. The absence table deliberately extends into the side margins.
+const WIDTH = 12191 / 20,
+  HEIGHT = 18711 / 20,
+  MARGIN = 567 / 20,
+  GAP = 18,
+  HEADER_X = 1134 / 20,
+  HEADER_WIDTH = 10201 / 20,
+  ABSENCE_X = (1134 - 572) / 20,
+  ABSENCE_WIDTH = 11132 / 20,
+  STAFF_X = 91.85,
+  STAFF_WIDTH = 8505 / 20;
 const BLACK = rgb(0, 0, 0);
 export function wrapText(value, font, size, width) {
   const lines = [];
@@ -50,8 +57,7 @@ export async function renderPdf(inputs, { twoPerPage = false } = {}) {
     bold = await doc.embedFont(Buffer.from(FONT_BOLD, "base64"), {
       subset: false,
     });
-  const width = WIDTH - MARGIN * 2,
-    forms = inputs.flatMap((input) =>
+  const forms = inputs.flatMap((input) =>
       buildBapData(input).forms.map((f) => ({ ...f, input })),
     );
   let page = null,
@@ -59,7 +65,7 @@ export async function renderPdf(inputs, { twoPerPage = false } = {}) {
     slots = 0;
   for (const form of forms) {
     const input = form.input,
-      meta = input.documentMeta;
+      meta = form.meta;
     const ops = [];
     let y = 0;
     const txt = (
@@ -67,13 +73,13 @@ export async function renderPdf(inputs, { twoPerPage = false } = {}) {
       x,
       top,
       w,
-      size = 11,
+      size = 12,
       isBold = false,
       align = "left",
     ) => {
       const font = isBold ? bold : regular,
         lines = wrapText(value, font, size, w),
-        lineHeight = size * 1.2;
+        lineHeight = size * 1.15;
       for (const [i, line] of lines.entries())
         ops.push({
           kind: "text",
@@ -82,7 +88,9 @@ export async function renderPdf(inputs, { twoPerPage = false } = {}) {
             x +
             (align === "center"
               ? (w - font.widthOfTextAtSize(line, size)) / 2
-              : 0),
+              : align === "right"
+                ? w - font.widthOfTextAtSize(line, size)
+                : 0),
           y: top + i * lineHeight,
           size,
           font,
@@ -91,55 +99,64 @@ export async function renderPdf(inputs, { twoPerPage = false } = {}) {
     };
     let header = 0;
     for (const [value, size, strong] of [
-      [meta.institusi, 9, true],
-      [meta.unit, 12, true],
-      [meta.prodi, 10, true],
-      [meta.alamat, 8, false],
+      [meta.institusi, 12, false],
+      [meta.unit, 12, false],
+      [meta.jurusan, 12, false],
+      [meta.prodi, 12, true],
+      [meta.alamat, 10, false],
+      [meta.kontak, 11, false],
     ])
-      header += txt(value, 70, header, width - 70, size, strong, "center") + 2;
+      header += txt(value, HEADER_X + 87.65, header,
+        HEADER_WIDTH - 87.65, size, strong, "center") + 2;
     ops.push({
       kind: "logo",
-      x: 4,
+      x: HEADER_X + 4.7,
       y: 0,
-      w: 55,
-      h: 55,
+      w: 976137 / 12700,
+      h: 972000 / 12700,
       value: meta.logo || DEFAULT_LOGO,
     });
-    y = Math.max(60, header) + 5;
-    ops.push({ kind: "line", x: 0, y, w: width });
-    y += 8;
+    y = Math.max(87, header) + 4.5;
+    ops.push({ kind: "line", x: HEADER_X, y, w: HEADER_WIDTH });
+    y += 7;
     y +=
-      txt(`${meta.judul}\n${form.judul}`, 0, y, width, 10, true, "center") + 7;
+      txt(`${meta.judul} ${form.judul}`, HEADER_X, y,
+        WIDTH - HEADER_X * 2, 12, true, "center") + 7;
     for (const [label, value] of [
-      ["Mata kuliah", input.mataKuliah],
-      ["Hari / tanggal", input.hariTanggal],
+      ["Mata Kuliah", input.mataKuliah],
+      ["Hari / Tanggal", input.hariTanggal],
       ["Tempat", input.tempat],
-      ["Semester / golongan", input.semGol],
+      ["Semester / Golongan", input.semGol],
     ]) {
-      const h = txt(value, 124, y, width - 124, 11);
-      txt(label + " :", 0, y, 120, 11);
-      y += Math.max(14, h) + 1;
+      const h = txt(value, 207.5, y, WIDTH - HEADER_X - 207.5);
+      const labelHeight = txt(label, 85.05, y, 116);
+      txt(":", 201.5, y, 6);
+      y += Math.max(13.8, h, labelHeight);
     }
-    y += 5;
-    function table(rows, widths, headerRows = 1) {
+    y += 6;
+    function table(rows, widths, xStart, minHeight, alignments, staff = false) {
       for (const [index, row] of rows.entries()) {
         const top = y,
           heights = row.map(
             (cell, i) =>
               wrapText(
                 cell,
-                index < headerRows ? bold : regular,
-                11,
+                index === 0 ? bold : regular,
+                12,
                 widths[i] - 8,
               ).length *
-                13.2 +
-              6,
+                13.8 +
+              3.4,
           ),
-          height = Math.max(19, ...heights);
-        let x = 0;
+          height = Math.max(minHeight, ...heights);
+        let x = xStart;
         for (const [i, cell] of row.entries()) {
           ops.push({ kind: "rect", x, y: top, w: widths[i], h: height });
-          txt(cell, x + 4, top + 3, widths[i] - 8, 11, index < headerRows);
+          const align = index === 0 ? "center"
+            : staff && i === 2 ? (index === 2 ? "right" : "left")
+              : alignments[i];
+          txt(cell, x + 4, top + (height - heights[i] + 3.4) / 2,
+            widths[i] - 8, 12, index === 0, align);
           x += widths[i];
         }
         y += height;
@@ -147,16 +164,18 @@ export async function renderPdf(inputs, { twoPerPage = false } = {}) {
     }
     table(
       [
-        ["No", "Nama dosen / pembimbing", "Tanda tangan"],
-        ["1.", meta.dosen, "1. ................"],
+        ["No", "Nama Dosen / Teknisi Pembimbing", "Tanda Tangan"],
+        ["1.", meta.dosen, "1.................."],
         ["2.", meta.asdos, "2. ................"],
       ],
-      [26, width - 136, 110],
+      [28.8, 254.7, STAFF_WIDTH - 283.5], STAFF_X, 21.2,
+      ["center", "left", "left"], true,
     );
-    y += 7;
-    y+=txt("Mahasiswa yang tidak hadir",0,y,width,10)+3;
-    const half = width / 2,
-      cols = [26, half - 90, 32, 32, 26, half - 90, 32, 32];
+    y += 2;
+    y += txt("Mahasiswa yang tidak hadir", 83.65, y, 400) + 2;
+    const sourceCols = [567, 3628, 650, 650, 567, 3685, 650, 695],
+      total = sourceCols.reduce((n, c) => n + c, 0),
+      cols = sourceCols.map((c) => c / total * ABSENCE_WIDTH);
     table(
       [
         ["No", "Nama", "Gol.", "Ket.", "No", "Nama", "Gol.", "Ket."],
@@ -171,7 +190,8 @@ export async function renderPdf(inputs, { twoPerPage = false } = {}) {
           r.rket,
         ]),
       ],
-      cols,
+      cols, ABSENCE_X, 17.25,
+      ["center", "left", "center", "center", "center", "left", "center", "center"],
     );
     const height = y + 7;
     if (height > HEIGHT - MARGIN * 2)
@@ -192,7 +212,7 @@ export async function renderPdf(inputs, { twoPerPage = false } = {}) {
     for (const op of ops) {
       if (op.kind === "text")
         page.drawText(op.line, {
-          x: MARGIN + op.x,
+          x: op.x,
           y: HEIGHT - base - op.y - op.size,
           size: op.size,
           font: op.font,
@@ -200,17 +220,17 @@ export async function renderPdf(inputs, { twoPerPage = false } = {}) {
         });
       if (op.kind === "line")
         page.drawLine({
-          start: { x: MARGIN + op.x, y: HEIGHT - base - op.y },
-          end: { x: MARGIN + op.x + op.w, y: HEIGHT - base - op.y },
-          thickness: 0.8,
+          start: { x: op.x, y: HEIGHT - base - op.y },
+          end: { x: op.x + op.w, y: HEIGHT - base - op.y },
+          thickness: 2.2,
         });
       if (op.kind === "rect")
         page.drawRectangle({
-          x: MARGIN + op.x,
+          x: op.x,
           y: HEIGHT - base - op.y - op.h,
           width: op.w,
           height: op.h,
-          borderWidth: 0.5,
+          borderWidth: 0.4,
           borderColor: BLACK,
         });
       if (op.kind === "logo") {
@@ -220,7 +240,7 @@ export async function renderPdf(inputs, { twoPerPage = false } = {}) {
             : await doc.embedPng(Buffer.from(data, "base64"));
         const scale = Math.min(op.w / img.width, op.h / img.height);
         page.drawImage(img, {
-          x: MARGIN + op.x + (op.w - img.width * scale) / 2,
+          x: op.x + (op.w - img.width * scale) / 2,
           y: HEIGHT - base - op.y - op.h,
           width: img.width * scale,
           height: img.height * scale,
@@ -228,6 +248,9 @@ export async function renderPdf(inputs, { twoPerPage = false } = {}) {
       }
     }
     used += height + GAP;
+    // Two different meetings occupy the upper and lower half, as on the
+    // reference folio. Taller forms move intact to the next page.
+    if (slots === 0) used = Math.max(HEIGHT / 2, used);
     slots++;
   }
   return {

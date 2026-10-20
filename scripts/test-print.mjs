@@ -47,11 +47,12 @@ for (const count of [0, 12, 13, 25, 93]) {
   assert.equal((text.match(/DAFTAR HADIR PEMBIMBING/g) || []).length, expected);
   assert.equal((text.match(/Nama Contoh/g) || []).length, count);
   assert.equal(
-    Array.from(doc.getElementsByTagNameNS(ns, "br")).filter(
-      (el) => el.getAttribute("w:type") === "page",
-    ).length,
+    doc.getElementsByTagNameNS(ns, "pageBreakBefore").length,
     Math.ceil(expected / 2) - 1,
   );
+  assert.equal(Array.from(doc.getElementsByTagNameNS(ns, "br")).filter(
+    el => el.getAttribute("w:type") === "page").length, 0,
+    "Pack separators must use pageBreakBefore to avoid overflowing break characters");
   assert.ok(doc.getElementsByTagNameNS(ns, "cantSplit").length > 0);
   assert.ok(
     zip.file("word/_rels/document.xml.rels"),

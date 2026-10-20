@@ -1,0 +1,170 @@
+[
+  {
+    "engine": "pdf",
+    "case": "single-0",
+    "pages": 1,
+    "forms": 1,
+    "passed": true
+  },
+  {
+    "engine": "word",
+    "case": "single-0",
+    "pages": 1,
+    "forms": 1,
+    "passed": true
+  },
+  {
+    "engine": "pdf",
+    "case": "pack-0",
+    "pages": 1,
+    "forms": 2,
+    "passed": true
+  },
+  {
+    "engine": "word",
+    "case": "pack-0",
+    "pages": 1,
+    "forms": 2,
+    "passed": true
+  },
+  {
+    "engine": "pdf",
+    "case": "single-12",
+    "pages": 1,
+    "forms": 1,
+    "passed": true
+  },
+  {
+    "engine": "word",
+    "case": "single-12",
+    "pages": 1,
+    "forms": 1,
+    "passed": true
+  },
+  {
+    "engine": "pdf",
+    "case": "pack-12",
+    "pages": 1,
+    "forms": 2,
+    "passed": true
+  },
+  {
+    "engine": "word",
+    "case": "pack-12",
+    "pages": 1,
+    "forms": 2,
+    "passed": true
+  },
+  {
+    "engine": "pdf",
+    "case": "single-13",
+    "pages": 2,
+    "forms": 2,
+    "passed": true
+  },
+  {
+    "engine": "word",
+    "case": "single-13",
+    "pages": 2,
+    "forms": 2,
+    "passed": true
+  },
+  {
+    "engine": "pdf",
+    "case": "pack-13",
+    "pages": 2,
+    "forms": 3,
+    "passed": true
+  },
+  {
+    "engine": "word",
+    "case": "pack-13",
+    "pages": 2,
+    "forms": 3,
+    "passed": true
+  },
+  {
+    "engine": "pdf",
+    "case": "single-25",
+    "pages": 3,
+    "forms": 3,
+    "passed": true
+  },
+  {
+    "engine": "word",
+    "case": "single-25",
+    "pages": 3,
+    "forms": 3,
+    "passed": true
+  },
+  {
+    "engine": "pdf",
+    "case": "pack-25",
+    "pages": 2,
+    "forms": 4,
+    "passed": true
+  },
+  {
+    "engine": "word",
+    "case": "pack-25",
+    "pages": 2,
+    "forms": 4,
+    "passed": true
+  },
+  {
+    "engine": "pdf",
+    "case": "single-93",
+    "pages": 8,
+    "forms": 8,
+    "passed": true
+  },
+  {
+    "engine": "word",
+    "case": "single-93",
+    "pages": 8,
+    "forms": 8,
+    "passed": true
+  },
+  {
+    "engine": "pdf",
+    "case": "pack-93",
+    "pages": 5,
+    "forms": 9,
+    "passed": true
+  },
+  {
+    "engine": "word",
+    "case": "pack-93",
+    "pages": 5,
+    "forms": 9,
+    "passed": true
+  },
+  {
+    "engine": "pdf",
+    "case": "long",
+    "pages": 3,
+    "forms": 3,
+    "passed": true
+  },
+  {
+    "engine": "word",
+    "case": "long",
+    "pages": 3,
+    "forms": 3,
+    "passed": true
+  },
+  {
+    "engine": "pdf",
+    "case": "source-kop-and-half-folio",
+    "maxCoordinateDeviationPt": 0.833,
+    "halfFolioStepPt": 467.775,
+    "passed": true
+  },
+  {
+    "engine": "word",
+    "case": "source-kop-and-half-folio",
+    "maxCoordinateDeviationPt": 0.222,
+    "halfFolioStepPt": 467.9,
+    "passed": true
+  }
+]

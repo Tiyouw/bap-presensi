@@ -158,6 +158,11 @@ async function noOverflow(p) {
     await page.getByRole("button", { name: "Ya, simpan jadwal" }).click();
     await page.getByText("Jadwal tersimpan.", { exact: true }).waitFor();
     await page.getByRole("link", { name: "Template BAP", exact: true }).click();
+    await page.getByLabel("Jurusan (opsional)", {exact: true}).fill("JURUSAN CONTOH");
+    await page.getByLabel("Email / situs (opsional)", {exact: true}).fill("Email: contoh@example.test");
+    await page.getByRole("button", {name: "Gunakan format resmi", exact: true}).click();
+    assert.equal(await page.getByLabel("Jurusan (opsional)", {exact: true}).inputValue(), "JURUSAN BAHASA KOMUNIKASI DAN PARIWISATA");
+    assert.equal(await page.getByLabel("Label dosen", {exact: true}).inputValue(), "");
     await page
       .getByLabel("Nama institusi", { exact: true })
       .fill("POLITEKNIK DEMO");
@@ -167,6 +172,8 @@ async function noOverflow(p) {
       .waitFor({ timeout: 30000 });
     const pdfCanvas = page.locator('canvas[data-rendered="true"]').first();
     await pdfCanvas.waitFor({ timeout: 30000 });
+    await page.getByText(/JURUSAN BAHASA KOMUNIKASI DAN PARIWISATA/).last().waitFor({state: "attached"});
+    await page.getByText(/Email: politeknik@polije.ac.id/).last().waitFor({state: "attached"});
     assert.ok(
       await pdfCanvas.evaluate((canvas) => {
         const ctx = canvas.getContext("2d");

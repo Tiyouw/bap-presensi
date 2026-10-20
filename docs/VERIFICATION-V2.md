@@ -28,10 +28,41 @@ COM membuka dan mengekspor semua11 DOCX ke PDF. Hasil normal:
 | 25 | 3/3 | 4/2 |
 | 93 | 8/8 | 9/5 |
 
-Fixture panjang menghasilkan PDF2 halaman, Word3 halaman: konten utuh dipindah,
-tanpa mengecilkan font. Pemeriksaan visual menemukan cacat font PDF ketika subset
-font dilakukan dua kali; diperbaiki dengan font statis tertanam penuh. Font tidak
-hanya diperiksa dari keberadaan resource—gambar render ikut diperiksa.
+Fixture panjang menghasilkan PDF3 halaman dan Word3 halaman dengan kop lengkap:
+konten utuh dipindah tanpa mengecilkan font. PDF memakai Tinos tertanam penuh,
+dengan metrik yang sesuai Times New Roman. Font tidak hanya diperiksa dari
+keberadaan resource—gambar render ikut diperiksa.
+
+### Fidelitas terhadap DOCX asli
+
+Acuan adalah `BAP - Senin 2.docx` (SHA256
+`e3cf9ad25e5872ece3f51b69883e2fb633f9f53b2c755a6780078df3cea0ec69`).
+Referensi asli dibaca privat; gambar publik hanya berisi data sintetis.
+Kop mempertahankan enam baris, termasuk jurusan terpisah dari prodi, telepon/faks,
+email/situs, proporsi logo sekitar2,71×2,70cm dan garis tebal. Tabel pembimbing
+memakai judul sumber; nama langsung tanpa label peran secara default. Teks nama
+mahasiswa pada kedua kolom memakai font/ukuran dan rata kiri yang sama.
+
+`test-document-fidelity.mjs` memeriksa isi/struktur kop, logo, tabel, format
+kedua kolom nama, label opsional dan kompatibilitas versi lama. Uji dokumen
+memeriksa lebar label identitas pada12pt serta kasus0/12/13/25/93 dan konten panjang.
+Render Microsoft Word dan PDF diperiksa untuk jumlah form, halaman kosong,
+batas kertas, dan kelengkapan teks. Posisi enam baris kop dibandingkan dengan
+render sumber; form kedua dimulai di setengah folio, bukan tepat setelah tabel
+pertama. Pengukuran ini mendukung fidelitas tata letak, bukan klaim piksel identik
+untuk semua font, isi khusus, aplikasi Word, atau printer.
+
+Hasil24 pemeriksaan tambahan ada di
+[`document-fidelity-results.json`](management-v2/document-fidelity-results.json).
+Pada fixture kop resmi, selisih koordinat maksimum terhadap render sumber adalah
+0,222pt untuk Word dan0,833pt untuk PDF; jarak awal form pertama–kedua sekitar467,8pt.
+Angka ini hanya mengukur enam baris kop dan posisi setengah folio; pemeriksaan
+tabel, isi, jumlah halaman dan kasus panjang dilakukan terpisah.
+
+Word memakai `pageBreakBefore` pada pemisah paket agar karakter page break yang
+jatuh di batas bawah tidak menghasilkan halaman kosong tambahan. Baris luar
+menjaga form utuh dan tinggi minimum slot atas; konten tinggi tetap boleh pindah
+halaman. Draf/template/arsip yang sudah tersimpan tidak ditimpa otomatis.
 
 Output privat/sintetis: `out/management/documents/results.json`,
 `word-results.json`, render PDF/PNG dan hasil backend/UI. Tidak perlu membagikan

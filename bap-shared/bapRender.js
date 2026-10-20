@@ -13,6 +13,7 @@
  */
 import { createReport } from "docx-templates";
 import { configurableTemplate } from "./documentMeta.js";
+import { documentMeta } from "./documentFormat.js";
 
 export const ROWS_PER_FORM = 6;
 export const SLOTS_PER_FORM = 12;
@@ -57,7 +58,7 @@ export function buildBapData(input) {
   const judul = `SEMESTER ${input.semester} TAHUN AKADEMIK ${input.tahunAkademik}`;
   const forms = buildForms(input.absen || []);
   forms.forEach((f, i) => {
-    if (input.documentMeta) f.meta = input.documentMeta;
+    if (input.documentMeta) f.meta = documentMeta(input.documentMeta);
     f.judul = i === 0 ? judul : `${judul} (lanjutan)`;
     // satu form per halaman; form terakhir tanpa page break (hindari halaman kosong)
     f.pageBreak = i !== forms.length - 1;

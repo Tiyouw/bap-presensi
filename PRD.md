@@ -83,9 +83,16 @@ dicache; tidak menjanjikan simpan server, manajemen data, atau generate offline.
 
 ## 6. Template dan dokumen
 
-DOC-01: Format resmi dengan formulir pengaturan: kop institusi, prodi, logo,
+DOC-01: DOCX asli adalah acuan format. Formulir pengaturan mencakup kop institusi,
+jurusan, prodi, alamat/telepon/faks, email/situs, logo,
 nama/kode matkul, semester, tahun, dosen/identitas, asdos/identitas, teks judul dan
 blok tanda tangan. Tidak ada upload DOCX bebas, kode template, atau editor drag-drop.
+Kop enam baris, logo sekitar 2,71 × 2,70 cm, garis kop, label identitas, lebar dan
+penjajaran tabel mengikuti sumber. Nama dosen/asdos dicetak langsung secara default;
+label peran opsional. Tombol “Gunakan format resmi” hanya mengubah isi editor,
+belum menerbitkan atau mengubah arsip. Nama mahasiswa di kedua sisi memakai
+Times New Roman12pt dan rata kiri pada Word; PDF memakai Tinos tertanam dengan
+metrik yang sesuai. Nomor/golongan/keterangan dan judul kolom rata tengah.
 DOC-02: Template memiliki draf, preview, terbitkan, dan histori versi per kelas.
 Pratinjau PDF dihasilkan generator yang sama dengan unduhan, memakai contoh sintetis
 sebelum kelas punya presensi. Versi terbit berlaku untuk sesi berikutnya.

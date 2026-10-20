@@ -5,6 +5,12 @@ import { renderPrintPack } from "../bap-shared/printRender.js";
 import { renderPdf } from "../bap-shared/pdfRender.js";
 import { DEFAULT_TEMPLATE } from "../bap-shared/management.js";
 import { PDFDocument } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
+import { FONT_REGULAR } from "../bap-shared/assets/fonts.js";
+const font = fontkit.create(Buffer.from(FONT_REGULAR, "base64"));
+assert.equal(font.familyName, "Tinos");
+const labelWidth = font.layout("Semester / Golongan").glyphs.reduce((n, g) => n + g.advanceWidth, 0) * 12 / font.unitsPerEm;
+assert.ok(labelWidth <= 116, "Source identity label must fit at 12pt without wrapping");
 const out = "out/management/documents";
 mkdirSync(out, { recursive: true });
 const template = readFileSync("templates/bap-template.docx"),
@@ -30,9 +36,9 @@ function input(count, long = false) {
       ...DEFAULT_TEMPLATE,
       prodi: "PROGRAM STUDI DESTINASI PARIWISATA",
       dosen: long
-        ? "Dosen pengampu: Dr. Éléonore Nur Prameswari Demo, S.Hum., M.Hum., Ph.D."
-        : "Dosen pengampu: Dosen Demo",
-      asdos: "Asisten dosen: Marchaenta Demo",
+        ? "Dr. Éléonore Nur Prameswari Demo, S.Hum., M.Hum., Ph.D."
+        : "Dosen Demo",
+      asdos: "Asdos Demo",
     },
   };
 }

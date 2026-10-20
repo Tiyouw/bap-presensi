@@ -38,10 +38,10 @@ export async function configurableTemplate(bytes) {
     const t = contents(p);
     if (t.includes("KEMENTERIAN")) replace(p, "+++$f.meta.institusi+++");
     else if (t.includes("POLITEKNIK")) replace(p, "+++$f.meta.unit+++");
-    else if (t.includes("JURUSAN")) replace(p, "+++$f.meta.prodi+++");
-    else if (t.includes("PROGRAM STUDI")) replace(p, "");
+    else if (t.includes("JURUSAN")) replace(p, "+++$f.meta.jurusan+++");
+    else if (t.includes("PROGRAM STUDI")) replace(p, "+++$f.meta.prodi+++");
     else if (t.includes("Jalan Mastrip")) replace(p, "+++$f.meta.alamat+++");
-    else if (t.includes("Telp.") || t.includes("Email:")) replace(p, "");
+    else if (t.includes("Email:")) replace(p, "+++$f.meta.kontak+++");
   }
   const logoP = Array.from(header.getElementsByTagNameNS(W, "p")).find(
     (p) => p.getElementsByTagNameNS(W, "drawing").length,
@@ -63,6 +63,33 @@ export async function configurableTemplate(bytes) {
       for (const p of ps.slice(1)) replace(p, "");
     }
   }
+  // The source's unused right-hand name slots inherit Normal (Calibri/centred).
+  // Once populated, both halves must use the same Times 12 / left-aligned text.
+  const absence = tables.find((t) => kids(kids(t, "tblGrid")[0] || {}, "gridCol").length === 8);
+  for (const row of kids(absence || {}, "tr").slice(1)) {
+    for (const index of [1, 5]) {
+      const cell = kids(row, "tc")[index];
+      for (const p of kids(cell, "p")) {
+        let props = kids(p, "pPr")[0];
+        if (!props) {
+          props = doc.createElementNS(W, "w:pPr");
+          p.insertBefore(props, p.firstChild);
+        }
+        const align = kids(props, "jc")[0] || doc.createElementNS(W, "w:jc");
+        align.setAttributeNS(W, "w:val", "left");
+        props.appendChild(align);
+        for (const parent of [props, ...kids(p, "r")]) {
+          const rPr = kids(parent, "rPr")[0] || doc.createElementNS(W, "w:rPr");
+          if (!rPr.parentNode) parent.insertBefore(rPr, parent.firstChild);
+          for (const [tag, attrs] of [["rFonts", {ascii: "Times New Roman", hAnsi: "Times New Roman"}], ["sz", {val: "24"}], ["szCs", {val: "24"}]]) {
+            const el = kids(rPr, tag)[0] || doc.createElementNS(W, `w:${tag}`);
+            for (const [key, value] of Object.entries(attrs)) el.setAttributeNS(W, `w:${key}`, value);
+            rPr.appendChild(el);
+          }
+        }
+      }
+    }
+  }
   for (const p of kids(body, "p"))
     if (contents(p).includes("DAFTAR HADIR PEMBIMBING"))
       replace(p, "+++$f.meta.judul+++ +++$f.judul+++");
@@ -77,12 +104,12 @@ export async function configurableTemplate(bytes) {
       props.appendChild(indent);
     }
     // Explicit stops avoid Word's inherited/default tabs moving with long values.
-    indent.setAttributeNS(W, "w:left", "3100");
-    indent.setAttributeNS(W, "w:hanging", "2533");
+    indent.setAttributeNS(W, "w:left", "3016");
+    indent.setAttributeNS(W, "w:hanging", "2449");
     indent.removeAttribute("w:firstLine");
     for (const old of kids(props, "tabs")) props.removeChild(old);
     const tabs = doc.createElementNS(W, "w:tabs");
-    for (const pos of [2880, 3100]) {
+    for (const pos of [2880, 3016]) {
       const tab = doc.createElementNS(W, "w:tab");
       tab.setAttributeNS(W, "w:val", "left");
       tab.setAttributeNS(W, "w:pos", String(pos));
@@ -122,10 +149,10 @@ export async function configurableTemplate(bytes) {
       const dimensions = logoDimensions(
           match ? value : `data:image/png;base64,${defaultLogo}`,
         ),
-        max = Math.max(dimensions.width, dimensions.height);
+        scale = Math.min(2.7114917 / dimensions.width, 2.7 / dimensions.height);
       return {
-        width: (2 * dimensions.width) / max,
-        height: (2 * dimensions.height) / max,
+        width: scale * dimensions.width,
+        height: scale * dimensions.height,
         data: match ? match[2] : defaultLogo,
         extension: match?.[1] === "jpeg" ? ".jpg" : ".png",
       };

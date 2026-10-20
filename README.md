@@ -22,9 +22,12 @@ Status: PR/preview untuk review; **belum di-merge atau dimigrasikan ke produksi*
 4. **Jadwal**: buat mingguan atau tambah satu pertemuan. Pilih Praktikum/TEORI/UTS/
    UAS/LIBUR. Kelas baru boleh praktikum minggu1. Preset PPB: teori1, praktikum2–7/
    9–15, UTS8, UAS16. Periksa sebelum menyimpan.
-5. **Template BAP**: atur kop, logo PNG/JPEG, judul dan label. Identitas dosen,
-   asdos, prodi dan semester mengikuti kelas. Simpan draf, preview PDF, terbitkan
-   versi. Tabel mengikuti format resmi; tidak ada upload DOCX bebas.
+5. **Template BAP**: atur kop lengkap (termasuk jurusan, alamat/telepon/faks,
+   email/situs), logo PNG/JPEG, judul dan label peran opsional. Tombol
+   **Gunakan format resmi** mengembalikan isi editor ke acuan DOCX asli;
+   simpan draf, periksa preview lalu terbitkan. Identitas dosen,
+   asdos, prodi dan semester mengikuti kelas. Tabel mengikuti format resmi;
+   tidak ada upload DOCX bebas.
 6. Periksa persiapan, aktifkan kelas. Buka praktikum, tandai yang tidak hadir,
    periksa nama/status, **Simpan & Kunci**, lalu unduh Word/PDF.
 7. **Siapkan cetak** dari kelas/presensi/arsip: pilih pertemuan terkunci dalam satu
@@ -70,12 +73,20 @@ ganjil menyisakan bagian bawah kosong.
 
 Preview PDF dirender dengan [PDF.js](https://mozilla.github.io/pdf.js/examples/) di canvas, termasuk pada browser tanpa plugin
 PDF bawaan. Tersedia navigasi halaman dan teks untuk pembaca layar. Preview memakai
-PDF hasil generator yang sama, font Noto Serif tertanam (OFL di
+PDF hasil generator yang sama, font Tinos tertanam dengan metrik Times New Roman (OFL di
 `bap-shared/assets/`). Word memakai template resmi. Keduanya dari snapshot sama,
 dengan pengukuran layout berbeda; jumlah halaman konten panjang dapat berbeda.
 Periksa berkas format yang akan dicetak. Skala100%, satu halaman per lembar dan
 kertas sesuai dokumen; jangan memilih dua halaman per lembar lagi. Printer dipilih
 melalui dialog sistem. Pengujian otomatis WebKit bukan pengujian Mac/printer fisik.
+
+Kop, proporsi logo, identitas, tabel pembimbing dan tabel mahasiswa mengikuti
+DOCX asli. Format resmi mencetak nama pembimbing tanpa awalan peran. Pengaturan
+yang sudah disimpan tetap dipertahankan; gunakan **Gunakan format resmi** lalu
+terbitkan bila ingin mengembalikan isinya. Sesi yang pernah dikunci dan berkas
+arsip tidak diganti otomatis. Sumber font PDF dipin dari
+[Google Fonts Tinos](https://github.com/google/fonts/tree/ba95515f1333efe9342c2ad988b9c2f6bef6dbad/ofl/tinos);
+regenerasi aset dengan `node scripts/embed-pdf-fonts.mjs`.
 
 ## Menjalankan lokal
 

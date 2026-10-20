@@ -862,10 +862,22 @@ export function TemplateEditor({ token, data, manage }) {
         <div>
           <fieldset disabled={!manage || task.busy} className="mg-panel">
             <h3>Kop & identitas dokumen</h3>
+            <button
+              className="button button--outline"
+              onClick={() => setConfig({ ...DEFAULT_TEMPLATE })}
+            >
+              Gunakan format resmi
+            </button>
+            <p className="muted">
+              Mengembalikan isi editor ke kop DOCX asli. Simpan sebagai draf dan
+              periksa preview sebelum menerbitkan.
+            </p>
             {[
               ["institusi", "Institusi / kementerian"],
               ["unit", "Nama institusi"],
-              ["alamat", "Alamat / kontak"],
+              ["jurusan", "Jurusan (opsional)"],
+              ["alamat", "Alamat / telepon / faks"],
+              ["kontak", "Email / situs (opsional)"],
               ["judul", "Judul form"],
               ["labelDosen", "Label dosen"],
               ["labelAsdos", "Label asdos"],
@@ -876,9 +888,13 @@ export function TemplateEditor({ token, data, manage }) {
                 value={config[k]}
                 onChange={(v) => setConfig((c) => ({ ...c, [k]: v }))}
                 maxLength={k === "judul" ? 240 : 180}
-                required={k !== "alamat"}
+                required={["institusi", "unit", "judul"].includes(k)}
               />
             ))}
+            <p className="muted">
+              Kosongkan label dosen dan asdos untuk mencetak nama langsung,
+              seperti pada form resmi.
+            </p>
             <label className="mg-field">
               <span>Logo PNG/JPEG (maksimum 350 KB)</span>
               <input
@@ -979,7 +995,7 @@ export function TemplateEditor({ token, data, manage }) {
                 {manage && (
                   <button
                     className="button button--quiet"
-                    onClick={() => setConfig({ ...t.config })}
+                    onClick={() => setConfig({ ...DEFAULT_TEMPLATE, ...t.config })}
                   >
                     Salin ke editor
                   </button>

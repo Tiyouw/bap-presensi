@@ -9,6 +9,7 @@ import { renderPdf } from "../bap-shared/pdfRender.js";
 import { hariTanggal } from "./lib/auth.js";
 import { TEMPLATE_BASE64 } from "./lib/templateData.js";
 import { documentUrl } from "./lib/documentUrl.js";
+import { documentMeta, staffName } from "../bap-shared/documentFormat.js";
 const MIME = {
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   pdf: "application/pdf",
@@ -16,7 +17,7 @@ const MIME = {
 export function documentInput(data) {
   const s = data.snapshot,
     c = s.kelas,
-    t = s.template;
+    t = documentMeta(s.template);
   return {
     mataKuliah: c.matkulNama,
     semester: c.semester,
@@ -28,8 +29,8 @@ export function documentInput(data) {
     documentMeta: {
       ...t,
       prodi: `PROGRAM STUDI ${c.prodi.toUpperCase()}`,
-      dosen: `${t.labelDosen}: ${c.dosen}${c.dosenId ? ` (${c.dosenId})` : ""}`,
-      asdos: `${t.labelAsdos}: ${c.asdos}${c.asdosId ? ` (${c.asdosId})` : ""}`,
+      dosen: staffName(t.labelDosen, c.dosen, c.dosenId),
+      asdos: staffName(t.labelAsdos, c.asdos, c.asdosId),
     },
   };
 }
