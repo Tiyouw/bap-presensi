@@ -1,3 +1,4 @@
+import { bacaToken } from "./store.js";
 export const URUT_STATUS = ["ALPHA", "SAKIT", "IZIN", "HADIR"];
 export const LABEL = {
   HADIR: "Hadir",
@@ -29,10 +30,10 @@ export function statusAwal(peserta, presensi = []) {
 export function drafValid(draf, peserta) {
   return Boolean(
     draf &&
-      Number.isFinite(draf.baseRevision) &&
-      draf.statuses &&
-      peserta.length > 0 &&
-      peserta.every((p) => LABEL[draf.statuses[p.id]]),
+    Number.isFinite(draf.baseRevision) &&
+    draf.statuses &&
+    peserta.length > 0 &&
+    peserta.every((p) => LABEL[draf.statuses[p.id]]),
   );
 }
 
@@ -46,7 +47,7 @@ export function cariPeserta(peserta, golongan, cari) {
   const query = cari.trim().toLocaleLowerCase("id-ID");
   return peserta.filter(
     (p) =>
-      (golongan === "SEMUA" || p.golongan === golongan) &&
+      (golongan === null || p.golongan === golongan) &&
       (!query ||
         `${p.nama} ${p.nim}`.toLocaleLowerCase("id-ID").includes(query)),
   );
@@ -68,6 +69,22 @@ export function pesanGalat(err) {
     return "Kunci presensi dulu sebelum membuat BAP.";
   if (/PESERTA_KURANG|PESERTA_ASING|PESERTA_DOBEL/.test(text))
     return "Daftar peserta tidak cocok dengan server. Muat ulang data kelas; draf tetap disimpan.";
+  const messages = {
+    AKSES_DITOLAK: "Akunmu tidak memiliki izin untuk tindakan ini.",
+    ADMIN_TERAKHIR: "Harus tetap ada setidaknya satu admin aktif.",
+    KELAS_DIARSIPKAN: "Kelas diarsipkan. Pulihkan kelas sebelum mengubah data.",
+    PASSWORD_MIN_12: "Gunakan password 12–128 karakter.",
+    PASSWORD_SALAH: "Username atau password tidak sesuai.",
+    NIM_SUDAH_ADA:
+      "NIM sudah ada di kelas ini. Ubah data mahasiswa yang tersedia.",
+    JADWAL_TERKUNCI: "Jadwal yang memiliki riwayat presensi dipertahankan.",
+    KONFIRMASI_PERUBARUI:
+      "Periksa dan setujui perubahan mahasiswa sebelum impor.",
+    WAJIB_GANTI_PASSWORD: "Ganti password sementara sebelum melanjutkan.",
+    USERNAME_SUDAH_ADA: "Username sudah dipakai. Pilih username lain.",
+  };
+  for (const [code, message] of Object.entries(messages))
+    if (text.includes(code)) return message;
   if (text.includes("BUSY"))
     return "BAP sedang diproses. Kamu dapat memeriksanya lagi sebentar.";
   if (text.includes("GENERATE_GAGAL"))
@@ -80,10 +97,23 @@ export function pesanGalat(err) {
 }
 
 export async function unduhDokumen(url, fileName) {
-  const response = await fetch(url);
+  const response = await authenticatedDocument(url);
   if (!response.ok) throw new Error("Unduhan gagal");
   const blob = await response.blob();
   unduhBlob(blob, fileName);
+}
+export async function authenticatedDocument(url) {
+  const target = new URL(url, window.location.href);
+  const backend = import.meta.env?.VITE_CONVEX_URL;
+  const expected = backend
+    ? new URL(backend).hostname.replace(/\.convex\.cloud$/, ".convex.site")
+    : "";
+  return fetch(
+    url,
+    target.hostname === expected && target.pathname === "/documents"
+      ? { headers: { Authorization: `Bearer ${bacaToken()}` } }
+      : {},
+  );
 }
 
 export function unduhPaket(base64, fileName) {

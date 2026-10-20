@@ -39,16 +39,21 @@ export function hapusToken() {
   }
 }
 
-export function simpanCache(data) {
+export function simpanCache(data, scope = "") {
   try {
-    localStorage.setItem(K.cache, JSON.stringify(data));
+    localStorage.setItem(
+      scope ? `${K.cache}.${scope}` : K.cache,
+      JSON.stringify(data),
+    );
   } catch {
     /* kuota penuh: cache boleh hilang, draf tidak */
   }
 }
-export function bacaCache() {
+export function bacaCache(scope = "") {
   try {
-    const data = JSON.parse(localStorage.getItem(K.cache) || "null");
+    const data = JSON.parse(
+      localStorage.getItem(scope ? `${K.cache}.${scope}` : K.cache) || "null",
+    );
     return Array.isArray(data?.peserta) && Array.isArray(data?.pertemuan)
       ? data
       : null;

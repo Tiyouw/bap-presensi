@@ -2,7 +2,7 @@
  * Nomor minggu, ID, tanggal, revisi, dan arsip lama tetap dipertahankan.
  */
 export function tipePertemuan(pertemuan) {
-  return pertemuan.nomor === 1 ? "TEORI" : pertemuan.tipe;
+  return !pertemuan.kelasId && pertemuan.nomor === 1 ? "TEORI" : pertemuan.tipe;
 }
 
 export function adaPraktikum(pertemuan) {

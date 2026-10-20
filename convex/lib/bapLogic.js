@@ -1,98 +1,80 @@
 import { ConvexError } from "convex/values";
-import { TEMPLATE_VERSION } from "./auth.js";
-import { adaPraktikum } from "../../bap-shared/jadwal.js";
-
-/** PENDING dianggap hidup selama ini; lewatnya boleh diambil alih. */
-export const KLAIM_HIDUP_MS = 120 * 1000;
-
-/**
- * Klaim generator yang bisa pulih.
- *
- * Temuan review putaran 2: kalau `klaim` berhasil membuat PENDING lalu action
- * mati, revisi itu tidak boleh dianggap "sedang diproses" selamanya. Tanpa
- * kedaluwarsa, tombol `Coba lagi` tidak akan pernah berhasil.
- *
- * Status balik: READY (sudah ada, unduh saja) / BUSY (proses lain masih hidup)
- * / DIKLAIM (hak render ada di pemanggil).
- */
+import { requireMeeting } from "./access.js";
+import { classSnapshot } from "./classLogic.js";
+export const KLAIM_HIDUP_MS = 120000;
 export async function klaimLogic(ctx, args, now = Date.now()) {
-  const pertemuan = await ctx.db.get(args.pertemuanId);
-  if (!pertemuan) throw new ConvexError("PERTEMUAN_TIDAK_ADA");
-  if (!adaPraktikum(pertemuan)) throw new ConvexError("TANPA_PRAKTIKUM");
-  const lama = await ctx.db
+  const p = await ctx.db.get(args.pertemuanId);
+  if (!p || p.tipe !== "REGULER") throw new ConvexError("TANPA_PRAKTIKUM");
+  if (p.status !== "KUNCI" || p.revision !== args.revision)
+    throw new ConvexError("KONFLIK_REVISI");
+  const format = args.format || "docx",
+    version = `${p.snapshot?.templateVersion || "legacy"}:${format}`;
+  const old = await ctx.db
     .query("bapDoc")
     .withIndex("by_key", (q) =>
       q
-        .eq("pertemuanId", args.pertemuanId)
+        .eq("pertemuanId", p._id)
         .eq("revision", args.revision)
-        .eq("templateVersion", TEMPLATE_VERSION)
+        .eq("templateVersion", version),
     )
     .unique();
-
-  if (lama) {
-    if (lama.status === "READY") return { status: "READY", id: lama._id };
-    if (lama.status === "PENDING" && now - lama.klaimPada < KLAIM_HIDUP_MS) {
-      return { status: "BUSY", id: lama._id };
-    }
-    await ctx.db.patch(lama._id, {
+  if (old) {
+    if (old.status === "READY") return { status: "READY", id: old._id };
+    if (old.status === "PENDING" && now - old.klaimPada < KLAIM_HIDUP_MS)
+      return { status: "BUSY", id: old._id };
+    await ctx.db.patch(old._id, {
       status: "PENDING",
       klaimPada: now,
-      percobaan: lama.percobaan + 1,
+      percobaan: old.percobaan + 1,
     });
-    return { status: "DIKLAIM", id: lama._id };
+    return { status: "DIKLAIM", id: old._id };
   }
-
   const id = await ctx.db.insert("bapDoc", {
-    pertemuanId: args.pertemuanId,
+    pertemuanId: p._id,
     revision: args.revision,
-    templateVersion: TEMPLATE_VERSION,
+    templateVersion: version,
+    format,
     status: "PENDING",
     klaimPada: now,
     percobaan: 1,
+    snapshot: p.snapshot,
   });
   return { status: "DIKLAIM", id };
 }
-
-/**
- * Bahan rendering: presensi terkunci + identitas sesi.
- * BAP hanya memuat yang TIDAK hadir; sakit/izin tetap tercantum (S/I),
- * hanya alpha yang mengurangi persentase.
- */
-export async function bahanGenerateLogic(ctx, { pertemuanId }) {
-  const pertemuan = await ctx.db.get(pertemuanId);
-  if (!pertemuan) throw new ConvexError("PERTEMUAN_TIDAK_ADA");
-  if (!adaPraktikum(pertemuan)) throw new ConvexError("TANPA_PRAKTIKUM");
-  if (pertemuan.status !== "KUNCI") throw new ConvexError("BELUM_DIKUNCI");
-
-  const baris = await ctx.db
+export async function bahanGenerateLogic(ctx, { token, pertemuanId }) {
+  const { meeting: p } = await requireMeeting(ctx, token, pertemuanId);
+  if (p.tipe !== "REGULER") throw new ConvexError("TANPA_PRAKTIKUM");
+  if (p.status !== "KUNCI") throw new ConvexError("BELUM_DIKUNCI");
+  const snapshot = p.snapshot || (await classSnapshot(ctx, p.kelasId, p)),
+    byId = new Map(snapshot.peserta.map((p) => [p.id, p]));
+  const rows = await ctx.db
     .query("presensi")
-    .withIndex("by_pertemuan", (q) => q.eq("pertemuanId", pertemuanId))
-    .take(200);
-  const peserta = await ctx.db.query("peserta").take(200);
-  const byId = new Map(peserta.map((p) => [p._id, p]));
-
-  const absen = baris
-    .filter((b) => b.status !== "HADIR")
-    .map((b) => {
-      const p = byId.get(b.pesertaId);
+    .withIndex("by_pertemuan", (q) => q.eq("pertemuanId", p._id))
+    .collect();
+  const absen = rows
+    .filter((r) => r.status !== "HADIR")
+    .map((r) => {
+      const person = byId.get(r.pesertaId);
+      if (!person) throw new ConvexError("PESERTA_ASING");
       return {
-        nim: p.nim,
-        nama: p.nama,
-        gol: p.golongan,
-        urut: p.urut,
-        ket: b.status === "ALPHA" ? "A" : b.status === "SAKIT" ? "S" : "I",
+        nama: person.nama,
+        gol: person.golongan,
+        urut: person.urut,
+        ket: r.status === "ALPHA" ? "A" : r.status === "SAKIT" ? "S" : "I",
       };
     })
-    .sort((a, b) => (a.gol === b.gol ? a.urut - b.urut : a.gol < b.gol ? -1 : 1));
-
+    .sort((a, b) => a.gol.localeCompare(b.gol) || a.urut - b.urut);
   return {
     pertemuan: {
-      nomor: pertemuan.nomor,
-      tanggal: pertemuan.tanggal,
-      tempat: pertemuan.tempat,
-      revision: pertemuan.revision,
+      id: p._id,
+      kelasId: p.kelasId,
+      nomor: p.nomor,
+      tanggal: snapshot.tanggal,
+      tempat: snapshot.tempat,
+      revision: p.revision,
     },
-    absen: absen.map(({ nim, nama, gol, ket }) => ({ nama, gol, ket })),
+    snapshot,
+    absen,
     jumlahAbsen: absen.length,
   };
 }

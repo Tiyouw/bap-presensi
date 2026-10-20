@@ -79,10 +79,38 @@ Logout meminta konfirmasi. Login memakai splash; perpindahan halaman memakai
 skeleton singkat. Pembaruan server di latar belakang mempertahankan editor dan
 hanya menampilkan indikator tipis. Rincian serta bukti: `docs/ACCESS-MOTION.md`.
 
-Metadata kelas sementara dikumpulkan dalam `KELAS` di `src/lib/presensi.js`, mengikuti konfigurasi yang sudah dipakai backend saat ini. Jika API kelas kelak tersedia, ganti sumber itu sekali; jangan menyebarkan literal mata kuliah ke komponen.
+Metadata berasal dari kelas yang dipilih atau snapshot sesi. Jangan memakai literal PPB/93/A–D pada layar kelas baru. `KELAS` hanya fallback kompatibilitas, bukan sumber data manajemen.
+
+## Workspace management v2
+
+Pertahankan Kontras: bidang datar, teks jelas, lime untuk tindakan utama dan status
+yang selalu memiliki label. Sidebar desktop, menu mobile dan navbar global berada
+di luar editor presensi. Pada HP tampilkan ikon brand/search agar navbar muat320px;
+target tetap48px. Konteks kelas/semester tetap terlihat pada judul halaman.
+
+Search adalah navigasi, bukan chat AI. Kelompokkan fitur, kelas, mahasiswa dan
+pertemuan; nama yang sama wajib dibedakan dengan kelas/semester/NIM. Tampilkan
+⌘K pada Apple, Ctrl+K pada Windows. Jangan ambil alih shortcut pencarian browser.
+Hasil wajib difilter server sesuai akses; menyembunyikan menu saja tidak cukup.
+
+Manajemen memakai formulir berlabel, empty/error/loading state dan konfirmasi
+yang menyebut dampak. Wizard dapat disimpan sebagai draf. Impor memperlihatkan
+mapping, contoh data, jumlah baris bermasalah dan perubahan sebelum commit.
+Jangan menyamarkan preview template sebagai dokumen kelas yang sudah dikunci.
+Konfigurasi template memiliki draf/versi terbit; snapshot arsip tetap utuh.
+
+Preview cetak menampilkan PDF sebenarnya. Perubahan pilihan/revisi membatalkan
+preview lama. Jangan menjanjikan dua form pasti muat untuk semua panjang isi;
+jumlah halaman aktual terlihat setelah generate. Tidak mengubah ukuran font
+dokumen untuk mengejar jumlah halaman. UI dan tipografi dokumen terpisah.
 
 Pemulihan data cache tidak sama dengan service worker untuk membuka aplikasi dari nol saat jaringan benar-benar mati. Pekerjaan service worker tetap terpisah; UI tidak menjanjikan generate atau simpan server saat offline.
 
 ## Pemeriksaan perubahan berikutnya
 
 Jalankan `npm test` dan `npm run test:ui`, lalu build dengan konfigurasi Convex proyek. Periksa tema terang/gelap pada 320, 360, 390, 414, 768, dan 1280 px. Uji nama panjang, pencarian kosong, nol absen, generator gagal, offline/reconnect, konflik, storage penuh, dan login kedaluwarsa.
+
+Preview PDF harus merender isi berkas pada canvas menggunakan PDF.js; jangan
+mengandalkan iframe/plugin PDF browser. Sediakan paging, pembesaran dan teks
+untuk pembaca layar. Tes harus memeriksa piksel dokumen yang dirender, bukan
+hanya memeriksa atribut src berisi blob URL.

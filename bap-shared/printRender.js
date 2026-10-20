@@ -2,6 +2,7 @@ import JSZip from "jszip";
 import { createReport } from "docx-templates";
 import { buildBapData } from "./bapRender.js";
 import { DOMParser, XMLSerializer } from "@xmldom/xmldom";
+import { configurableTemplate } from "./documentMeta.js";
 
 const W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 const children = (el, local) =>
@@ -22,8 +23,23 @@ export function keepFormsTogether(xml) {
       node.setAttributeNS(W, `w:${key}`, String(value));
     return node;
   };
-  let block = [];
+  let block = [], formIndex = 0;
   for (const element of children(body)) {
+    if (!block.some(part => part.localName === "tbl") && element.localName === "p" && !element.getElementsByTagNameNS(W, "t").length) {
+      const props = children(element, "pPr")[0] || create("pPr");
+      if (!props.parentNode) element.insertBefore(props, element.firstChild);
+      for (const old of children(props, "spacing")) props.removeChild(old);
+      props.appendChild(create("spacing", {before: 0, after: 0, line: 1, lineRule: "exact"}));
+      const breaks = Array.from(element.getElementsByTagNameNS(W, "br"))
+        .filter(br => br.getAttribute("w:type") === "page");
+      if (breaks.length) {
+        for (const br of breaks) br.parentNode.removeChild(br);
+        // A break character can itself overflow an almost-full folio and then
+        // create an extra blank page. Break *before* this tiny separator instead.
+        props.appendChild(create("pageBreakBefore"));
+        props.appendChild(create("keepNext"));
+      }
+    }
     const columns = children(
       children(element, "tblGrid")[0] || {},
       "gridCol",
@@ -65,6 +81,8 @@ export function keepFormsTogether(xml) {
     const row = create("tr");
     const rowProps = create("trPr");
     rowProps.appendChild(create("cantSplit"));
+    if (formIndex++ % 2 === 0)
+      rowProps.appendChild(create("trHeight", {val: 9355, hRule: "atLeast"}));
     row.appendChild(rowProps);
     const cell = create("tc");
     const cellProps = create("tcPr");
@@ -91,15 +109,25 @@ export function keepFormsTogether(xml) {
             `w:${side}`,
             String(Number(indent.getAttribute(`w:${side}`) || 0) + 572),
           );
+        for (const tabs of children(pPr, "tabs"))
+          for (const stop of children(tabs, "tab"))
+            if (stop.hasAttribute("w:pos"))
+              stop.setAttributeNS(
+                W,
+                "w:pos",
+                String(Number(stop.getAttribute("w:pos")) + 572),
+              );
       }
-      if (
-        part.localName === "tbl" &&
-        children(children(part, "tblGrid")[0] || {}, "gridCol").length === 2
-      ) {
+      const columns = children(children(part, "tblGrid")[0] || {}, "gridCol").length;
+      if (part.localName === "tbl" && [2, 4].includes(columns)) {
         const p = children(part, "tblPr")[0];
         const jc = children(p, "jc")[0] || create("jc");
-        jc.setAttributeNS(W, "w:val", "center");
+        jc.setAttributeNS(W, "w:val", "left");
         p.appendChild(jc);
+        const indent = children(p, "tblInd")[0] || create("tblInd");
+        indent.setAttributeNS(W, "w:w", String(columns === 2 ? 572 : 1239));
+        indent.setAttributeNS(W, "w:type", "dxa");
+        p.appendChild(indent);
       }
       cell.appendChild(part);
     }
@@ -136,7 +164,10 @@ export function buildPrintData(inputs) {
 
 /** Reuse the corrected official form, changing only metadata scope and pagination. */
 export async function renderPrintPack(template, inputs) {
-  const zip = await JSZip.loadAsync(template);
+  const prepared = inputs.some((i) => i.documentMeta)
+    ? await configurableTemplate(template)
+    : null;
+  const zip = await JSZip.loadAsync(prepared?.bytes || template);
   let xml = await zip.file("word/document.xml").async("string");
   for (const field of ["mataKuliah", "hariTanggal", "tempat", "semGol"])
     xml = xml.replaceAll(`+++${field}+++`, `+++$f.${field}+++`);
@@ -146,6 +177,7 @@ export async function renderPrintPack(template, inputs) {
     data: buildPrintData(inputs),
     cmdDelimiter: ["+++", "+++"],
     processLineBreaks: true,
+    ...(prepared ? { additionalJsContext: { logo: prepared.logo } } : {}),
   });
   const output = await JSZip.loadAsync(result);
   output.file(

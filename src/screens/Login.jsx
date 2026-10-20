@@ -3,12 +3,13 @@ import { useAction } from "convex/react";
 import { api } from "../../convex/_generated/api.js";
 import Brand from "../components/Brand.jsx";
 import { Header, Notice } from "../components/Layout.jsx";
-import { KELAS } from "../lib/presensi.js";
 import { LoginSplash } from "../components/Loading.jsx";
 
 export default function Login({ onMasuk }) {
   const login = useAction(api.authNode.login);
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
+  const [recovery, setRecovery] = useState(false);
   const [visible, setVisible] = useState(false);
   const [galat, setGalat] = useState("");
   const [sibuk, setSibuk] = useState(false);
@@ -24,7 +25,14 @@ export default function Login({ onMasuk }) {
     setGalat("");
     try {
       const [hasil] = await Promise.all([
-        login({ password }),
+        login({
+          username,
+          password,
+          recovery,
+          label: /Mac|iPhone|iPad/.test(navigator.platform)
+            ? "Apple / browser"
+            : "Browser",
+        }),
         new Promise((resolve) =>
           setTimeout(
             resolve,
@@ -42,7 +50,9 @@ export default function Login({ onMasuk }) {
           ? "Password belum cocok. Periksa dan coba lagi."
           : pesan.includes("belum diset")
             ? "Aplikasi belum siap digunakan. Hubungi pengelola aplikasi."
-            : "Belum berhasil masuk. Periksa koneksi dan coba lagi.",
+            : pesan.includes("TERLALU_BANYAK")
+              ? "Terlalu banyak percobaan. Tunggu satu menit lalu coba lagi."
+              : "Belum berhasil masuk. Periksa koneksi dan coba lagi.",
       );
     } finally {
       setSibuk(false);
@@ -67,10 +77,12 @@ export default function Login({ onMasuk }) {
             dokumen BAP dari presensi yang sama.
           </p>
           <div className="login-course">
-            <span className="small-label">Mata kuliah</span>
-            <strong>{KELAS.nama}</strong>
+            <span className="small-label">
+              Satu ruang kerja untuk semua kelas
+            </span>
+            <strong>Atur kelas. Periksa presensi. Cetak BAP.</strong>
             <span>
-              {KELAS.prodi} · {KELAS.semester}
+              Mahasiswa, jadwal, dosen, dan template mengikuti kelasnya.
             </span>
           </div>
         </section>
@@ -81,9 +93,21 @@ export default function Login({ onMasuk }) {
         >
           <p className="eyebrow">Ruang kerja asisten dosen</p>
           <h2 id="login-title">Masuk</h2>
-          <p className="muted">Gunakan password yang sudah disiapkan.</p>
+          <p className="muted">Gunakan akun yang disiapkan admin.</p>
+          <label className="field-label" htmlFor="username">
+            Username
+          </label>
+          <input
+            id="username"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            required
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
           <label className="field-label" htmlFor="password">
-            Password
+            {recovery ? "Kode pemulihan" : "Password"}
           </label>
           <div className="password-field">
             <input
@@ -113,14 +137,26 @@ export default function Login({ onMasuk }) {
           )}
           <button
             className="button button--primary button--full"
-            disabled={sibuk || !password}
+            disabled={sibuk || !password || !username}
             type="submit"
           >
             {sibuk ? "Memeriksa password…" : "Masuk ke aplikasi"}
             <span aria-hidden="true">→</span>
           </button>
+          <button
+            type="button"
+            className="button button--quiet"
+            onClick={() => {
+              setRecovery(!recovery);
+              setPassword("");
+              setGalat("");
+            }}
+          >
+            {recovery ? "Kembali ke password" : "Gunakan kode pemulihan admin"}
+          </button>
           <p className="login-footnote">
-            Satu akun untuk mengelola presensi dan BAP kelas.
+            Lupa password? Minta admin mereset akun. Tidak ada pendaftaran
+            publik.
           </p>
         </form>
       </main>

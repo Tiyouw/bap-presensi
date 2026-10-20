@@ -1,431 +1,314 @@
-/**
- * Uji logika Convex TANPA deployment, pakai ctx tiruan di memori.
- *
- * Yang diuji adalah invarian yang pernah jadi temuan review:
- *  - simpan + kunci harus satu transaksi, revisi basi DITOLAK
- *  - klaim generator harus bisa pulih setelah action mati
- *  - bahan BAP hanya memuat yang tidak hadir, urut gol A->D
- *  - buka kunci tidak menaikkan revisi
- */
 import assert from "node:assert/strict";
-import { simpanDanKunciLogic, bukaKunciLogic, detailLogic } from "../convex/lib/sesiLogic.js";
-import { klaimLogic, bahanGenerateLogic, KLAIM_HIDUP_MS } from "../convex/lib/bapLogic.js";
-import { TEMPLATE_VERSION } from "../convex/lib/auth.js";
-import { bahanPaketLogic, ringkasanCetakLogic } from "../convex/lib/printLogic.js";
-
-// ---------- ctx tiruan ----------
-const INDEX = {
-  sesi: { by_token: ["token"] },
-  presensi: { by_pertemuan: ["pertemuanId"] },
-  audit: { by_pertemuan: ["pertemuanId"] },
-  bapDoc: { by_key: ["pertemuanId", "revision", "templateVersion"] },
-  peserta: { by_gol: ["golongan", "urut"] },
-  pertemuan: { by_nomor: ["nomor"] },
-};
-
-function buatCtx() {
-  const tabel = new Map();
-  let seq = 0;
-  const T = (n) => {
-    if (!tabel.has(n)) tabel.set(n, new Map());
-    return tabel.get(n);
-  };
-  const semua = (n) => [...T(n).entries()].map(([id, d]) => ({ _id: id, ...d }));
-
-  function query(nama) {
-    const dasar = {
-      withIndex(namaIdx, build) {
-        const eq = {};
-        const q = { eq(field, value) { eq[field] = value; return q; } };
-        build(q);
-        const fields = INDEX[nama][namaIdx] || [];
-        const filter = (row) => fields.every((f) => eq[f] === undefined || row[f] === eq[f]);
-        return {
-          unique: async () => semua(nama).filter(filter)[0] ?? null,
-          take: async (n) => semua(nama).filter(filter).slice(0, n),
-          collect: async () => semua(nama).filter(filter),
-        };
-      },
-      take: async (n) => semua(nama).slice(0, n),
-      collect: async () => semua(nama),
-    };
-    return dasar;
-  }
-
-  return {
-    tabel,
-    db: {
-      query,
-      get: async (id) => {
-        for (const name of tabel.keys()) {
-          const d = T(name).get(id);
-          if (d) return { _id: id, ...d };
-        }
-        return null;
-      },
-      insert: async (nama, doc) => {
-        const id = `${nama}:${++seq}`;
-        T(nama).set(id, doc);
-        return id;
-      },
-      patch: async (id, fields) => {
-        for (const name of tabel.keys()) {
-          const d = T(name).get(id);
-          if (d) {
-            T(name).set(id, { ...d, ...fields });
-            return;
-          }
-        }
-        throw new Error("patch id tidak ada: " + id);
-      },
-      delete: async (id) => {
-        for (const name of tabel.keys()) if (T(name).delete(id)) return;
-        throw new Error("delete id tidak ada: " + id);
-      },
-    },
-    storage: { getUrl: async () => "https://contoh/bap.docx" },
-  };
-}
-
-async function siapkan({ peserta = 3, tipe = "REGULER" } = {}) {
-  const ctx = buatCtx();
-  const token = "tok";
-  await ctx.db.insert("sesi", { token, dibuatPada: 0, kedaluwarsaPada: Date.now() + 1e9 });
+import { buatCtx } from "./test-context.mjs";
+import { hashToken } from "../convex/lib/auth.js";
+import { DEFAULT_TEMPLATE } from "../bap-shared/management.js";
+import {
+  simpanDanKunciLogic,
+  bukaKunciLogic,
+  detailLogic,
+} from "../convex/lib/sesiLogic.js";
+import {
+  klaimLogic,
+  bahanGenerateLogic,
+  KLAIM_HIDUP_MS,
+} from "../convex/lib/bapLogic.js";
+import {
+  bahanPaketLogic,
+  ringkasanCetakLogic,
+} from "../convex/lib/printLogic.js";
+async function setup(n = 8) {
+  const ctx = buatCtx(),
+    token = "test-token",
+    user = await ctx.db.insert("pengguna", {
+      username: "admin",
+      nama: "Admin Demo",
+      aktif: true,
+      wajibGanti: false,
+      peran: "ADMIN",
+      kelasIds: [],
+    }),
+    matkulId = await ctx.db.insert("matkul", {
+      nama: "Matkul Demo",
+      kode: "DEMO",
+    }),
+    kelasId = await ctx.db.insert("kelas", {
+      matkulId,
+      nama: "Kelas Demo",
+      dosen: "Dosen Demo",
+      asdos: "Asdos Demo",
+      semester: "GASAL",
+      tahunAkademik: "2026/2027",
+      tingkat: "3",
+      prodi: "Demo",
+      tempat: "F6",
+      arsip: false,
+      revision: 1,
+      templateVersion: 1,
+      templateDraft: DEFAULT_TEMPLATE,
+    });
+  await ctx.db.insert("template", {
+    kelasId,
+    version: 1,
+    config: DEFAULT_TEMPLATE,
+  });
+  await ctx.db.insert("sesi", {
+    token: await hashToken(token),
+    penggunaId: user,
+    kedaluwarsaPada: Date.now() + 1e9,
+  });
   const ids = [];
-  for (let i = 0; i < peserta; i++) {
+  for (let i = 0; i < n; i++)
     ids.push(
       await ctx.db.insert("peserta", {
-        nim: `F41250${i}`,
-        nama: `Mahasiswa ${i + 1}`,
+        kelasId,
+        nim: `DEMO${i}`,
+        nama: `Nama Demo ${i}`,
         golongan: "ABCD"[i % 4],
         urut: i + 1,
-      })
+        aktif: true,
+      }),
     );
-  }
   const pertemuanId = await ctx.db.insert("pertemuan", {
-    nomor: 5,
-    tipe,
-    tanggal: "2026-09-28",
+    kelasId,
+    nomor: 1,
+    tipe: "REGULER",
+    tanggal: "2026-10-20",
     tempat: "F6",
     status: "TERBUKA",
     revision: 0,
   });
-  return { ctx, token, ids, pertemuanId };
+  return { ctx, token, kelasId, pertemuanId, ids, user };
 }
-
-const status = (ids, pola) => ids.map((pesertaId, i) => ({ pesertaId, status: pola(i) }));
-
-let lulus = 0;
-async function cek(nama, fn) {
-  await fn();
-  lulus++;
-  console.log("  OK", nama);
-}
-
-console.log("simpanDanKunci:");
-
-await cek("happy path: tulis semua peserta, kunci, revisi +1, audit", async () => {
-  const { ctx, token, ids, pertemuanId } = await siapkan({ peserta: 4 });
-  const hasil = await simpanDanKunciLogic(ctx, {
-    token,
-    pertemuanId,
+const statuses = (f, fn = () => "HADIR") =>
+  f.ids.map((pesertaId, i) => ({ pesertaId, status: fn(i) }));
+const lock = (f) =>
+  simpanDanKunciLogic(f.ctx, {
+    token: f.token,
+    pertemuanId: f.pertemuanId,
     baseRevision: 0,
-    statuses: status(ids, (i) => (i === 1 ? "ALPHA" : "HADIR")),
+    statuses: statuses(f),
   });
-  assert.equal(hasil.revision, 1);
-  const p = await ctx.db.get(pertemuanId);
-  assert.equal(p.status, "KUNCI");
-  assert.equal(p.revision, 1);
-  const presensi = await ctx.db.query("presensi").take(100);
-  assert.equal(presensi.length, 4);
-  assert.equal(presensi.filter((b) => b.status === "ALPHA").length, 1);
-  const audit = await ctx.db.query("audit").take(10);
-  assert.equal(audit.length, 1);
-  assert.match(audit[0].ringkas, /1 tidak hadir/);
-});
-
-await cek("revisi basi ditolak KONFLIK_REVISI (bukan menimpa)", async () => {
-  const { ctx, token, ids, pertemuanId } = await siapkan();
-  await simpanDanKunciLogic(ctx, {
-    token, pertemuanId, baseRevision: 0,
-    statuses: status(ids, () => "HADIR"),
-  });
-  // perangkat kedua masih memegang revisi 0
-  await assert.rejects(
-    simpanDanKunciLogic(ctx, {
-      token, pertemuanId, baseRevision: 0,
-      statuses: status(ids, () => "ALPHA"),
-    }),
-    (e) => String(e.data || e.message).includes("KONFLIK_REVISI")
-  );
-  const presensi = await ctx.db.query("presensi").take(100);
-  assert.ok(presensi.every((b) => b.status === "HADIR"), "data lama tidak boleh tertimpa");
-});
-
-await cek("peserta kurang ditolak (bukan tersimpan sebagian)", async () => {
-  const { ctx, token, ids, pertemuanId } = await siapkan({ peserta: 4 });
-  await assert.rejects(
-    simpanDanKunciLogic(ctx, {
-      token, pertemuanId, baseRevision: 0,
-      statuses: status(ids.slice(0, 3), () => "HADIR"),
-    }),
-    (e) => String(e.data || e.message).includes("PESERTA_KURANG")
-  );
-  assert.equal((await ctx.db.query("presensi").take(10)).length, 0);
-});
-
-await cek("UTS tidak punya BAP", async () => {
-  const { ctx, token, ids, pertemuanId } = await siapkan({ tipe: "UTS" });
-  await assert.rejects(
-    simpanDanKunciLogic(ctx, {
-      token, pertemuanId, baseRevision: 0,
-      statuses: status(ids, () => "HADIR"),
-    }),
-    (e) => String(e.data || e.message).includes("TANPA_PRAKTIKUM")
-  );
-});
-
-await cek("token salah ditolak", async () => {
-  const { ctx, ids, pertemuanId } = await siapkan();
-  await assert.rejects(
-    simpanDanKunciLogic(ctx, {
-      token: "palsu", pertemuanId, baseRevision: 0,
-      statuses: status(ids, () => "HADIR"),
-    }),
-    (e) => String(e.data || e.message).includes("TOKEN_TIDAK_DIKENAL")
-  );
-});
-
-console.log("klaim generator:");
-
-await cek("klaim pertama DIKLAIM, klaim kedua BUSY", async () => {
-  const { ctx, pertemuanId } = await siapkan();
-  const a = await klaimLogic(ctx, { pertemuanId, revision: 0 });
-  assert.equal(a.status, "DIKLAIM");
-  const b = await klaimLogic(ctx, { pertemuanId, revision: 0 });
-  assert.equal(b.status, "BUSY");
-});
-
-await cek("action mati -> setelah 120 dtk boleh diambil alih (percobaan naik)", async () => {
-  const { ctx, pertemuanId } = await siapkan();
-  const a = await klaimLogic(ctx, { pertemuanId, revision: 0 });
-  const nanti = Date.now() + KLAIM_HIDUP_MS + 1000;
-  const b = await klaimLogic(ctx, { pertemuanId, revision: 0 }, nanti);
-  assert.equal(b.status, "DIKLAIM");
-  assert.equal(b.id, a.id, "baris yang sama dipakai ulang, bukan duplikat");
-  const rows = await ctx.db.query("bapDoc").take(10);
-  assert.equal(rows.length, 1);
-  assert.equal(rows[0].percobaan, 2);
-});
-
-await cek("sudah READY -> tidak dirender ulang", async () => {
-  const { ctx, pertemuanId } = await siapkan();
-  const a = await klaimLogic(ctx, { pertemuanId, revision: 0 });
-  await ctx.db.patch(a.id, { status: "READY", storageId: "s:1" });
-  const b = await klaimLogic(ctx, { pertemuanId, revision: 0 });
-  assert.equal(b.status, "READY");
-});
-
-await cek("revisi lain -> dokumen terpisah (versi baru)", async () => {
-  const { ctx, pertemuanId } = await siapkan();
-  await klaimLogic(ctx, { pertemuanId, revision: 0 });
-  const b = await klaimLogic(ctx, { pertemuanId, revision: 1 });
-  assert.equal(b.status, "DIKLAIM");
-  assert.equal((await ctx.db.query("bapDoc").take(10)).length, 2);
-});
-
-console.log("bahan BAP:");
-
-await cek("belum dikunci -> BELUM_DIKUNCI", async () => {
-  const { ctx, pertemuanId } = await siapkan();
-  await assert.rejects(
-    bahanGenerateLogic(ctx, { pertemuanId }),
-    (e) => String(e.data || e.message).includes("BELUM_DIKUNCI")
-  );
-});
-
-await cek("hanya tidak hadir, kode A/S/I benar, urut gol A->D", async () => {
-  const { ctx, token, ids, pertemuanId } = await siapkan({ peserta: 8 });
-  const pola = ["ALPHA", "HADIR", "SAKIT", "HADIR", "IZIN", "ALPHA", "HADIR", "HADIR"];
-  await simpanDanKunciLogic(ctx, {
-    token, pertemuanId, baseRevision: 0,
-    statuses: ids.map((pesertaId, i) => ({ pesertaId, status: pola[i] })),
-  });
-  const bahan = await bahanGenerateLogic(ctx, { pertemuanId });
-  assert.equal(bahan.absen.length, 4);
-  // urutan BAP: golongan A->D dulu, baru NIM/urut di dalam golongan
-  assert.deepEqual(bahan.absen.map((a) => a.ket), ["A", "I", "A", "S"]);
-  assert.deepEqual(bahan.absen.map((a) => a.nama), [
-    "Mahasiswa 1", "Mahasiswa 5", "Mahasiswa 6", "Mahasiswa 3",
-  ]);
-  assert.deepEqual(bahan.absen.map((a) => a.gol), ["A", "A", "B", "C"]);
-});
-
-console.log("buka kunci:");
-
-await cek("kunci -> buka: status TERBUKA, revisi tetap, audit tercatat", async () => {
-  const { ctx, token, ids, pertemuanId } = await siapkan();
-  await simpanDanKunciLogic(ctx, {
-    token, pertemuanId, baseRevision: 0, statuses: status(ids, () => "HADIR"),
-  });
-  const hasil = await bukaKunciLogic(ctx, { token, pertemuanId });
-  assert.equal(hasil.revision, 1);
-  const p = await ctx.db.get(pertemuanId);
-  assert.equal(p.status, "TERBUKA");
-  assert.equal(p.revision, 1);
-  const audit = await ctx.db.query("audit").take(10);
-  assert.equal(audit.filter((a) => a.jenis === "BUKA_KUNCI").length, 1);
-});
-
-await cek("koreksi setelah buka -> revisi 2 (BAP baru)", async () => {
-  const { ctx, token, ids, pertemuanId } = await siapkan();
-  await simpanDanKunciLogic(ctx, {
-    token, pertemuanId, baseRevision: 0, statuses: status(ids, () => "HADIR"),
-  });
-  await bukaKunciLogic(ctx, { token, pertemuanId });
-  const hasil = await simpanDanKunciLogic(ctx, {
-    token, pertemuanId, baseRevision: 1,
-    statuses: status(ids, (i) => (i === 0 ? "SAKIT" : "HADIR")),
-  });
-  assert.equal(hasil.revision, 2);
-});
-
-console.log("detail:");
-
-await cek("detail mengembalikan presensi tersimpan + status kunci", async () => {
-  const { ctx, token, ids, pertemuanId } = await siapkan();
-  await simpanDanKunciLogic(ctx, {
-    token, pertemuanId, baseRevision: 0,
-    statuses: status(ids, (i) => (i === 2 ? "IZIN" : "HADIR")),
-  });
-  const d = await detailLogic(ctx, { token, pertemuanId });
-  assert.equal(d.pertemuan.status, "KUNCI");
-  assert.equal(d.presensi.length, 3);
-  assert.equal(d.presensi.filter((b) => b.status === "IZIN").length, 1);
-});
-
-console.log("paket cetak:");
-await cek(
-  "snapshot paket: token wajib, pilihan kosong/dobel/batas ditolak",
+const state = (ctx) =>
+  JSON.stringify([...ctx.tabel].map(([key, rows]) => [key, [...rows]]));
+let count = 0;
+async function check(name, fn) {
+  await fn();
+  count++;
+  console.log("  OK", name);
+}
+await check(
+  "atomic save creates complete attendance, snapshot, revision and actor audit",
   async () => {
-    const { ctx, token, pertemuanId } = await siapkan();
-    await assert.rejects(
-      bahanPaketLogic(ctx, { token: "palsu", items: [] }),
-      (e) => e.data === "TOKEN_TIDAK_DIKENAL",
-    );
-    await assert.rejects(
-      ringkasanCetakLogic(ctx, { token: "palsu" }),
-      (e) => e.data === "TOKEN_TIDAK_DIKENAL",
-    );
-    await assert.rejects(
-      bahanPaketLogic(ctx, { token, items: [] }),
-      (e) => e.data === "PILIH_PERTEMUAN",
-    );
-    const item = { pertemuanId, revision: 0 };
-    await assert.rejects(
-      bahanPaketLogic(ctx, { token, items: [item, item] }),
-      (e) => e.data === "PERTEMUAN_DOBEL",
-    );
-    await assert.rejects(
-      bahanPaketLogic(ctx, { token, items: Array(15).fill(item) }),
-      (e) => e.data === "PILIH_PERTEMUAN",
-    );
+    const f = await setup();
+    await lock(f);
+    const p = await f.ctx.db.get(f.pertemuanId);
+    assert.equal(p.revision, 1);
+    assert.equal(p.snapshot.peserta.length, 8);
+    assert.equal((await f.ctx.db.query("presensi").collect()).length, 8);
+    assert.equal((await f.ctx.db.query("audit").collect())[0].actorId, f.user);
   },
 );
-await cek(
-  "snapshot paket menolak sesi terbuka, revisi lama, dan ujian",
+await check(
+  "stale revision and re-saving locked session cannot overwrite",
   async () => {
-    const { ctx, token, ids, pertemuanId } = await siapkan();
+    const f = await setup();
+    await lock(f);
+    const before = state(f.ctx);
     await assert.rejects(
-      bahanPaketLogic(ctx, { token, items: [{ pertemuanId, revision: 0 }] }),
-      (e) => e.data === "PAKET_BERUBAH",
+      simpanDanKunciLogic(f.ctx, {
+        token: f.token,
+        pertemuanId: f.pertemuanId,
+        baseRevision: 0,
+        statuses: statuses(f, () => "ALPHA"),
+      }),
+      /KONFLIK_REVISI/,
     );
-    await simpanDanKunciLogic(ctx, {
-      token,
-      pertemuanId,
+    await assert.rejects(
+      simpanDanKunciLogic(f.ctx, {
+        token: f.token,
+        pertemuanId: f.pertemuanId,
+        baseRevision: 1,
+        statuses: statuses(f),
+      }),
+      /SUDAH_DIKUNCI/,
+    );
+    assert.equal(state(f.ctx), before);
+  },
+);
+await check(
+  "missing, foreign and duplicate participant rejected before writes",
+  async () => {
+    for (const scenario of ["missing", "foreign", "duplicate"]) {
+      const f = await setup(),
+        rows = statuses(f);
+      if (scenario === "missing") rows.pop();
+      if (scenario === "foreign") rows[0].pesertaId = "foreign";
+      if (scenario === "duplicate") rows[0].pesertaId = rows[1].pesertaId;
+      const before = state(f.ctx);
+      await assert.rejects(
+        simpanDanKunciLogic(f.ctx, {
+          token: f.token,
+          pertemuanId: f.pertemuanId,
+          baseRevision: 0,
+          statuses: rows,
+        }),
+        /PESERTA_/,
+      );
+      assert.equal(state(f.ctx), before);
+    }
+  },
+);
+await check(
+  "theory, UTS, UAS and holiday cannot save/generate; week 1 practical allowed",
+  async () => {
+    for (const tipe of ["TEORI", "UTS", "UAS", "LIBUR"]) {
+      const f = await setup();
+      await f.ctx.db.patch(f.pertemuanId, { tipe });
+      await assert.rejects(lock(f), /TANPA_PRAKTIKUM/);
+      await assert.rejects(bahanGenerateLogic(f.ctx, f), /TANPA_PRAKTIKUM/);
+    }
+    const f = await setup();
+    assert.equal((await lock(f)).revision, 1);
+  },
+);
+await check(
+  "invalid, expired and disabled-user sessions rejected",
+  async () => {
+    const f = await setup();
+    await assert.rejects(
+      detailLogic(f.ctx, { token: "invalid", pertemuanId: f.pertemuanId }),
+      /TOKEN_/,
+    );
+    await f.ctx.db.patch(f.user, { aktif: false });
+    await assert.rejects(detailLogic(f.ctx, f), /TOKEN_/);
+    await f.ctx.db.patch(f.user,{aktif:true});
+    const session=(await f.ctx.db.query("sesi").collect())[0];
+    await f.ctx.db.patch(session._id,{kedaluwarsaPada:Date.now()-1});
+    await assert.rejects(detailLogic(f.ctx,f),/TOKEN_/);
+  },
+);
+await check(
+  "claim BUSY and expired claim reuse same document; ready claim reused",
+  async () => {
+    const f = await setup();
+    await lock(f);
+    const args = { pertemuanId: f.pertemuanId, revision: 1 };
+    const a = await klaimLogic(f.ctx, args);
+    assert.equal((await klaimLogic(f.ctx, args)).status, "BUSY");
+    const b = await klaimLogic(f.ctx, args, Date.now() + KLAIM_HIDUP_MS + 100);
+    assert.equal(b.id, a.id);
+    assert.equal((await f.ctx.db.get(a.id)).percobaan, 2);
+    await f.ctx.db.patch(a.id, { status: "READY", storageId: "storage:demo" });
+    assert.equal((await klaimLogic(f.ctx, args)).status, "READY");
+  },
+);
+await check(
+  "new attendance revision and format have separate immutable documents",
+  async () => {
+    const f = await setup();
+    await lock(f);
+    await klaimLogic(f.ctx, { pertemuanId: f.pertemuanId, revision: 1 });
+    await klaimLogic(f.ctx, {
+      pertemuanId: f.pertemuanId,
+      revision: 1,
+      format: "pdf",
+    });
+    await f.ctx.db.patch(f.pertemuanId, { revision: 2 });
+    await klaimLogic(f.ctx, { pertemuanId: f.pertemuanId, revision: 2 });
+    assert.equal((await f.ctx.db.query("bapDoc").collect()).length, 3);
+  },
+);
+await check(
+  "generation requires lock; absence codes and group/row ordering correct",
+  async () => {
+    const f = await setup();
+    await assert.rejects(bahanGenerateLogic(f.ctx, f), /BELUM_DIKUNCI/);
+    await simpanDanKunciLogic(f.ctx, {
+      token: f.token,
+      pertemuanId: f.pertemuanId,
       baseRevision: 0,
-      statuses: status(ids, () => "HADIR"),
+      statuses: statuses(f, (i) => ["HADIR", "ALPHA", "SAKIT", "IZIN"][i % 4]),
     });
-    await assert.rejects(
-      bahanPaketLogic(ctx, { token, items: [{ pertemuanId, revision: 0 }] }),
-      (e) => e.data === "PAKET_BERUBAH",
-    );
-    await ctx.db.patch(pertemuanId, { tipe: "UTS" });
-    await assert.rejects(
-      bahanPaketLogic(ctx, { token, items: [{ pertemuanId, revision: 1 }] }),
-      (e) => e.data === "TANPA_PRAKTIKUM",
+    const b = await bahanGenerateLogic(f.ctx, f);
+    assert.equal(b.absen.length, 6);
+    assert.deepEqual(
+      b.absen.map((p) => p.ket),
+      ["A", "A", "S", "S", "I", "I"],
     );
   },
 );
-await cek(
-  "ringkasan & snapshot hanya terkunci, jumlah form benar, urut nomor tanpa menulis data",
+await check(
+  "unlock preserves snapshot/revision; correction creates next revision",
   async () => {
-    const { ctx, token, ids, pertemuanId } = await siapkan({ peserta: 13 });
-    await simpanDanKunciLogic(ctx, {
-      token,
-      pertemuanId,
-      baseRevision: 0,
-      statuses: status(ids, () => "ALPHA"),
+    const f = await setup();
+    await lock(f);
+    const before = (await f.ctx.db.get(f.pertemuanId)).snapshot;
+    await bukaKunciLogic(f.ctx, f);
+    assert.equal((await f.ctx.db.get(f.pertemuanId)).revision, 1);
+    await f.ctx.db.patch(f.ids[0], { nama: "Changed", aktif: false });
+    await simpanDanKunciLogic(f.ctx, {
+      token: f.token,
+      pertemuanId: f.pertemuanId,
+      baseRevision: 1,
+      statuses: statuses(f),
     });
-    await ctx.db.patch(pertemuanId, { nomor: 3 });
-    const second = await ctx.db.insert("pertemuan", {
-      nomor: 2,
-      tipe: "REGULER",
-      tanggal: "2026-08-31",
-      tempat: "F6",
-      status: "KUNCI",
-      revision: 2,
-    });
-    const before = JSON.stringify([...ctx.tabel]);
-    const summary = await ringkasanCetakLogic(ctx, { token });
-    assert.deepEqual(
-      summary.map((p) => [p.nomor, p.jumlahForm]),
-      [
-        [2, 1],
-        [3, 2],
-      ],
-    );
-    const snapshot = await bahanPaketLogic(ctx, {
-      token,
-      items: [
-        { pertemuanId, revision: 1 },
-        { pertemuanId: second, revision: 2 },
-      ],
-    });
-    assert.deepEqual(
-      snapshot.map((b) => [b.pertemuan.nomor, b.jumlahAbsen]),
-      [
-        [2, 0],
-        [3, 13],
-      ],
-    );
-    assert.equal(JSON.stringify([...ctx.tabel]), before);
+    const p = await f.ctx.db.get(f.pertemuanId);
+    assert.equal(p.revision, 2);
+    assert.deepEqual(p.snapshot, before);
   },
 );
-
-await cek("minggu teori/ujian menolak simpan, klaim, generate, dan paket; arsip lama tetap utuh", async () => {
-  for (const [nomor, tipe] of [[1, "REGULER"], [1, "TEORI"], [8, "UTS"], [16, "UAS"]]) {
-    const { ctx, token, ids, pertemuanId } = await siapkan();
-    await simpanDanKunciLogic(ctx, {
-      token, pertemuanId, baseRevision: 0, statuses: status(ids, () => "HADIR"),
-    });
-    await klaimLogic(ctx, { pertemuanId, revision: 1 });
-    await ctx.db.patch(pertemuanId, { nomor, tipe });
-    const before = JSON.stringify([...ctx.tabel].map(([table, rows]) => [table, [...rows]]));
-    const reject = (e) => e.data === "TANPA_PRAKTIKUM";
-    await assert.rejects(simpanDanKunciLogic(ctx, {
-      token, pertemuanId, baseRevision: 1, statuses: status(ids, () => "ALPHA"),
-    }), reject);
-    await assert.rejects(klaimLogic(ctx, { pertemuanId, revision: 1 }), reject);
-    await assert.rejects(bukaKunciLogic(ctx, { token, pertemuanId }), reject);
-    await assert.rejects(bahanGenerateLogic(ctx, { pertemuanId }), reject);
-    await assert.rejects(bahanPaketLogic(ctx, { token, items: [{ pertemuanId, revision: 1 }] }), reject);
-    assert.deepEqual(await ringkasanCetakLogic(ctx, { token }), []);
-    const detail = await detailLogic(ctx, { token, pertemuanId });
-    assert.equal(detail.pertemuan.tipe, nomor === 1 ? "TEORI" : tipe);
-    assert.equal(detail.presensi.length, ids.length);
-    assert.equal(JSON.stringify([...ctx.tabel].map(([table, rows]) => [table, [...rows]])), before);
-  }
-});
-
-console.log(`\n${lulus} pemeriksaan lulus`);
+await check(
+  "detail uses snapshot roster and reports stored status",
+  async () => {
+    const f = await setup();
+    await lock(f);
+    await f.ctx.db.patch(f.ids[0], { nama: "Changed", aktif: false });
+    const detail = await detailLogic(f.ctx, f);
+    assert.equal(detail.peserta[0].nama, "Nama Demo 0");
+    assert.equal(detail.presensi.length, 8);
+  },
+);
+await check(
+  "print summary excludes open/non-practical sessions; rejects duplicate/stale/mixed-class jobs",
+  async () => {
+    const f = await setup();
+    await lock(f);
+    const args = { token: f.token, kelasId: f.kelasId };
+    assert.equal((await ringkasanCetakLogic(f.ctx, args)).length, 1);
+    const item = { pertemuanId: f.pertemuanId, revision: 1 };
+    assert.equal(
+      (await bahanPaketLogic(f.ctx, { ...args, items: [item] })).length,
+      1,
+    );
+    await assert.rejects(
+      bahanPaketLogic(f.ctx, { ...args, items: [] }),
+      /PILIH_PERTEMUAN/,
+    );
+    await assert.rejects(
+      bahanPaketLogic(f.ctx, { ...args, items: [item, item] }),
+      /PERTEMUAN_DOBEL/,
+    );
+    await assert.rejects(
+      bahanPaketLogic(f.ctx, { ...args, items: [{ ...item, revision: 0 }] }),
+      /PAKET_BERUBAH/,
+    );
+    await f.ctx.db.patch(f.pertemuanId, { kelasId: "other" });
+    await assert.rejects(
+      bahanPaketLogic(f.ctx, { ...args, items: [item] }),
+      /AKSES_DITOLAK/,
+    );
+  },
+);
+await check(
+  "class assignment, role and archive checks protect server operations",
+  async () => {
+    const f = await setup();
+    await f.ctx.db.patch(f.user, { peran: "OPERATOR", kelasIds: [] });
+    await assert.rejects(detailLogic(f.ctx, f), /AKSES_DITOLAK/);
+    await f.ctx.db.patch(f.user, { kelasIds: [f.kelasId] });
+    await detailLogic(f.ctx, f);
+    await f.ctx.db.patch(f.kelasId, { arsip: true });
+    await assert.rejects(lock(f), /KELAS_DIARSIPKAN/);
+  },
+);
+console.log(`${count} handler invariant groups passed`);

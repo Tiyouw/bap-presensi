@@ -13,6 +13,22 @@ const read = (key, fallback) => {
   }
 };
 const participants = PESERTA.map((p) => ({ ...p, id: p.nim }));
+const kelas = {
+  id: "k1",
+  _id: "k1",
+  matkulId: "m1",
+  nama: "Kelas Demo",
+  matkulNama: "Pengantar Pariwisata Budaya",
+  matkulKode: "PPB",
+  semester: "GASAL",
+  tahunAkademik: "2026/2027",
+  dosen: "Dosen Demo",
+  asdos: "Marchaenta Demo",
+  tempat: "F6",
+  revision: 1,
+  templateVersion: 1,
+  arsip: false,
+};
 const initial = {
   peserta: participants,
   pertemuan: Array.from({ length: 16 }, (_, i) => ({
@@ -21,8 +37,8 @@ const initial = {
     nomor: i + 1,
     tanggal: new Date(Date.UTC(2026, 7, 31 + i * 7)).toISOString().slice(0, 10),
     tempat: "F6",
-    // Intentionally keep the old week-1 record locked/REGULER to test compatibility.
-    tipe: i === 7 ? "UTS" : i === 15 ? "UAS" : "REGULER",
+    // Migrated PPB week 1 remains historical/locked but is theory, excluded from practical counts.
+    tipe: i === 0 ? "TEORI" : i === 7 ? "UTS" : i === 15 ? "UAS" : "REGULER",
     status: i === 0 ? "KUNCI" : "TERBUKA",
     revision: i === 0 ? 1 : 0,
   })),
@@ -105,11 +121,46 @@ export function useQuery(reference, args) {
   return useMemo(() => {
     if (args === "skip" || !connected || heldQueries.has(name))
       return undefined;
+    if (name === "auth:me")
+      return authExpired || args?.token !== "ui-test-token"
+        ? null
+        : {
+            id: "qa-user",
+            username: "demo",
+            nama: "Admin Demo",
+            peran: "ADMIN",
+            kelasIds: ["k1"],
+            aktif: true,
+            wajibGanti: false,
+          };
     if (authExpired || args?.token !== "ui-test-token") {
       const error = new Error("TOKEN_KEDALUWARSA");
       error.data = "TOKEN_KEDALUWARSA";
       throw error;
     }
+    if (name === "kelola:catalog")
+      return {
+        kelas: [
+          {
+            ...kelas,
+            jumlahPeserta: 93,
+            jumlahPraktikum: 13,
+            jumlahTerkunci: server.pertemuan.filter(
+              (p) => p.nomor !== 1 && p.status === "KUNCI",
+            ).length,
+          },
+        ],
+        matkul: [{ id: "m1", nama: kelas.matkulNama, kode: "PPB" }],
+      };
+    if (name === "kelola:detail")
+      return {
+        kelas,
+        peserta: participants,
+        pertemuan: server.pertemuan.map((p) => ({ ...p })),
+        templates: [],
+        impor: [],
+        audit: [],
+      };
     if (name === "bootstrap:get")
       return {
         diambilPada: Date.now(),
@@ -118,6 +169,8 @@ export function useQuery(reference, args) {
       };
     if (name === "sesi:detail")
       return {
+        peserta: participants,
+        kelas,
         pertemuan: {
           ...server.pertemuan.find((p) => p.id === args.pertemuanId),
         },

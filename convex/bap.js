@@ -1,138 +1,154 @@
 import { v } from "convex/values";
-import {
-  internalMutation,
-  internalQuery,
-  mutation,
-  query,
-} from "./_generated/server.js";
-import { TEMPLATE_VERSION, requireSesi } from "./lib/auth.js";
+import { internalMutation, internalQuery, query } from "./_generated/server.js";
+import { requireMeeting, requireClass } from "./lib/access.js";
+import { classRows, classSnapshot } from "./lib/classLogic.js";
 import { bahanGenerateLogic, klaimLogic } from "./lib/bapLogic.js";
 import { bahanPaketLogic, ringkasanCetakLogic } from "./lib/printLogic.js";
-import { adaPraktikum } from "../bap-shared/jadwal.js";
-
+import { documentUrl } from "./lib/documentUrl.js";
+export const fileAccess = internalQuery({
+  args: { token: v.string(), id: v.id("bapDoc") },
+  handler: async (ctx, a) => {
+    const d = await ctx.db.get(a.id);
+    if (!d || d.status !== "READY" || !d.storageId) return null;
+    await requireMeeting(ctx, a.token, d.pertemuanId);
+    return {
+      storageId: d.storageId,
+      format: d.format || "docx",
+      revision: d.revision,
+    };
+  },
+});
 export const ringkasanCetak = query({
-  args: { token: v.string() },
+  args: { token: v.string(), kelasId: v.id("kelas") },
   handler: ringkasanCetakLogic,
 });
-
 export const bahanPaket = internalQuery({
   args: {
     token: v.string(),
+    kelasId: v.id("kelas"),
     items: v.array(
       v.object({ pertemuanId: v.id("pertemuan"), revision: v.number() }),
     ),
   },
   handler: bahanPaketLogic,
 });
-
-const klaimArgs = {
-  token: v.string(),
-  pertemuanId: v.id("pertemuan"),
-  revision: v.number(),
-};
-
-async function klaimTerverifikasi(ctx, args) {
-  await requireSesi(ctx, args.token);
-  return klaimLogic(ctx, args);
-}
-
-/** Publik: dipakai tombol "Buat BAP" di klien. */
-export const klaim = mutation({ args: klaimArgs, handler: klaimTerverifikasi });
-
-/** Internal: action hanya boleh memanggil internal mutation/query. */
-export const klaimInternal = internalMutation({
-  args: klaimArgs,
-  handler: klaimTerverifikasi,
-});
-
 export const bahanGenerate = internalQuery({
-  args: { pertemuanId: v.id("pertemuan") },
+  args: { token: v.string(), pertemuanId: v.id("pertemuan") },
   handler: bahanGenerateLogic,
 });
-
+export const klaimInternal = internalMutation({
+  args: {
+    token: v.string(),
+    pertemuanId: v.id("pertemuan"),
+    revision: v.number(),
+    format: v.string(),
+  },
+  handler: async (ctx, a) => {
+    await requireMeeting(ctx, a.token, a.pertemuanId);
+    return klaimLogic(ctx, a);
+  },
+});
+export const selesai = internalMutation({
+  args: { id: v.id("bapDoc"), storageId: v.id("_storage"), sha256: v.string() },
+  handler: async (ctx, a) => {
+    await ctx.db.patch(a.id, {
+      status: "READY",
+      storageId: a.storageId,
+      sha256: a.sha256,
+    });
+  },
+});
+export const gagal = internalMutation({
+  args: { id: v.id("bapDoc"), pesan: v.string() },
+  handler: async (ctx, a) => {
+    await ctx.db.patch(a.id, {
+      status: "FAILED",
+      pesan: a.pesan.slice(0, 1000),
+    });
+  },
+});
 export const docById = internalQuery({
-  args: { id: v.id("bapDoc") },
-  handler: async (ctx, args) => {
-    const doc = await ctx.db.get(args.id);
-    if (!doc || !doc.storageId) return { url: null, sha256: null };
+  args: { token: v.string(), id: v.id("bapDoc") },
+  handler: async (ctx, a) => {
+    const d = await ctx.db.get(a.id);
+    if (!d) return null;
+    await requireMeeting(ctx, a.token, d.pertemuanId);
     return {
-      url: await ctx.storage.getUrl(doc.storageId),
-      sha256: doc.sha256 ?? null,
+      url: d.storageId ? documentUrl(d._id) : null,
+      sha256: d.sha256 || null,
     };
   },
 });
-
-export const selesai = internalMutation({
-  args: { id: v.id("bapDoc"), storageId: v.id("_storage"), sha256: v.string() },
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.id, {
-      status: "READY",
-      storageId: args.storageId,
-      sha256: args.sha256,
-    });
-    return { ok: true };
-  },
-});
-
-export const gagal = internalMutation({
-  args: { id: v.id("bapDoc"), pesan: v.string() },
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.id, { status: "FAILED", pesan: args.pesan });
-    return { ok: true };
-  },
-});
-
-/** Dokumen BAP terbaru untuk satu pertemuan (unduh + penanda usang). */
 export const forSesi = query({
   args: { token: v.string(), pertemuanId: v.id("pertemuan") },
-  handler: async (ctx, args) => {
-    await requireSesi(ctx, args.token);
-    const meeting = await ctx.db.get(args.pertemuanId);
-    if (!meeting || !adaPraktikum(meeting)) return null;
-    const docs = await ctx.db
-      .query("bapDoc")
-      .withIndex("by_key", (q) => q.eq("pertemuanId", args.pertemuanId))
-      .take(50);
-    const siap = docs
+  handler: async (ctx, a) => {
+    const { meeting: p } = await requireMeeting(ctx, a.token, a.pertemuanId);
+    if (p.tipe !== "REGULER") return null;
+    const docs = (
+      await ctx.db
+        .query("bapDoc")
+        .withIndex("by_key", (q) => q.eq("pertemuanId", p._id))
+        .collect()
+    )
       .filter(
         (d) =>
           d.status === "READY" &&
           d.storageId &&
-          d.templateVersion === TEMPLATE_VERSION,
+          (!d.format || d.format === "docx"),
       )
-      .sort((a, b) => b.revision - a.revision);
-    const terbaru = siap[0];
-    if (!terbaru) return null;
-    return {
-      id: terbaru._id,
-      revision: terbaru.revision,
-      url: await ctx.storage.getUrl(terbaru.storageId),
-      sha256: terbaru.sha256,
-      templateVersion: terbaru.templateVersion,
-    };
+      .sort((a, b) => b.revision - a.revision || b.klaimPada - a.klaimPada);
+    const d = docs[0];
+    return d
+      ? {
+          id: d._id,
+          revision: d.revision,
+          url: documentUrl(d._id),
+          sha256: d.sha256 || null,
+        }
+      : null;
   },
 });
-
-/** Baca pesan gagal generate terbaru (untuk diagnosa, token-protected). */
-export const pesanGagal = query({
-  args: { token: v.string(), pertemuanId: v.id("pertemuan") },
-  handler: async (ctx, args) => {
-    await requireSesi(ctx, args.token);
-    const docs = await ctx.db
-      .query("bapDoc")
-      .withIndex("by_key", (q) => q.eq("pertemuanId", args.pertemuanId))
-      .take(50);
-    const gagal = docs
-      .filter((d) => d.status === "FAILED")
-      .sort((a, b) => b.klaimPada - a.klaimPada);
-    const docsAll = docs
-      .filter((d) => d.status === "FAILED" || d.status === "PENDING")
-      .map((d) => ({
-        status: d.status,
-        pesan: d.pesan ?? null,
-        percobaan: d.percobaan,
-        klaimPada: d.klaimPada,
-      }));
-    return { jumlahGagal: gagal.length, detail: docsAll };
+export const history = query({
+  args: { token: v.string(), kelasId: v.id("kelas") },
+  handler: async (ctx, a) => {
+    await requireClass(ctx, a.token, a.kelasId);
+    const result = [];
+    for (const p of await classRows(ctx, "pertemuan", a.kelasId))
+      for (const d of await ctx.db
+        .query("bapDoc")
+        .withIndex("by_key", (q) => q.eq("pertemuanId", p._id))
+        .collect())
+        if (d.status === "READY" && d.storageId)
+          result.push({
+            id: d._id,
+            pertemuanId: p._id,
+            nomor: p.nomor,
+            tanggal: p.tanggal,
+            revision: d.revision,
+            format: d.format || "docx",
+            templateVersion: d.templateVersion,
+            url: documentUrl(d._id),
+            pada: d.klaimPada,
+          });
+    return result.sort((a, b) => b.pada - a.pada);
+  },
+});
+export const previewData = internalQuery({
+  args: { token: v.string(), kelasId: v.id("kelas") },
+  handler: async (ctx, a) => {
+    const { kelas } = await requireClass(ctx, a.token, a.kelasId, true);
+    const m = {
+      nomor: 1,
+      tanggal: new Date().toISOString().slice(0, 10),
+      tempat: kelas.tempat,
+    };
+    const snapshot = await classSnapshot(ctx, a.kelasId, m);
+    snapshot.template = kelas.templateDraft;
+    return {
+      snapshot,
+      pertemuan: m,
+      absen: [{ nama: "Mahasiswa Contoh", gol: "A", ket: "I" }],
+      jumlahAbsen: 1,
+    };
   },
 });
