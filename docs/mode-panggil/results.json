@@ -1,0 +1,86 @@
+{
+  "base": "b1c7ee1",
+  "passed": true,
+  "results": [
+    {
+      "engine": "chromium",
+      "name": "same draft, full roster despite filter, same-default choice, 1–4/Enter/arrows, correction, unique progress and focus return",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "reload/resume, remembered preference, focus trap and explicit review of skipped names",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "320/390/768/1280, both themes, all status colors, 48px targets, 200% text and reduced motion",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "changed roster snapshot resets reviewed progress; long names remain readable at 320px/200% text",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "700ms feedback, animated auto advance, key-repeat suppression, manual advance and close cancel timers",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "offline edits persist and reactive revision conflict stops card input",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "all 93 cards end in review, reopening completed progress opens review, one explicit lock and no locked editing",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "storage failure is visible; expired session removes editable card",
+      "passed": true
+    },
+    {
+      "engine": "webkit",
+      "name": "same draft, full roster despite filter, same-default choice, 1–4/Enter/arrows, correction, unique progress and focus return",
+      "passed": true
+    },
+    {
+      "engine": "webkit",
+      "name": "reload/resume, remembered preference, focus trap and explicit review of skipped names",
+      "passed": true
+    },
+    {
+      "engine": "webkit",
+      "name": "320/390/768/1280, both themes, all status colors, 48px targets, 200% text and reduced motion",
+      "passed": true
+    },
+    {
+      "engine": "webkit",
+      "name": "changed roster snapshot resets reviewed progress; long names remain readable at 320px/200% text",
+      "passed": true
+    },
+    {
+      "engine": "webkit",
+      "name": "700ms feedback, animated auto advance, key-repeat suppression, manual advance and close cancel timers",
+      "passed": true
+    },
+    {
+      "engine": "webkit",
+      "name": "offline edits persist and reactive revision conflict stops card input",
+      "passed": true
+    },
+    {
+      "engine": "webkit",
+      "name": "all 93 cards end in review, reopening completed progress opens review, one explicit lock and no locked editing",
+      "passed": true
+    },
+    {
+      "engine": "webkit",
+      "name": "storage failure is visible; expired session removes editable card",
+      "passed": true
+    }
+  ]
+}

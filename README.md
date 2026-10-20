@@ -36,6 +36,15 @@ Status: PR/preview untuk review; **belum di-merge atau dimigrasikan ke produksi*
 7. **Siapkan cetak** dari kelas/presensi/arsip: pilih pertemuan terkunci dalam satu
    kelas, buat preview PDF atau unduh paket Word dua form per folio.
 
+Di halaman presensi, **Mode Panggil** membuka kartu satu mahasiswa. Pilih status
+dengan tombol atau **1 Hadir / 2 Alpha / 3 Sakit / 4 Izin**. **←** kembali,
+**→/Enter** berikutnya setelah memilih, **Escape** menutup. Warna dan cap mengikuti
+status. Lanjut otomatis (700 ms) bisa dimatikan; pengaturannya diingat per akun/kelas.
+Kartu dan daftar memakai draf yang sama. Nama yang dilewati tidak diubah dan
+ditampilkan saat review. Posisi/progres dapat dilanjutkan setelah tutup/refresh;
+progres direset bila snapshot/revisi berubah. Akhir panggilan tetap melalui review
+dan konfirmasi Simpan & Kunci. Lihat [catatan dan verifikasi](docs/MODE-PANGGIL.md).
+
 Search navbar mencari matkul/kelas, mahasiswa/NIM, tanggal/pertemuan dan fitur.
 **⌘K** pada Mac, **Ctrl+K** pada Windows; ↑↓/Enter/Escape didukung. Konteks kelas/
 semester terlihat dan hasil dibatasi izin. ⌘F/Ctrl+F tetap milik browser.
@@ -145,6 +154,7 @@ npm run test:backend
 npm run test:ui
 npm run test:pdf-ui       # renderer PDF portabel, paging/zoom/teks
 npm run test:responsive   # semua layar manajemen, kedua browser/tema
+npm run test:panggil      # progres/draf + UI kartu dengan transport sintetis, dua browser
 ```
 
 Integrasi/UI dipatok ke deployment QA sintetis `doting-horse-423`, agar tidak menulis

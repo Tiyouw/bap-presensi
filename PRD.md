@@ -81,6 +81,23 @@ berganti akun tidak menampilkannya. Draf lama ditawarkan untuk diambil alih satu
 oleh pengguna yang boleh mengakses kelas PPB. Offline mendukung draf/data yang telah
 dicache; tidak menjanjikan simpan server, manajemen data, atau generate offline.
 
+ATT-06: Mode Panggil tersedia dari header presensi pertemuan yang dapat diedit.
+Satu kartu berisi nama, NIM, golongan dan pilihan Hadir/Alpha/Sakit/Izin (1/2/3/4).
+Panah kiri kembali, kanan/Enter melanjutkan setelah memilih; Escape menutup.
+Kartu memberi warna serta cap status, lalu bergeser. Lanjut otomatis awalnya aktif
+dengan jeda 700 ms dan preferensinya diingat per akun/kelas. Key repeat tidak
+mengisi nama berikutnya. Reduced motion meniadakan gerak; dialog menjaga fokus.
+
+ATT-07: Kartu memakai draf yang sama dengan daftar; seluruh roster sesi dipanggil
+tanpa mengikuti filter daftar. Progres menghitung ID unik yang diperiksa, terpisah
+dari status Hadir bawaan. Lewati tidak mengubah status. Posisi dan progres disimpan
+bersama draf hanya setelah interaksi, terikat roster snapshot dan baseRevision.
+Tutup/refresh dapat melanjutkan; perubahan snapshot/revisi membatalkan progres lama.
+Nama belum diperiksa terlihat saat review: lanjutkan panggilan atau konfirmasi
+secara eksplisit penggunaan status daftar. Kartu tidak mengunci atau menyimpan ke
+server. Sesudah lengkap, buka kembali menuju review. Izin, kelas arsip, konflik,
+offline, storage gagal dan sesi kedaluwarsa tetap mengikuti perlindungan editor.
+
 ## 6. Template dan dokumen
 
 DOC-01: DOCX asli adalah acuan format. Formulir pengaturan mencakup kop institusi,
