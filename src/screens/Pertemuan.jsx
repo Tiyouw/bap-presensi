@@ -7,7 +7,8 @@ import {
 } from "../components/Layout.jsx";
 import { bacaDraf, hariTanggal } from "../lib/store.js";
 import { hariIni, KELAS } from "../lib/presensi.js";
-import PrintPack from "../components/PrintPack.jsx";
+import { RefreshHint } from "../components/Loading.jsx";
+import { usePageReady } from "../lib/usePageReady.js";
 
 export default function Pertemuan({
   data,
@@ -15,11 +16,12 @@ export default function Pertemuan({
   onPilih,
   onKeluar,
   onHelp,
-  token,
+  onPrint,
+  freshData,
 }) {
   const [filter, setFilter] = useState("semua");
-  const [printOpen, setPrintOpen] = useState(false);
-  if (!data || data.peserta.length === 0)
+  const ready = usePageReady(Boolean(data?.peserta.length), "meetings");
+  if (!ready)
     return (
       <>
         <Header onKeluar={onKeluar} onHelp={onHelp} />
@@ -62,7 +64,8 @@ export default function Pertemuan({
   return (
     <>
       <Header onKeluar={onKeluar} onHelp={onHelp} />
-      <main className="page meetings-page">
+      <main className="page meetings-page page-enter">
+        <RefreshHint value={freshData} pending={!freshData && network.online} />
         <div className="page-context">
           <span>{KELAS.semester}</span>
           <ConnectionStatus network={network} />
@@ -86,10 +89,7 @@ export default function Pertemuan({
           <p className="muted">
             Gabungkan BAP beberapa pertemuan untuk menghemat kertas.
           </p>
-          <button
-            className="button button--outline"
-            onClick={() => setPrintOpen(true)}
-          >
+          <button className="button button--outline" onClick={onPrint}>
             Siapkan cetak <span aria-hidden="true">↗</span>
           </button>
         </div>
@@ -225,13 +225,6 @@ export default function Pertemuan({
           <span>UTS dan UAS tidak memiliki BAP.</span>
         </footer>
       </main>
-      {printOpen && (
-        <PrintPack
-          token={token}
-          network={network}
-          onClose={() => setPrintOpen(false)}
-        />
-      )}
     </>
   );
 }

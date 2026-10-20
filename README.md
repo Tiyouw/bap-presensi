@@ -110,6 +110,8 @@ npm run test:ui
 Lihat `docs/UI-UPDATE.md` untuk cakupan dan batas pengujian.
 Panduan awal, paket cetak, bukti sebelum–sesudah, dan hasil render Word dijelaskan
 di [docs/GUIDE-PRINT.md](docs/GUIDE-PRINT.md).
+Quick access cetak, konfirmasi logout, dan transisi loading dijelaskan di
+[docs/ACCESS-MOTION.md](docs/ACCESS-MOTION.md), termasuk screenshot sebelum–sesudah.
 
 ## Setelah template berubah
 

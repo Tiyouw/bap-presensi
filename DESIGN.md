@@ -35,7 +35,8 @@ Nilai status Hadir/Alpha/Sakit/Izin dan pasangan latarnya ada di token. Selalu s
 - Radius kontrol 3 px, badge 2 px, dialog 8 px.
 - Focus ring terlihat; dialog menahan Tab, mendukung Escape, dan mengembalikan focus.
 - Teks diperbesar 200% harus tetap dapat dipakai. Tombol/filter boleh membungkus.
-- Transisi singkat; hormati reduced motion. Tidak ada animasi berulang.
+- Transisi singkat; hormati reduced motion. Animasi berulang hanya selama loading
+  (shimmer, simbol, indikator akses), lalu berhenti ketika data siap.
 
 ## Layout responsif
 
@@ -71,6 +72,12 @@ rekap/pengaturan yang backend-nya belum tersedia.
 Panduan awal dapat dilewati dan hanya muncul sekali per browser. Tombol Bantuan
 (?) membuka ulang panduan tanpa mengubah data. Hindari tour yang memaksa pengguna
 mengisi presensi sungguhan atau membuka ulang panduan setiap login.
+
+Siapkan cetak tersedia dari dashboard, footer presensi, dan dialog BAP dengan
+pilihan bersama selama sesi aplikasi. Unduhan satu pertemuan tetap terpisah.
+Logout meminta konfirmasi. Login memakai splash; perpindahan halaman memakai
+skeleton singkat. Pembaruan server di latar belakang mempertahankan editor dan
+hanya menampilkan indikator tipis. Rincian serta bukti: `docs/ACCESS-MOTION.md`.
 
 Metadata kelas sementara dikumpulkan dalam `KELAS` di `src/lib/presensi.js`, mengikuti konfigurasi yang sudah dipakai backend saat ini. Jika API kelas kelak tersedia, ganti sumber itu sekali; jangan menyebarkan literal mata kuliah ke komponen.
 

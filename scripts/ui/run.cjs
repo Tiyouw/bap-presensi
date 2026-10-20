@@ -47,10 +47,12 @@ async function session(
   theme = "light",
   loggedIn = true,
   firstTime = false,
+  reducedMotion = "no-preference",
 ) {
   const context = await browser.newContext({
     viewport: { width, height: width >= 1024 ? 900 : 844 },
     colorScheme: theme,
+    reducedMotion,
     acceptDownloads: true,
   });
   const page = await context.newPage();
@@ -342,7 +344,7 @@ function done(name) {
   await page.locator(".student-main").nth(2).click();
   await page.evaluate(() => window.__qa.setConnected(false));
   assert.equal(
-    await page.locator(".attendance-footer button").isDisabled(),
+    await page.locator(".attendance-footer .button--primary").isDisabled(),
     true,
   );
   await page.getByRole("button", { name: "← Pertemuan" }).click();
@@ -460,6 +462,7 @@ function done(name) {
   await page
     .getByRole("button", { name: "Siapkan cetak", exact: false })
     .click();
+  await page.getByRole("checkbox").first().waitFor();
   assert.equal(await page.getByRole("checkbox").count(), 2);
   assert.equal(
     await page
@@ -502,10 +505,220 @@ function done(name) {
   await page
     .getByRole("button", { name: "Siapkan cetak", exact: false })
     .click();
-  await page.getByRole("button", { name: "Pilih semua", exact: true }).click();
+  await page.getByRole("checkbox").first().waitFor();
+  assert.equal(await page.getByRole("checkbox", { checked: true }).count(), 2);
   await page.screenshot({ path: path.join(shots, "print-desktop.png") });
   done(
     "print package selects only locked meetings, plans two forms, retries failures, downloads without popup, blocks offline",
+  );
+  await context.close();
+
+  // Quick access uses one selection across attendance, the BAP dialog and dashboard.
+  ({ page, context } = await session(1280, "dark"));
+  await page.evaluate(() => {
+    window.__qa.advance("p2");
+    window.__qa.documentReady("p1");
+    window.__qa.holdQuery("sesi:detail");
+  });
+  await page
+    .locator(".meeting-row")
+    .filter({ hasText: "Pertemuan 1" })
+    .first()
+    .click();
+  await page
+    .getByRole("heading", { name: "Memuat presensi", exact: true })
+    .waitFor();
+  await page.screenshot({
+    path: path.join(shots, "attendance-skeleton-desktop.png"),
+  });
+  assert.equal(await page.locator(".student-row").count(), 0);
+  await page.evaluate(() => window.__qa.holdQuery("sesi:detail", false));
+  await page.locator(".student-row").last().waitFor();
+  await page.screenshot({ path: path.join(shots, "quick-print-desktop.png") });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await noOverflow(page);
+  await page.screenshot({ path: path.join(shots, "quick-print-mobile.png") });
+  await page
+    .locator(".attendance-footer")
+    .getByRole("button", { name: "Siapkan cetak", exact: true })
+    .click();
+  await page.getByRole("checkbox").first().waitFor();
+  assert.equal(
+    await page
+      .getByRole("checkbox", { name: "Cetak pertemuan 1", exact: true })
+      .isChecked(),
+    true,
+  );
+  await page
+    .getByRole("checkbox", { name: "Cetak pertemuan 2", exact: true })
+    .check();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "BAP", exact: true }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Siapkan cetak", exact: true })
+    .click();
+  await page.getByRole("checkbox").first().waitFor();
+  assert.equal(await page.getByRole("dialog").count(), 1);
+  assert.equal(await page.getByRole("checkbox", { checked: true }).count(), 2);
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "← Pertemuan" }).click();
+  await page
+    .getByRole("heading", { name: "Menyiapkan data kelas", exact: true })
+    .waitFor();
+  await page.locator(".meeting-row").last().waitFor();
+  await page
+    .getByRole("button", { name: "Siapkan cetak", exact: true })
+    .click();
+  await page.getByRole("checkbox").first().waitFor();
+  assert.equal(await page.getByRole("checkbox", { checked: true }).count(), 2);
+  await page.keyboard.press("Escape");
+  await openP3(page);
+  await page.locator(".student-main").first().click();
+  await page.getByRole("searchbox").fill("Alya");
+  await page.evaluate(() => window.__qa.advance("p2"));
+  assert.equal(await page.locator(".student-row").count(), 1);
+  assert.equal(await page.getByRole("searchbox").inputValue(), "Alya");
+  assert.equal(
+    await page.evaluate(() => document.activeElement.type),
+    "search",
+  );
+  assert.equal(await page.locator(".skeleton-region").count(), 0);
+  await page
+    .locator(".attendance-footer")
+    .getByRole("button", { name: "Siapkan cetak", exact: true })
+    .click();
+  await page.getByRole("checkbox").first().waitFor();
+  assert.equal(
+    await page
+      .getByRole("checkbox", { name: "Cetak pertemuan 3", exact: true })
+      .count(),
+    0,
+  );
+  await page.keyboard.press("Escape");
+  assert.equal(
+    await page.locator(".student-row .status-badge").first().textContent(),
+    "Alpha",
+  );
+  await page.getByRole("button", { name: "← Pertemuan" }).click();
+  await page.locator(".meeting-row").last().waitFor();
+  await page.getByRole("button", { name: "Keluar", exact: true }).click();
+  assert.notEqual(
+    await page.evaluate(() => localStorage.getItem("bap.token")),
+    null,
+  );
+  await page.getByRole("button", { name: "Batal", exact: true }).click();
+  await page.getByRole("button", { name: "Keluar", exact: true }).click();
+  await page.screenshot({ path: path.join(shots, "logout-mobile.png") });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.screenshot({ path: path.join(shots, "logout-desktop.png") });
+  await page.keyboard.press("Escape");
+  assert.notEqual(
+    await page.evaluate(() => localStorage.getItem("bap.token")),
+    null,
+  );
+  await page.getByRole("button", { name: "Keluar", exact: true }).click();
+  await page.getByRole("button", { name: "Ya, keluar", exact: true }).click();
+  await page.locator(".login-form").waitFor();
+  assert.equal(
+    await page.evaluate(() => localStorage.getItem("bap.token")),
+    null,
+  );
+  assert.notEqual(
+    await page.evaluate(() => localStorage.getItem("bap.draft.p3")),
+    null,
+  );
+  done(
+    "quick print from attendance/BAP/dashboard shares choices, preserves drafts/search/focus; logout cancel/Escape/confirm preserves draft",
+  );
+  await context.close();
+
+  ({ page, context } = await session(390, "dark", false));
+  await page.evaluate(() => {
+    window.__qa.setRequestDelay(700);
+    window.__qa.holdQuery("bootstrap:get");
+  });
+  await page.getByLabel("Password", { exact: true }).fill("demo");
+  await page
+    .getByRole("button", { name: "Masuk ke aplikasi", exact: false })
+    .click();
+  await page
+    .getByRole("heading", { name: "Memeriksa akses", exact: true })
+    .waitFor();
+  await page.screenshot({ path: path.join(shots, "login-loading-mobile.png") });
+  await page
+    .getByRole("heading", { name: "Menyiapkan ruang kerja", exact: true })
+    .waitFor();
+  assert.equal(await page.locator(".meeting-row").count(), 0);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.screenshot({
+    path: path.join(shots, "login-loading-desktop.png"),
+  });
+  await page
+    .getByText("Data kelas belum selesai dimuat.", { exact: false })
+    .waitFor({ timeout: 12000 });
+  await page.getByRole("button", { name: "Keluar", exact: true }).click();
+  await page.getByRole("button", { name: "Batal", exact: true }).click();
+  await page.evaluate(() => window.__qa.holdQuery("bootstrap:get", false));
+  await page.locator(".meeting-row").last().waitFor();
+  done(
+    "animated login waits for real data instead of a fake completed progress bar",
+  );
+  await context.close();
+
+  ({ page, context } = await session(320, "dark", true, false, "reduce"));
+  await page.evaluate(() => window.__qa.holdQuery("sesi:detail"));
+  await page
+    .locator(".meeting-row")
+    .filter({ hasText: "Pertemuan 1" })
+    .first()
+    .click();
+  await page
+    .getByRole("heading", { name: "Memuat presensi", exact: true })
+    .waitFor();
+  assert.equal(
+    await page
+      .locator(".skeleton")
+      .first()
+      .evaluate((el) => getComputedStyle(el, "::after").animationName),
+    "none",
+  );
+  await page.evaluate(() => window.__qa.holdQuery("sesi:detail", false));
+  await page.locator(".student-row").last().waitFor();
+  assert.equal(
+    await page
+      .locator(".page-enter")
+      .evaluate((el) => getComputedStyle(el).animationName),
+    "none",
+  );
+  await noOverflow(page);
+  done(
+    "reduced motion disables shimmer and page movement while keeping real loading states",
+  );
+  await context.close();
+
+  ({ page, context } = await session(390, "dark"));
+  await page.evaluate(() => window.__qa.setConnected(false));
+  await page
+    .locator(".meeting-row")
+    .filter({ hasText: "Pertemuan 1" })
+    .first()
+    .click();
+  await page
+    .getByText("Rincian presensi terkunci belum tersedia", { exact: false })
+    .waitFor();
+  assert.equal(
+    await page.locator(".student-row .status-badge").first().textContent(),
+    "—",
+  );
+  assert.equal(
+    await page.locator(".attendance-footer .button--primary").isDisabled(),
+    true,
+  );
+  await page.getByRole("button", { name: "← Pertemuan" }).click();
+  await page.locator(".meeting-row").last().waitFor();
+  done(
+    "uncached locked attendance offline shows honest unknown states and a working back action",
   );
   await context.close();
 

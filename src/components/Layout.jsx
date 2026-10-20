@@ -1,5 +1,6 @@
 import Brand from "./Brand.jsx";
 import { ThemeSelect } from "./Theme.jsx";
+import { SkeletonRows } from "./Loading.jsx";
 
 export function Header({
   onKeluar,
@@ -100,10 +101,7 @@ export function Loading({ title = "Menyiapkan data kelas" }) {
     <main className="page loading-page" aria-busy="true" aria-label={title}>
       <p className="eyebrow">BAP Praktikum</p>
       <h1>{title}</h1>
-      <div className="skeleton skeleton--heading" />
-      {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="skeleton skeleton--row" />
-      ))}
+      <SkeletonRows title={title} />
     </main>
   );
 }

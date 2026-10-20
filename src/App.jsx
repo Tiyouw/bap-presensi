@@ -15,6 +15,10 @@ import {
 import { useNetwork } from "./lib/useNetwork.js";
 import Guide from "./components/Guide.jsx";
 import { panduanSudahDilihat, tutupPanduan } from "./lib/guide.js";
+import Modal from "./components/Modal.jsx";
+import PrintPack from "./components/PrintPack.jsx";
+import { LoginSplash } from "./components/Loading.jsx";
+import { usePageReady } from "./lib/usePageReady.js";
 
 class SessionBoundary extends Component {
   state = { error: null };
@@ -52,12 +56,17 @@ class SessionBoundary extends Component {
   }
 }
 
-function SessionApp({ token, onKeluar }) {
+function SessionApp({ token, onKeluar, entering, onReady }) {
   const [dipilih, setDipilih] = useState(null);
   const [cache, setCache] = useState(bacaCache);
   const [seedError, setSeedError] = useState(false);
   const [guide, setGuide] = useState(null);
   const [autoGuideChecked, setAutoGuideChecked] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const [printOpen, setPrintOpen] = useState(false);
+  const [printIds, setPrintIds] = useState([]);
+  const [printContext, setPrintContext] = useState(null);
+  const [startupTimedOut, setStartupTimedOut] = useState(false);
   const network = useNetwork();
   const bootstrap = useQuery(api.bootstrap.get, { token });
   const seed = useMutation(api.seed.jalan);
@@ -75,17 +84,44 @@ function SessionApp({ token, onKeluar }) {
   }, [bootstrap?.peserta.length, network.online, seed]);
 
   const data = bootstrap || cache;
+  const sessionReady = usePageReady(Boolean(data?.peserta.length), "session");
   useEffect(() => {
-    if (!data?.peserta.length || autoGuideChecked) return;
-    setAutoGuideChecked(true);
-    if (!panduanSudahDilihat()) setGuide("first");
-  }, [data, autoGuideChecked]);
+    if (!entering || sessionReady) return;
+    const timer = setTimeout(() => setStartupTimedOut(true), 8000);
+    return () => clearTimeout(timer);
+  }, [entering, sessionReady]);
+  useEffect(() => {
+    if (entering && sessionReady) onReady();
+  }, [entering, sessionReady, onReady]);
+  useEffect(() => {
+    if (!sessionReady || autoGuideChecked || printOpen || logoutOpen || dipilih)
+      return;
+    const timer = setTimeout(() => {
+      setAutoGuideChecked(true);
+      if (!panduanSudahDilihat()) setGuide("first");
+    }, 240);
+    return () => clearTimeout(timer);
+  }, [sessionReady, autoGuideChecked, printOpen, logoutOpen, dipilih]);
   const closeGuide = () => {
     tutupPanduan();
     setGuide(null);
   };
   const pertemuan =
     dipilih && (data?.pertemuan.find((p) => p.id === dipilih.id) || dipilih);
+  const openPrint = (meeting = null) => {
+    setPrintContext(meeting);
+    if (meeting?.status === "KUNCI")
+      setPrintIds((ids) =>
+        ids.includes(meeting.id) ? ids : [...ids, meeting.id],
+      );
+    setPrintOpen(true);
+  };
+  const openHelp = () => {
+    setAutoGuideChecked(true);
+    setGuide("help");
+  };
+  if (entering && !sessionReady && !startupTimedOut && !seedError)
+    return <LoginSplash />;
   return (
     <>
       {pertemuan ? (
@@ -96,10 +132,17 @@ function SessionApp({ token, onKeluar }) {
           peserta={data?.peserta || []}
           network={network}
           onKembali={() => setDipilih(null)}
-          onHelp={() => setGuide("help")}
+          onHelp={openHelp}
+          onPrint={openPrint}
         />
       ) : (
         <>
+          {startupTimedOut && !sessionReady && (
+            <Notice kind="warning">
+              Data kelas belum selesai dimuat. Periksa koneksi; kamu dapat
+              menunggu atau keluar lewat menu Keluar.
+            </Notice>
+          )}
           {seedError && (
             <Notice kind="error">
               Data kelas belum berhasil disiapkan. Periksa koneksi lalu muat
@@ -110,14 +153,50 @@ function SessionApp({ token, onKeluar }) {
             data={data}
             network={network}
             onPilih={setDipilih}
-            onKeluar={onKeluar}
-            onHelp={() => setGuide("help")}
-            token={token}
+            onKeluar={() => setLogoutOpen(true)}
+            onHelp={openHelp}
+            onPrint={() => openPrint()}
+            freshData={bootstrap}
           />
         </>
       )}
       {guide && (
         <Guide key={guide} firstTime={guide === "first"} onClose={closeGuide} />
+      )}
+      {printOpen && (
+        <PrintPack
+          token={token}
+          network={network}
+          onClose={() => setPrintOpen(false)}
+          selected={printIds}
+          onSelectionChange={setPrintIds}
+          contextMeeting={printContext}
+        />
+      )}
+      {logoutOpen && (
+        <Modal
+          title="Keluar dari aplikasi?"
+          onClose={() => setLogoutOpen(false)}
+        >
+          <p className="modal-description">
+            Kamu perlu memasukkan password lagi untuk kembali. Presensi di
+            server dan draf yang tersimpan di perangkat ini tetap ada.
+          </p>
+          <div className="modal-actions">
+            <button
+              className="button button--outline button--full"
+              onClick={() => setLogoutOpen(false)}
+            >
+              Batal
+            </button>
+            <button
+              className="button button--primary button--full"
+              onClick={onKeluar}
+            >
+              Ya, keluar
+            </button>
+          </div>
+        </Modal>
       )}
     </>
   );
@@ -125,22 +204,30 @@ function SessionApp({ token, onKeluar }) {
 
 export default function App() {
   const [token, setToken] = useState(bacaToken);
+  const [entering, setEntering] = useState(false);
   const keluar = () => {
     hapusToken();
     setToken("");
+    setEntering(false);
   };
   if (!token)
     return (
       <Login
         onMasuk={(value) => {
           simpanToken(value);
+          setEntering(true);
           setToken(value);
         }}
       />
     );
   return (
     <SessionBoundary key={token} onMasukUlang={keluar}>
-      <SessionApp token={token} onKeluar={keluar} />
+      <SessionApp
+        token={token}
+        onKeluar={keluar}
+        entering={entering}
+        onReady={() => setEntering(false)}
+      />
     </SessionBoundary>
   );
 }
