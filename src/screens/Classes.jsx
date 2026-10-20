@@ -1,4 +1,5 @@
 import PdfPreview from "../components/PdfPreview.jsx";
+import ClassTabHeading from "../components/ClassTabHeading.jsx";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api.js";
@@ -326,7 +327,10 @@ export function ClassWorkspace({
           <TemplateEditor token={token} data={data} manage={!c.arsip} />
         ) : tab === "pengaturan" && manage ? (
           <>
-            <h2>Identitas kelas</h2>
+            <ClassTabHeading
+              title="Identitas kelas"
+              description="Atur identitas kelas, dosen pengampu, asisten, dan ruang bawaan."
+            />
             <fieldset disabled={c.arsip}>
               <ClassForm
                 key={c.id}
@@ -352,7 +356,10 @@ export function ClassWorkspace({
           </>
         ) : tab === "riwayat" ? (
           <section>
-            <h2>Riwayat aktivitas kelas</h2>
+            <ClassTabHeading
+              title="Riwayat aktivitas kelas"
+              description="Lihat aktivitas dan riwayat impor untuk kelas ini."
+            />
             <div className="mg-panel">
               {data.audit.map((e) => (
                 <div className="mg-list-row" key={e.id}>

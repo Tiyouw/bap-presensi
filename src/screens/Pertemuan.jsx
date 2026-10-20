@@ -10,6 +10,7 @@ import { hariIni, KELAS } from "../lib/presensi.js";
 import { RefreshHint } from "../components/Loading.jsx";
 import { usePageReady } from "../lib/usePageReady.js";
 import { useScopedStore } from "../lib/ScopedStorage.jsx";
+import ClassTabHeading from "../components/ClassTabHeading.jsx";
 
 export default function Pertemuan({
   data,
@@ -78,22 +79,17 @@ export default function Pertemuan({
           <span>{classInfo.semester}</span>
           <ConnectionStatus network={network} />
         </div>
-        <div className="page-heading">
-          <div>
-            <p className="eyebrow">{classInfo.nama}</p>
-            <h1>
-              Pertemuan<span className="heading-dot">.</span>
-            </h1>
-            <p className="lede">
-              Pilih pertemuan praktikum untuk mengisi presensi atau mengunduh
-              BAP.
-            </p>
-          </div>
-          <span className="page-counter">
-            <strong>{String(dikunci).padStart(2, "0")}</strong>
-            <span>dari {reguler.length} terkunci</span>
-          </span>
-        </div>
+        <ClassTabHeading
+          title="Pertemuan"
+          description="Pilih pertemuan praktikum untuk mengisi presensi atau mengunduh BAP."
+          className="mg-tab-heading--meetings"
+          actions={
+            <span className="page-counter">
+              <strong>{String(dikunci).padStart(2, "0")}</strong>
+              <span>dari {reguler.length} terkunci</span>
+            </span>
+          }
+        />
         <div className="meeting-tools">
           <p className="muted">
             Gabungkan BAP beberapa pertemuan untuk menghemat kertas.
