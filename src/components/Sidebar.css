@@ -1,0 +1,94 @@
+/* Fixed panel geometry: hover reveals labels without reflowing the workspace. */
+.mg-shell.mg-shell--nav {
+  --ws-sidebar-width: 240px;
+  grid-template-columns: var(--ws-sidebar-width) minmax(0, 1fr);
+}
+.mg-shell--nav[data-sidebar-pinned="false"] { --ws-sidebar-width: 72px; }
+.mg-shell--nav .mg-workspace { grid-column: 2; }
+.mg-shell--nav .ws-sidebar {
+  width: var(--ws-sidebar-width);
+  height: calc(100dvh - 64px);
+  padding: 0;
+  display: block;
+  background: transparent;
+  border: 0;
+  z-index: 35;
+}
+.mg-shell--nav .ws-sidebar[data-hit-open="true"] { width: 240px; }
+.ws-sidebar-panel {
+  width: 240px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 12px 12px;
+  background: var(--bap-bg);
+  border-right: 1px solid var(--bap-border);
+  clip-path: inset(0 0 0 0);
+  transition: clip-path 160ms ease;
+}
+.ws-sidebar[data-expanded="false"] .ws-sidebar-panel { clip-path: inset(0 168px 0 0); }
+.ws-sidebar-scroll { min-height: 0; flex: 1; overflow-y: auto; scrollbar-width: thin; }
+.ws-nav-group { height: 28px; margin: 0 0 8px; padding-left: 12px; color: var(--bap-muted); font-size: 10px; white-space: nowrap; }
+.mg-shell--nav .ws-sidebar nav { gap: 4px; }
+.mg-shell--nav .ws-sidebar .ws-nav-item {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  min-height: 48px;
+  padding: 0;
+  width: 100%;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--bap-muted);
+  font-size: 13px;
+  text-align: left;
+  text-decoration: none;
+}
+.mg-shell--nav .ws-sidebar .ws-nav-item:hover { color: var(--bap-text); background: var(--bap-surface); }
+.mg-shell--nav .ws-sidebar .ws-nav-item.is-active { background: var(--bap-accent-soft); color: var(--bap-text); box-shadow: inset 3px 0 var(--bap-accent); font-weight: 700; }
+.ws-nav-symbol { display: grid; place-items: center; height: 48px; }
+.ws-nav-symbol svg { flex-shrink: 0; }
+.ws-nav-item.is-active .ws-nav-symbol { color: var(--bap-accent); }
+.ws-nav-label { white-space: nowrap; opacity: 1; transition: opacity 100ms ease; }
+.ws-sidebar[data-expanded="false"] .ws-nav-label { opacity: 0; }
+.ws-sidebar-footer { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--bap-border); }
+.ws-sidebar-footer > button + button { margin-top: 4px; }
+.ws-pin-label { display: flex; align-items: center; justify-content: space-between; gap: 4px; padding-right: 8px; font-size: 12px; }
+.ws-pin-label kbd { font: 10px var(--bap-font-mono); color: var(--bap-muted); }
+.ws-drawer-heading { display: none; }
+.ws-sidebar-backdrop { position: fixed; inset: 0; z-index: 50; border: 0; background: #0006; }
+.ws-icon-button { display: inline-grid; place-items: center; width: 48px; height: 48px; padding: 0; border: 0; background: transparent; color: var(--bap-text); border-radius: 3px; }
+.ws-icon-button:hover { background: var(--bap-surface); }
+.mg-shell--nav .mg-mobile-menu { display: none; }
+/* Modal portals must sit above both the sticky header and mobile drawer. */
+body > .modal-backdrop { z-index: 100; }
+
+@media (min-width: 641px) and (max-width: 900px) {
+  .mg-shell--nav .mg-search-trigger { flex: 1; max-width: 340px; min-width: 200px; }
+  .mg-shell--nav .mg-search-trigger > span { display: inline; }
+}
+@media (max-width: 640px) {
+  .mg-shell.mg-shell--nav { grid-template-columns: minmax(0, 1fr); }
+  .mg-shell--nav .mg-workspace { grid-column: 1; }
+  .mg-shell--nav .mg-mobile-menu { display: inline-grid; }
+  .mg-shell--nav .ws-sidebar {
+    display: none;
+    position: fixed;
+    inset: 64px auto 0 0;
+    width: min(280px, calc(100vw - 32px));
+    height: calc(100dvh - 64px);
+    z-index: 60;
+  }
+  .mg-shell--nav .ws-sidebar[data-mobile-open="true"] { display: block; width: min(280px, calc(100vw - 32px)); }
+  .ws-sidebar .ws-sidebar-panel { width: 100%; clip-path: none; padding: 12px; }
+  .ws-sidebar[data-expanded="false"] .ws-sidebar-panel { clip-path: none; }
+  .ws-sidebar[data-expanded="false"] .ws-nav-label { opacity: 1; }
+  .ws-drawer-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-left: 12px; margin-bottom: 12px; font-size: 14px; }
+  .ws-pin-button { display: none !important; }
+  .ws-sidebar-footer { margin-top: 8px; }
+  .mg-shell--nav .mg-profile-button { max-width: 108px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ws-sidebar-panel, .ws-nav-label { transition: none; }
+}

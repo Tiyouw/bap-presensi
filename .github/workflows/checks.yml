@@ -21,5 +21,6 @@ jobs:
       - run: npm audit --audit-level=moderate
       - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:class-layout
+      - run: npm run test:sidebar
       - run: npm run test:faults
       - run: npm run test:pdf-ui
