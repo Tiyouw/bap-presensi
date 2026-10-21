@@ -209,7 +209,11 @@
 }
 .call-choices {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
+  /* Keep the chosen 2 × 2 layout; enlarged text can use one column. */
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, max(8rem, calc(50% - 4px))), 1fr)
+  );
   gap: 8px;
 }
 .call-choice {
@@ -278,7 +282,10 @@
 }
 .call-navigation {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, max(8rem, calc(50% - 5px))), 1fr)
+  );
   gap: 10px;
   padding: 0 24px;
 }

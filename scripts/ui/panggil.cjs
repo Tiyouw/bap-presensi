@@ -304,6 +304,15 @@ async function noOverflow(page) {
         await page.emulateMedia({ colorScheme: theme });
         await open(page);
         await noOverflow(page);
+        assert.equal(
+          await page
+            .locator(".call-choices")
+            .evaluate(
+              (e) => getComputedStyle(e).gridTemplateColumns.split(" ").length,
+            ),
+          2,
+          "normal text must keep the chosen 2 × 2 status layout",
+        );
         for (const s of ["HADIR", "ALPHA", "SAKIT", "IZIN"]) {
           const target = page.locator(`.call-choice.${s}`);
           await target.click();
