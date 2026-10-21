@@ -1,6 +1,7 @@
 import { ConvexError } from "convex/values";
 import { requireMeeting } from "./access.js";
 import { classSnapshot } from "./classLogic.js";
+import { syncDocument } from "./readModels.js";
 export const KLAIM_HIDUP_MS = 120000;
 export async function klaimLogic(ctx, args, now = Date.now()) {
   const p = await ctx.db.get(args.pertemuanId);
@@ -27,7 +28,7 @@ export async function klaimLogic(ctx, args, now = Date.now()) {
       klaimPada: now,
       percobaan: old.percobaan + 1,
     });
-    return { status: "DIKLAIM", id: old._id };
+    return { status: "DIKLAIM", id: old._id, attempt: old.percobaan + 1 };
   }
   const id = await ctx.db.insert("bapDoc", {
     pertemuanId: p._id,
@@ -39,7 +40,19 @@ export async function klaimLogic(ctx, args, now = Date.now()) {
     percobaan: 1,
     snapshot: p.snapshot,
   });
-  return { status: "DIKLAIM", id };
+  return { status: "DIKLAIM", id, attempt: 1 };
+}
+export async function finalisasiLogic(ctx, args) {
+  const doc = await ctx.db.get(args.id);
+  if (!doc || doc.status !== "PENDING" || doc.percobaan !== args.attempt)
+    return { accepted: false };
+  if (args.storageId) {
+    await ctx.db.patch(args.id, { status: "READY", storageId: args.storageId, sha256: args.sha256 });
+    await syncDocument(ctx, args.id);
+  } else {
+    await ctx.db.patch(args.id, { status: "FAILED", pesan: args.pesan.slice(0, 1000) });
+  }
+  return { accepted: true };
 }
 export async function bahanGenerateLogic(ctx, { token, pertemuanId }) {
   const { meeting: p } = await requireMeeting(ctx, token, pertemuanId);

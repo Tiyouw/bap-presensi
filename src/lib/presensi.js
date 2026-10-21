@@ -59,6 +59,8 @@ export function pesanGalat(err) {
     typeof detail === "object" && detail !== null
       ? String(detail.code || detail.message || "")
       : String(detail || err?.message || err);
+  if (text.includes("SNAPSHOT_TERLALU_BESAR"))
+    return detail?.message || "Data sesi terlalu besar. Kurangi ukuran logo atau bagi peserta ke kelas lain. Presensi belum diubah.";
   if (/TOKEN_|TANPA_TOKEN/.test(text))
     return "Sesi berakhir. Masuk kembali; draf tetap ada di perangkat ini.";
   if (text.includes("KONFLIK_REVISI"))

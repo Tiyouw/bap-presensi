@@ -1,0 +1,18 @@
+[
+  {
+    "file": "after-normal-desktop.png",
+    "sha256": "56f9953c3962157166e53dc96130b7fe4f7ef79b2c976ee4f873b8c7d0c12188"
+  },
+  {
+    "file": "after-normal-mobile.png",
+    "sha256": "6e91b0e61ad55973040e1c05761f86a3a3a31776c8d1196fcff58b0b8d4619f9"
+  },
+  {
+    "file": "before-normal-desktop.png",
+    "sha256": "56f9953c3962157166e53dc96130b7fe4f7ef79b2c976ee4f873b8c7d0c12188"
+  },
+  {
+    "file": "before-normal-mobile.png",
+    "sha256": "6e91b0e61ad55973040e1c05761f86a3a3a31776c8d1196fcff58b0b8d4619f9"
+  }
+]

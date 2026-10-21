@@ -243,7 +243,7 @@ await check(
     const f = await setup();
     await lock(f);
     const before = (await f.ctx.db.get(f.pertemuanId)).snapshot;
-    await bukaKunciLogic(f.ctx, f);
+    await bukaKunciLogic(f.ctx, { ...f, expectedRevision: 1 });
     assert.equal((await f.ctx.db.get(f.pertemuanId)).revision, 1);
     await f.ctx.db.patch(f.ids[0], { nama: "Changed", aktif: false });
     await simpanDanKunciLogic(f.ctx, {

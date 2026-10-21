@@ -162,6 +162,9 @@ export const update = mutation({
       peran: a.peran,
       aktif: a.aktif,
       kelasIds: a.kelasIds,
+      ...(!a.aktif || (user.peran === "ADMIN" && a.peran !== "ADMIN")
+        ? { recoveryHashes: [] }
+        : {}),
     });
     if (!a.aktif) await revokeAll(ctx, a.id);
     await audit(ctx, admin, "AKUN_UBAH", user.username);
@@ -187,6 +190,7 @@ export const passwordInternal = internalMutation({
     await ctx.db.patch(a.id, {
       passwordHash: a.hash,
       wajibGanti: actor._id !== a.id,
+      recoveryHashes: [],
     });
     await revokeAll(ctx, a.id);
     await audit(ctx, actor, "PASSWORD_UBAH", target.username);

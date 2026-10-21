@@ -30,11 +30,13 @@ export default defineSchema({
     resetAt: v.number(),
   }).index("by_key", ["key"]),
   matkul: defineTable({
+    revision: v.optional(v.number()),
     kode: v.string(),
     nama: v.string(),
     dibuatOleh: v.id("pengguna"),
-  }),
+  }).index("by_creator", ["dibuatOleh"]),
   kelas: defineTable({
+    readModelReady: v.optional(v.boolean()),
     draft: v.optional(v.boolean()),
     matkulId: v.id("matkul"),
     nama: v.string(),
@@ -52,7 +54,7 @@ export default defineSchema({
     templateVersion: v.number(),
     templateDraft: v.any(),
     dibuatOleh: v.id("pengguna"),
-  }),
+  }).index("by_matkul", ["matkulId"]),
   template: defineTable({
     kelasId: v.id("kelas"),
     version: v.number(),
@@ -66,12 +68,24 @@ export default defineSchema({
     jumlah: v.number(),
     pada: v.number(),
     actorId: v.id("pengguna"),
-  }).index("by_kelas", ["kelasId"]),
+  }).index("by_kelas", ["kelasId"]).index("by_kelas_pada", ["kelasId", "pada"]),
   migrasi: defineTable({
     versi: v.string(),
     pada: v.number(),
     ringkas: v.string(),
-  }),
+  }).index("by_versi", ["versi"]),
+  classView: defineTable({ kelasId: v.id("kelas"), matkulId: v.id("matkul"), data: v.any() })
+    .index("by_kelas", ["kelasId"]).index("by_matkul", ["matkulId"]),
+  meetingView: defineTable({ kelasId: v.id("kelas"), sourceId: v.id("pertemuan"), data: v.any() })
+    .index("by_kelas", ["kelasId"]).index("by_source", ["sourceId"]),
+  templateView: defineTable({ kelasId: v.id("kelas"), sourceId: v.id("template"), version: v.number(), data: v.any() })
+    .index("by_kelas_version", ["kelasId", "version"]).index("by_source", ["sourceId"]),
+  searchEntry: defineTable({ kelasId: v.id("kelas"), sourceId: v.string(), text: v.string(), data: v.any() })
+    .index("by_kelas", ["kelasId"]).index("by_source", ["sourceId"])
+    .searchIndex("search_text", { searchField: "text", filterFields: ["kelasId"] }),
+  documentView: defineTable({ kelasId: v.id("kelas"), pertemuanId: v.id("pertemuan"), sourceId: v.id("bapDoc"), format: v.string(), revision: v.number(), pada: v.number(), data: v.any() })
+    .index("by_source", ["sourceId"]).index("by_kelas_pada", ["kelasId", "pada"])
+    .index("by_pertemuan_format_revision", ["pertemuanId", "format", "revision", "pada"]),
   peserta: defineTable({
     kelasId: v.optional(v.id("kelas")),
     aktif: v.optional(v.boolean()),
@@ -145,5 +159,5 @@ export default defineSchema({
     ringkas: v.string(),
   })
     .index("by_pertemuan", ["pertemuanId"])
-    .index("by_kelas", ["kelasId"]),
+    .index("by_kelas", ["kelasId"]).index("by_kelas_pada", ["kelasId", "pada"]),
 });

@@ -25,3 +25,5 @@ jobs:
       - run: npm run test:sidebar
       - run: npm run test:faults
       - run: npm run test:pdf-ui
+      - run: npm run test:audit-ui
+      - run: npm run test:offline

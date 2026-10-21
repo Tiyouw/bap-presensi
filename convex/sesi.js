@@ -32,6 +32,6 @@ export const simpanDanKunci = mutation({
 
 /** Buka kunci wajib ada sejak versi pertama dipakai di kelas (review putaran 2). */
 export const bukaKunci = mutation({
-  args: { token: v.string(), pertemuanId: v.id("pertemuan") },
+  args: { token: v.string(), pertemuanId: v.id("pertemuan"), expectedRevision: v.number() },
   handler: bukaKunciLogic,
 });

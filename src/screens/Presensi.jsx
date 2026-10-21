@@ -9,6 +9,8 @@ import { RefreshHint, SkeletonRows } from "../components/Loading.jsx";
 import { usePageReady } from "../lib/usePageReady.js";
 import { useScopedStore } from "../lib/ScopedStorage.jsx";
 import { registerNavigationGuard } from "../lib/navigation.js";
+import { reconcileDraft, rosterData, rosterKey } from "../lib/draft.js";
+import { useDraftLock } from "../lib/useDraftLock.js";
 import {
   bacaDetail,
   bacaDraf,
@@ -31,7 +33,7 @@ import {
   URUT_STATUS,
 } from "../lib/presensi.js";
 
-function initialState(pertemuan, peserta, store) {
+function initialState(pertemuan, peserta, store, resumeDraft) {
   const cached = store.bacaDetail(pertemuan.id);
   // Bootstrap can be newer than a cached detail: never roll its revision back.
   const cacheMatches =
@@ -39,15 +41,19 @@ function initialState(pertemuan, peserta, store) {
     cached?.pertemuan?.status === pertemuan.status &&
     Array.isArray(cached.presensi);
   const record = pertemuan;
-  const draft = store.bacaDraf(pertemuan.id);
-  const valid = drafValid(draft, peserta);
+  const local = store.bacaDraf(pertemuan.id);
+  const memoryResume = Boolean(resumeDraft && (!local || resumeDraft.baseRevision > local.baseRevision ||
+    (resumeDraft.baseRevision === local.baseRevision && resumeDraft.ts > (local.ts || 0))));
+  const draft = memoryResume ? resumeDraft : local;
+  const reconciled = reconcileDraft(draft, peserta, cacheMatches ? cached.presensi : []);
+  const valid = Boolean(reconciled);
   const useDraft =
     valid &&
     (record.status !== "KUNCI" || draft.baseRevision !== record.revision);
   return {
     record,
     statuses: useDraft
-      ? Object.fromEntries(peserta.map((p) => [p.id, draft.statuses[p.id]]))
+      ? reconciled.statuses
       : statusAwal(peserta, cacheMatches ? cached.presensi : []),
     base: useDraft ? draft.baseRevision : record.revision,
     dirty: useDraft,
@@ -56,6 +62,10 @@ function initialState(pertemuan, peserta, store) {
     restored: useDraft ? draft.ts : null,
     panggil:
       useDraft && draft.baseRevision === record.revision ? draft.panggil : null,
+    rosterReview: useDraft && reconciled.needsRosterReview,
+    rosterReviewIds: useDraft ? reconciled.rosterReviewIds : [],
+    backup: useDraft && reconciled.rosterChanged ? draft : null,
+    memoryResume,
   };
 }
 
@@ -69,6 +79,9 @@ export default function Presensi({
   onPrint,
   kelas,
   readOnly = false,
+  resumeDraft,
+  snapshotControls,
+  onResumeCleared,
 }) {
   const store = useScopedStore();
   const { simpanDetail, bacaDraf, simpanDraf, hapusDraf, cadangkanDraf } =
@@ -87,7 +100,7 @@ export default function Presensi({
   const simpanKunci = useMutation(api.sesi.simpanDanKunci);
   const bukaKunci = useMutation(api.sesi.bukaKunci);
   const generate = useAction(api.bapNode.generate);
-  const [initial] = useState(() => initialState(pertemuan, peserta, store));
+  const [initial] = useState(() => initialState(pertemuan, peserta, store, resumeDraft));
   const pageReady = usePageReady(
     Boolean(detail) || !network.online,
     pertemuan.id,
@@ -122,6 +135,11 @@ export default function Presensi({
   );
   const [preferensiAman, setPreferensiAman] = useState(true);
   const [remainingApproved, setRemainingApproved] = useState(false);
+  const [rosterReview, setRosterReview] = useState(initial.rosterReview);
+  const [rosterReviewIds, setRosterReviewIds] = useState(initial.rosterReviewIds);
+  const [rosterApproved, setRosterApproved] = useState(false);
+  const backupRef = useRef(initial.backup);
+  const previousRoster = useRef(rosterData(peserta));
   const progres = progresPanggil(panggil, peserta, baseRevision);
   const persistedDraftRef = useRef(
     JSON.stringify({
@@ -135,6 +153,7 @@ export default function Presensi({
     : [];
   useEffect(() => {
     setRemainingApproved(false);
+    setRosterApproved(false);
   }, [modal?.kind]);
   useEffect(
     () =>
@@ -160,6 +179,44 @@ export default function Presensi({
   const syncedRef = useRef("");
   const footerRef = useRef(null);
   const layoutRef = useRef(null);
+  const editor = useDraftLock(`${store.scope}:${pertemuan.id}`, () => {
+    const latest = initialState(pertemuan, peserta, store, resumeDraft);
+    setRecord(latest.record);
+    setStatus(latest.statuses);
+    setBase(latest.base);
+    setDirty(latest.dirty);
+    dirtyRef.current = latest.dirty;
+    setKnown(latest.known);
+    setKonflik(latest.conflict);
+    setPanggil(latest.panggil);
+    setRosterReview(latest.rosterReview);
+    setRosterReviewIds(latest.rosterReviewIds);
+    backupRef.current = latest.backup;
+    previousRoster.current = rosterData(peserta);
+    persistedDraftRef.current = latest.backup || latest.memoryResume ? "" : JSON.stringify({
+      baseRevision: latest.base, statuses: latest.statuses,
+      panggil: progresPanggil(latest.panggil, peserta, latest.base),
+      roster: rosterData(peserta), needsRosterReview: latest.rosterReview,
+      rosterReviewIds: latest.rosterReviewIds,
+    });
+    syncedRef.current = "";
+    if (resumeDraft && !latest.memoryResume) onResumeCleared?.();
+  });
+  const makeDraft = () => ({ baseRevision, statuses: status, panggil: progres,
+    roster: previousRoster.current, needsRosterReview: rosterReview, rosterReviewIds });
+  if (snapshotControls) snapshotControls.current = {
+    prepare() {
+      if (!editor.owns() || readOnly || konflik || operationRef.current)
+        throw Error("Perbarui snapshot dari tab yang sedang mengedit setelah konflik diselesaikan.");
+      const draft = makeDraft();
+      if (!cadangkanDraf(pertemuan.id, draft))
+        throw Error("Draf belum dapat dicadangkan. Kosongkan ruang penyimpanan sebelum memperbarui snapshot.");
+      operationRef.current = "snapshot";
+      setSibuk("snapshot");
+      return draft;
+    },
+    abort() { operationRef.current = ""; setSibuk(""); },
+  };
 
   useEffect(() => {
     const observer = new ResizeObserver(([entry]) => {
@@ -173,7 +230,7 @@ export default function Presensi({
   }, [pageReady]);
 
   const terkunci = record.status === "KUNCI";
-  const canEdit = !readOnly && !terkunci && !sibuk && !konflik && known;
+  const canEdit = editor.owned && !readOnly && !terkunci && !sibuk && !konflik && known;
   const daftar = useMemo(
     () => cariPeserta(peserta, gol, cari),
     [peserta, gol, cari],
@@ -208,7 +265,7 @@ export default function Presensi({
     if (!detail) return;
     simpanDetail(pertemuan.id, detail);
     if (operationRef.current) return;
-    const key = `${detail.pertemuan.revision}:${detail.pertemuan.status}`;
+    const key = `${detail.pertemuan.revision}:${detail.pertemuan.status}:${rosterKey(peserta)}`;
     if (syncedRef.current === key) return;
     syncedRef.current = key;
     if (dirtyRef.current && detail.pertemuan.revision !== baseRevision) {
@@ -224,18 +281,40 @@ export default function Presensi({
       dirtyRef.current = false;
       setRiwayat([]);
       setPanggil(null);
+      setRosterReview(false);
+      setRosterReviewIds([]);
+      previousRoster.current = rosterData(peserta);
+    } else if (rosterKey(previousRoster.current) !== rosterKey(peserta)) {
+      const draft = makeDraft();
+      const next = reconcileDraft(draft, peserta, detail.presensi);
+      if (next) {
+        backupRef.current = draft;
+        previousRoster.current = rosterData(peserta);
+        setStatus(next.statuses);
+        setRosterReview(next.needsRosterReview);
+        setRosterReviewIds(next.rosterReviewIds);
+        setRosterApproved(false);
+        setRiwayat([]);
+      }
     }
   }, [detail, peserta, pertemuan.id, baseRevision, sibuk]);
 
   useEffect(() => {
-    if (!dirty || terkunci || !peserta.length) return;
-    const draft = { baseRevision, statuses: status, panggil: progres };
+    if (!editor.owns() || !dirty || terkunci || !peserta.length) return;
+    // A roster effect will reconcile first. Never persist a new roster with old statuses.
+    if (rosterKey(previousRoster.current) !== rosterKey(peserta) || !drafValid({ baseRevision, statuses: status }, peserta)) return;
+    if (backupRef.current) {
+      if (!cadangkanDraf(pertemuan.id, backupRef.current)) { setDrafAman(false); return; }
+      backupRef.current = null;
+    }
+    const draft = { ...makeDraft(), roster: rosterData(peserta) };
     const serialized = JSON.stringify(draft);
     if (persistedDraftRef.current === serialized) return;
     const saved = simpanDraf(pertemuan.id, draft);
     if (saved) persistedDraftRef.current = serialized;
+    if (saved && resumeDraft) onResumeCleared?.();
     setDrafAman(saved);
-  }, [status, panggil, baseRevision, dirty, terkunci, pertemuan.id, peserta]);
+  }, [status, panggil, baseRevision, dirty, terkunci, pertemuan.id, peserta, rosterReview, rosterReviewIds, editor.owned]);
 
   useEffect(() => {
     if (!toast) return;
@@ -254,7 +333,7 @@ export default function Presensi({
   }, [dirty, drafAman]);
 
   function setSatu(pesertaId, nilai) {
-    if (!canEdit || status[pesertaId] === nilai) return;
+    if (!editor.owns() || !canEdit || status[pesertaId] === nilai) return;
     setRiwayat((previous) => [
       ...previous.slice(-19),
       { pesertaId, sebelum: status[pesertaId] },
@@ -322,14 +401,10 @@ export default function Presensi({
   }
 
   function muatServer() {
-    if (!detail) return;
+    if (!detail || !editor.owns()) return;
     if (
       dirtyRef.current &&
-      !cadangkanDraf(pertemuan.id, {
-        baseRevision,
-        statuses: status,
-        panggil: progres,
-      })
+      !cadangkanDraf(pertemuan.id, makeDraft())
     ) {
       setGalat(
         "Draf belum dapat dicadangkan. Kosongkan ruang penyimpanan perangkat sebelum mengganti draf.",
@@ -345,16 +420,35 @@ export default function Presensi({
     setKnown(true);
     setRiwayat([]);
     setPanggil(null);
+    setRosterReview(false);
+    setRosterReviewIds([]);
+    previousRoster.current = rosterData(peserta);
     setModal(null);
     setGalat("");
     hapusDraf(pertemuan.id);
+    onResumeCleared?.();
     setInfo(
       "Data server dimuat. Salinan draf sebelumnya tetap disimpan di perangkat.",
     );
   }
 
   function gunakanDraf() {
-    if (!detail || detail.pertemuan.status === "KUNCI") return;
+    if (!editor.owns() || !detail || detail.pertemuan.status === "KUNCI") return;
+    const draft = makeDraft();
+    if (!cadangkanDraf(pertemuan.id, draft)) {
+      setGalat("Draf belum dapat dicadangkan. Kosongkan ruang penyimpanan sebelum menggunakan draf ini.");
+      return;
+    }
+    const next = reconcileDraft(draft, peserta, detail.presensi);
+    if (!next) return;
+    setStatus(next.statuses);
+    setRosterReview(next.needsRosterReview);
+    setRosterReviewIds(next.rosterReviewIds);
+    previousRoster.current = rosterData(peserta);
+    setPanggil(null);
+    setRiwayat([]);
+    setRosterApproved(false);
+    persistedDraftRef.current = "";
     setRecord(detail.pertemuan);
     setBase(detail.pertemuan.revision);
     setKonflik(false);
@@ -391,8 +485,13 @@ export default function Presensi({
   }
 
   async function simpan() {
-    if (!network.online || !canEdit || operationRef.current) return;
+    if (!editor.owns() || !network.online || !canEdit || operationRef.current) return;
     if (belumDiperiksa.length && !remainingApproved) return;
+    if (rosterReview && !rosterApproved) return;
+    if (backupRef.current && !cadangkanDraf(pertemuan.id, backupRef.current)) {
+      setGalat("Draf sebelum perubahan roster belum dapat dicadangkan. Kosongkan ruang perangkat lalu coba lagi.");
+      return;
+    }
     setModal(null);
     setGalat("");
     setInfo("");
@@ -421,7 +520,10 @@ export default function Presensi({
       dirtyRef.current = false;
       setRiwayat([]);
       setPanggil(null);
+      setRosterReview(false);
+      setRosterReviewIds([]);
       hapusDraf(pertemuan.id);
+      onResumeCleared?.();
       simpanDetail(pertemuan.id, {
         pertemuan: nextRecord,
         presensi: statuses,
@@ -441,12 +543,12 @@ export default function Presensi({
   }
 
   async function bukaKuncinya() {
-    if (readOnly || !network.online || operationRef.current) return;
+    if (!editor.owns() || readOnly || !network.online || operationRef.current) return;
     operationRef.current = "unlock";
     setSibuk("buka");
     setGalat("");
     try {
-      await bukaKunci({ token, pertemuanId: pertemuan.id });
+      await bukaKunci({ token, pertemuanId: pertemuan.id, expectedRevision: modal?.revision ?? record.revision });
       setRecord((previous) => ({ ...previous, status: "TERBUKA" }));
       setGenerated(null);
       setModal(null);
@@ -515,11 +617,11 @@ export default function Presensi({
       konflik ||
       !known ||
       !peserta.length ||
-      (!terkunci && (!detail || readOnly)),
+      (!terkunci && (!detail || readOnly || !editor.owned)),
     // readOnly still permits downloads of locked attendance.
   );
 
-  if (!pageReady)
+  if (!pageReady || !editor.ready)
     return (
       <div className="attendance-layout" ref={layoutRef}>
         <Header onKembali={onKembali} onHelp={onHelp} />
@@ -580,6 +682,19 @@ export default function Presensi({
           </span>
           <ConnectionStatus network={network} />
         </div>
+        {editor.ready && !editor.owned && !readOnly && (
+          <Notice kind="warning">
+            {editor.supported
+              ? "Presensi ini sedang diedit di tab lain. Tab ini hanya membaca. Tutup tab pengedit untuk melanjutkan di sini; draf terbaru akan dimuat otomatis."
+              : "Browser belum menyediakan penguncian editor yang aman. Gunakan browser terbaru melalui HTTPS untuk mengedit presensi."}
+          </Notice>
+        )}
+        {rosterReview && (
+          <Notice kind="warning">
+            Daftar atau identitas mahasiswa berubah. Status yang cocok dipertahankan dan draf sebelumnya dicadangkan.
+            Periksa kembali daftar sebelum mengunci.
+          </Notice>
+        )}
         {!terkunci && !readOnly && (
           <div className="call-entry">
             <button
@@ -658,8 +773,8 @@ export default function Presensi({
             </div>
             <button
               className="button button--outline"
-              disabled={readOnly || !network.online || Boolean(sibuk) || !known}
-              onClick={() => setModal({ kind: "unlock" })}
+              disabled={!editor.owned || readOnly || !network.online || Boolean(sibuk) || !known}
+              onClick={() => { setGalat(""); setModal({ kind: "unlock", revision: record.revision }); }}
             >
               Buka kunci
             </button>
@@ -962,6 +1077,16 @@ export default function Presensi({
             Pertemuan {record.nomor} ·{" "}
             {hariTanggal(record.tanggal).replace(" / ", ", ")}
           </p>
+          {rosterReview && (
+            <section className="call-unreviewed" aria-label="Perubahan roster">
+              <strong>Periksa perubahan roster sebelum mengunci</strong>
+              <p>Status peserta yang masih cocok dipertahankan. Nama baru atau identitas yang berubah perlu diperiksa.</p>
+              {rosterReviewIds.length > 0 && <ul>{peserta.filter(p => rosterReviewIds.includes(p.id)).map(p =>
+                <li key={p.id}>{p.nama} · {p.nim} · {LABEL[status[p.id]]}</li>)}</ul>}
+              <label className="call-auto"><input type="checkbox" checked={rosterApproved}
+                onChange={e => setRosterApproved(e.target.checked)} />Saya sudah memeriksa perubahan roster dan seluruh status presensi.</label>
+            </section>
+          )}
           {belumDiperiksa.length > 0 && (
             <section
               className="call-unreviewed"
@@ -1038,6 +1163,7 @@ export default function Presensi({
               className="button button--primary button--full"
               disabled={
                 primaryDisabled ||
+                (rosterReview && !rosterApproved) ||
                 (belumDiperiksa.length > 0 && !remainingApproved)
               }
               onClick={simpan}
@@ -1064,10 +1190,11 @@ export default function Presensi({
             Kamu dapat memperbaiki status mahasiswa. BAP sebelumnya menjadi
             usang sampai koreksi dikunci dan BAP dibuat kembali.
           </p>
+          {galat && <Notice kind="error">{galat}</Notice>}
           <div className="modal-actions">
             <button
               className="button button--primary button--full"
-              disabled={readOnly || !network.online || Boolean(sibuk)}
+              disabled={!editor.owned || readOnly || !network.online || Boolean(sibuk)}
               onClick={bukaKuncinya}
             >
               {sibuk ? "Membuka kunci…" : "Buka kunci & koreksi"}
@@ -1096,7 +1223,7 @@ export default function Presensi({
           <div className="modal-actions">
             <button
               className="button button--primary button--full"
-              disabled={!detail}
+              disabled={!detail || !editor.owned}
               onClick={muatServer}
             >
               Muat data server
@@ -1130,6 +1257,7 @@ export default function Presensi({
             Saat disimpan nanti, seluruh status pada draf ini akan menggantikan
             presensi server. Periksa nama-nama tidak hadir sebelum mengunci.
           </p>
+          {galat && <Notice kind="error">{galat}</Notice>}
           <button
             className="button button--primary button--full"
             disabled={!network.online || detail?.pertemuan.status !== "TERBUKA"}

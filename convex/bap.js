@@ -1,8 +1,9 @@
 import { v } from "convex/values";
+import { paginationOptsValidator } from "convex/server";
 import { internalMutation, internalQuery, query } from "./_generated/server.js";
 import { requireMeeting, requireClass } from "./lib/access.js";
 import { classRows, classSnapshot } from "./lib/classLogic.js";
-import { bahanGenerateLogic, klaimLogic } from "./lib/bapLogic.js";
+import { bahanGenerateLogic, klaimLogic, finalisasiLogic } from "./lib/bapLogic.js";
 import { bahanPaketLogic, ringkasanCetakLogic } from "./lib/printLogic.js";
 import { documentUrl } from "./lib/documentUrl.js";
 export const fileAccess = internalQuery({
@@ -49,23 +50,12 @@ export const klaimInternal = internalMutation({
   },
 });
 export const selesai = internalMutation({
-  args: { id: v.id("bapDoc"), storageId: v.id("_storage"), sha256: v.string() },
-  handler: async (ctx, a) => {
-    await ctx.db.patch(a.id, {
-      status: "READY",
-      storageId: a.storageId,
-      sha256: a.sha256,
-    });
-  },
+  args: { id: v.id("bapDoc"), attempt: v.number(), storageId: v.id("_storage"), sha256: v.string() },
+  handler: finalisasiLogic,
 });
 export const gagal = internalMutation({
-  args: { id: v.id("bapDoc"), pesan: v.string() },
-  handler: async (ctx, a) => {
-    await ctx.db.patch(a.id, {
-      status: "FAILED",
-      pesan: a.pesan.slice(0, 1000),
-    });
-  },
+  args: { id: v.id("bapDoc"), attempt: v.number(), pesan: v.string() },
+  handler: finalisasiLogic,
 });
 export const docById = internalQuery({
   args: { token: v.string(), id: v.id("bapDoc") },
@@ -82,8 +72,14 @@ export const docById = internalQuery({
 export const forSesi = query({
   args: { token: v.string(), pertemuanId: v.id("pertemuan") },
   handler: async (ctx, a) => {
-    const { meeting: p } = await requireMeeting(ctx, a.token, a.pertemuanId);
+    const { meeting: p, kelas } = await requireMeeting(ctx, a.token, a.pertemuanId);
     if (p.tipe !== "REGULER") return null;
+    if (kelas.readModelReady) {
+      const [view] = await ctx.db.query("documentView")
+        .withIndex("by_pertemuan_format_revision", q => q.eq("pertemuanId", p._id).eq("format", "docx"))
+        .order("desc").take(1);
+      return view ? { id: view.sourceId, revision: view.revision, url: documentUrl(view.sourceId), sha256: view.data.sha256 } : null;
+    }
     const docs = (
       await ctx.db
         .query("bapDoc")
@@ -111,7 +107,11 @@ export const forSesi = query({
 export const history = query({
   args: { token: v.string(), kelasId: v.id("kelas") },
   handler: async (ctx, a) => {
-    await requireClass(ctx, a.token, a.kelasId);
+    const { kelas } = await requireClass(ctx, a.token, a.kelasId);
+    if (kelas.readModelReady) {
+      return (await ctx.db.query("documentView").withIndex("by_kelas_pada", q => q.eq("kelasId", a.kelasId))
+        .order("desc").collect()).map(v => ({ ...v.data, url: documentUrl(v.sourceId) }));
+    }
     const result = [];
     for (const p of await classRows(ctx, "pertemuan", a.kelasId))
       for (const d of await ctx.db
@@ -131,6 +131,16 @@ export const history = query({
             pada: d.klaimPada,
           });
     return result.sort((a, b) => b.pada - a.pada);
+  },
+});
+export const historyPage = query({
+  args: { token: v.string(), kelasId: v.id("kelas"), paginationOpts: paginationOptsValidator },
+  handler: async (ctx, a) => {
+    await requireClass(ctx, a.token, a.kelasId);
+    const page = await ctx.db.query("documentView")
+      .withIndex("by_kelas_pada", q => q.eq("kelasId", a.kelasId)).order("desc")
+      .paginate({ ...a.paginationOpts, numItems: Math.max(1, Math.min(50, Math.trunc(a.paginationOpts.numItems))), maximumBytesRead: 512 * 1024 });
+    return { ...page, page: page.page.map(v => ({ ...v.data, url: documentUrl(v.sourceId) })) };
   },
 });
 export const previewData = internalQuery({
