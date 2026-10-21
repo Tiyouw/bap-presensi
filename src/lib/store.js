@@ -85,9 +85,34 @@ export function bacaPreferensiPanggil(id) {
   }
 }
 
-export function simpanPreferensiPanggil(id, auto) {
+export function bacaKeluarOtomatisPanggil(id) {
   try {
-    localStorage.setItem(K.panggil(id), JSON.stringify({ auto }));
+    return (
+      JSON.parse(localStorage.getItem(K.panggil(id)) || "null")?.autoExit !==
+      false
+    );
+  } catch {
+    return true;
+  }
+}
+
+export function simpanPreferensiPanggil(id, auto, autoExit) {
+  try {
+    let previous = {};
+    try {
+      previous =
+        JSON.parse(localStorage.getItem(K.panggil(id)) || "null") || {};
+    } catch {
+      /* replace malformed preferences */
+    }
+    localStorage.setItem(
+      K.panggil(id),
+      JSON.stringify({
+        ...previous,
+        auto,
+        ...(typeof autoExit === "boolean" ? { autoExit } : {}),
+      }),
+    );
     return true;
   } catch {
     return false;

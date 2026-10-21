@@ -94,16 +94,37 @@ async function session(type, port = 5194, options = {}) {
   await page.locator(".student-row").last().waitFor();
   return { context, page, errors };
 }
-async function open(page) {
+async function open(page, start = true) {
   await page.getByRole("button", { name: /Mode Panggil/ }).click();
   await page.getByRole("dialog", { name: "Mode Panggil" }).waitFor();
+  if (start) await page.locator(".call-start").click();
 }
 async function close(page) {
   await page.keyboard.press("Escape");
   await page.getByRole("dialog").waitFor({ state: "hidden" });
 }
-async function reviewed(page, n) {
-  await page.getByText(`${n} dari 93 diperiksa`, { exact: true }).waitFor();
+async function reviewed(page, n, total = 23) {
+  await page
+    .getByText(`${n} dari ${total} diperiksa`, { exact: true })
+    .waitFor();
+}
+async function nearGroupEnd(page, skipFirst = false) {
+  // Restore a deterministic partial draft using the editor's actual schema.
+  await open(page);
+  await page.getByLabel("Lanjut otomatis").uncheck();
+  await close(page);
+  await page.evaluate((skip) => {
+    const key = "bap.draft.qa-user:k1:p3";
+    const draft = JSON.parse(localStorage.getItem(key));
+    const group = JSON.parse(draft.panggil.roster).filter((p) => p[3] === "A");
+    draft.panggil.reviewedIds = group.slice(skip ? 1 : 0, -1).map((p) => p[0]);
+    draft.panggil.currentId = group.at(-1)[0];
+    draft.panggil.positions.A = draft.panggil.currentId;
+    localStorage.setItem(key, JSON.stringify(draft));
+  }, skipFirst);
+  await page.reload();
+  await page.locator(".student-row").last().waitFor();
+  await open(page);
 }
 async function noOverflow(page) {
   const layout = await page.evaluate(() => {
@@ -156,12 +177,38 @@ async function noOverflow(page) {
         ["mobile", 390, 844],
       ]) {
         await page.setViewportSize({ width, height });
-        await open(page);
+        await open(page, false);
+        await page.screenshot({ path: `${shots}/golongan-${device}.png` });
+        await page.locator(".call-help-toggle").click();
+        await page.screenshot({ path: `${shots}/bantuan-${device}.png` });
+        await page
+          .getByRole("button", { name: "Mengerti, kembali", exact: true })
+          .click();
+        await page.locator(".call-start").click();
         await page.getByLabel("Lanjut otomatis").uncheck();
         await page.getByRole("button", { name: /Izin 4/ }).click();
         await page.screenshot({ path: `${shots}/kartu-${device}.png` });
         await close(page);
       }
+      const ending = await session(type);
+      await nearGroupEnd(ending.page);
+      await ending.page.getByRole("button", { name: /Hadir 1/ }).click();
+      await ending.page
+        .getByRole("button", { name: /Selesaikan golongan/ })
+        .click();
+      await ending.page
+        .getByRole("button", { name: "Batalkan hitung mundur", exact: true })
+        .click();
+      for (const [device, width, height] of [
+        ["desktop", 1280, 1000],
+        ["mobile", 390, 844],
+      ]) {
+        await ending.page.setViewportSize({ width, height });
+        await ending.page.screenshot({
+          path: `${shots}/selesai-${device}.png`,
+        });
+      }
+      await ending.context.close();
       await before.context.close();
       await context.close();
       if (captureOnly) {
@@ -172,15 +219,23 @@ async function noOverflow(page) {
       ({ context, page, errors } = await session(type));
     }
     await page.getByRole("searchbox").fill("Bima");
-    await open(page);
-    await reviewed(page, 0);
-    assert.match(await page.locator(".call-person h3").innerText(), /Alya/);
+    await open(page, false);
+    assert.equal(await page.locator(".call-group-option svg").count(), 4);
+    assert.equal(
+      await page
+        .getByLabel("Keluar otomatis 3 detik setelah golongan selesai")
+        .isChecked(),
+      true,
+    );
     assert.equal(
       await page.evaluate(() =>
         localStorage.getItem("bap.draft.qa-user:k1:p3"),
       ),
       null,
     );
+    await page.locator(".call-start").click();
+    await reviewed(page, 0);
+    assert.match(await page.locator(".call-person h3").innerText(), /Alya/);
     await page.getByLabel("Lanjut otomatis").uncheck();
     await page
       .getByRole("button", { name: "Lewati dulu", exact: true })
@@ -257,7 +312,7 @@ async function noOverflow(page) {
     );
     await page.reload();
     await page.locator(".student-row").last().waitFor();
-    await open(page);
+    await open(page, false);
     assert.equal(
       await page.evaluate(() =>
         localStorage.getItem("bap.draft.qa-user:k1:p3"),
@@ -265,11 +320,12 @@ async function noOverflow(page) {
       savedDraft,
       "opening/restoring must not rewrite the draft",
     );
+    await page.locator(".call-start").click();
     assert.match(await page.locator(".call-person h3").innerText(), /Damar/);
     assert.equal(await page.getByLabel("Lanjut otomatis").isChecked(), false);
     await reviewed(page, 4);
     // Both ends of the dialog trap keyboard focus.
-    await page.getByRole("button", { name: "Tutup", exact: true }).focus();
+    await page.locator(".call-help-toggle").focus();
     await page.keyboard.press("Shift+Tab");
     assert.equal(
       await page
@@ -280,7 +336,7 @@ async function noOverflow(page) {
     await page.keyboard.press("Tab");
     assert.equal(
       await page
-        .getByRole("button", { name: "Tutup", exact: true })
+        .locator(".call-help-toggle")
         .evaluate((e) => e === document.activeElement),
       true,
     );
@@ -306,7 +362,19 @@ async function noOverflow(page) {
       for (const theme of ["light", "dark"]) {
         await page.setViewportSize({ width, height: 844 });
         await page.emulateMedia({ colorScheme: theme });
-        await open(page);
+        await open(page, false);
+        await noOverflow(page);
+        await page.locator(".call-help-toggle").click();
+        await noOverflow(page);
+        await page.evaluate(
+          () => (document.documentElement.style.fontSize = "200%"),
+        );
+        await noOverflow(page);
+        await page.evaluate(
+          () => (document.documentElement.style.fontSize = ""),
+        );
+        await page.keyboard.press("Escape");
+        await page.locator(".call-start").click();
         await noOverflow(page);
         assert.equal(
           await page
@@ -386,6 +454,15 @@ async function noOverflow(page) {
     await page.waitForTimeout(850);
     assert.match(await page.locator(".call-person h3").innerText(), /Citra/);
     await page.getByRole("button", { name: /Sakit 3/ }).click();
+    await page.locator(".call-help-toggle").click();
+    await page.waitForTimeout(850);
+    await page.keyboard.press("4");
+    await page.keyboard.press("Escape");
+    assert.match(await page.locator(".call-person h3").innerText(), /Citra/);
+    assert.equal(
+      await page.locator(".call-choice.SAKIT").getAttribute("aria-pressed"),
+      "true",
+    );
     await page.keyboard.press("Escape");
     await page.waitForTimeout(850);
     await open(page);
@@ -431,17 +508,114 @@ async function noOverflow(page) {
       .waitFor();
     await context.close();
     ({ context, page } = await session(type));
+    await nearGroupEnd(page);
+    await page.getByRole("button", { name: /Hadir 1/ }).click();
+    await page.getByRole("button", { name: /Selesaikan golongan/ }).click();
+    await page.getByText("Golongan A selesai.", { exact: true }).waitFor();
+    const exitStarted = Date.now();
+    await page.locator(".call-modal").waitFor({ state: "hidden" });
+    assert.ok(Date.now() - exitStarted >= 2700, "exit waits three seconds");
+    assert.equal(
+      await page.evaluate(
+        () =>
+          window.__qa.calls.filter((c) => c.name === "sesi:simpanDanKunci")
+            .length,
+      ),
+      0,
+    );
+    await open(page, false);
+    assert.equal(
+      await page.locator('[data-call-group="B"]').getAttribute("aria-pressed"),
+      "true",
+    );
+    await page.locator(".call-start").click();
+    await reviewed(page, 0, 24);
+    await page
+      .getByRole("button", { name: "Lewati dulu", exact: true })
+      .click();
+    const savedB = await page.locator(".call-person h3").innerText();
+    await close(page);
+    await page.reload();
+    await page.locator(".student-row").last().waitFor();
+    await open(page);
+    assert.equal(await page.locator(".call-person h3").innerText(), savedB);
+    ok(
+      engine,
+      "group A exits after three seconds without locking; next scheduled group selected; B position survives reload",
+    );
+    await context.close();
+    ({ context, page } = await session(type));
+    await nearGroupEnd(page, true);
+    await page.getByRole("button", { name: /Hadir 1/ }).click();
+    await page.getByRole("button", { name: /Selesaikan golongan/ }).click();
+    await page
+      .getByText("Golongan A belum selesai.", { exact: true })
+      .waitFor();
+    assert.equal(await page.locator(".call-exit-countdown").count(), 0);
+    await page
+      .getByRole("button", { name: "Periksa nama yang dilewati", exact: true })
+      .click();
+    assert.match(await page.locator(".call-person h3").innerText(), /Alya/);
+    await reviewed(page, 22);
+    await page.getByRole("button", { name: /Hadir 1/ }).click();
+    await reviewed(page, 23);
+    ok(
+      engine,
+      "skipped names keep their statuses, prevent automatic exit and can be reviewed within the same group",
+    );
+    await context.close();
+    ({ context, page } = await session(type));
     await open(page);
     await page.getByLabel("Lanjut otomatis").uncheck();
-    // Completing the last card must open review, with no lock mutation yet.
-    for (let i = 0; i < 93; i++) {
-      await page.getByRole("button", { name: /Hadir 1/ }).click();
-      await page
-        .getByRole("button", {
-          name: i === 92 ? /Periksa hasil/ : /Selanjutnya/,
-        })
-        .click();
+    // Progress and completion belong to each group, never auto-locking the class.
+    for (const [g, count, next] of [
+      ["A", 23, "B"],
+      ["B", 24, "C"],
+      ["C", 23, "D"],
+      ["D", 23, null],
+    ]) {
+      await reviewed(page, 0, count);
+      for (let i = 0; i < count; i++) {
+        await page.getByRole("button", { name: /Hadir 1/ }).click();
+        await page
+          .getByRole("button", {
+            name: i === count - 1 ? /Selesaikan golongan/ : /Selanjutnya/,
+          })
+          .click();
+      }
+      await page.getByText(`Golongan ${g} selesai.`, { exact: true }).waitFor();
+      if (g === "A") {
+        await page.locator(".call-help-toggle").click();
+        await page.waitForTimeout(3200);
+        await page.keyboard.press("Escape");
+        assert.equal(await page.locator(".call-exit-countdown").count(), 0);
+      } else
+        await page
+          .getByRole("button", { name: "Batalkan hitung mundur", exact: true })
+          .click();
+      if (capture && engine === "chromium" && g === "A") {
+        for (const [device, width, height] of [
+          ["desktop", 1280, 1000],
+          ["mobile", 390, 844],
+        ]) {
+          await page.setViewportSize({ width, height });
+          await page.screenshot({ path: `${shots}/selesai-${device}.png` });
+        }
+      }
+      if (next)
+        await page
+          .getByRole("button", {
+            name: `Lanjut ke golongan ${next}`,
+            exact: true,
+          })
+          .click();
     }
+    await page
+      .getByRole("button", {
+        name: "Periksa presensi seluruh kelas",
+        exact: true,
+      })
+      .click();
     await page.getByRole("dialog", { name: "Periksa presensi" }).waitFor();
     assert.equal(
       await page.evaluate(
@@ -473,7 +647,7 @@ async function noOverflow(page) {
     );
     ok(
       engine,
-      "all 93 cards end in review, reopening completed progress opens review, one explicit lock and no locked editing",
+      "93 cards across four independent groups; help pauses completion countdown; explicit next group and class review; one explicit lock",
     );
     await context.close();
     ({ context, page } = await session(type));

@@ -34,7 +34,17 @@
     },
     {
       "engine": "chromium",
-      "name": "all 93 cards end in review, reopening completed progress opens review, one explicit lock and no locked editing",
+      "name": "group A exits after three seconds without locking; next scheduled group selected; B position survives reload",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "skipped names keep their statuses, prevent automatic exit and can be reviewed within the same group",
+      "passed": true
+    },
+    {
+      "engine": "chromium",
+      "name": "93 cards across four independent groups; help pauses completion countdown; explicit next group and class review; one explicit lock",
       "passed": true
     },
     {
@@ -74,7 +84,17 @@
     },
     {
       "engine": "webkit",
-      "name": "all 93 cards end in review, reopening completed progress opens review, one explicit lock and no locked editing",
+      "name": "group A exits after three seconds without locking; next scheduled group selected; B position survives reload",
+      "passed": true
+    },
+    {
+      "engine": "webkit",
+      "name": "skipped names keep their statuses, prevent automatic exit and can be reviewed within the same group",
+      "passed": true
+    },
+    {
+      "engine": "webkit",
+      "name": "93 cards across four independent groups; help pauses completion countdown; explicit next group and class review; one explicit lock",
       "passed": true
     },
     {

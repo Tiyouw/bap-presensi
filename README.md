@@ -36,7 +36,11 @@ Status: PR/preview untuk review; **belum di-merge atau dimigrasikan ke produksi*
 7. **Siapkan cetak** dari kelas/presensi/arsip: pilih pertemuan terkunci dalam satu
    kelas, buat preview PDF atau unduh paket Word dua form per folio.
 
-Di halaman presensi, **Mode Panggil** membuka kartu satu mahasiswa. Pilih status
+Di halaman presensi, **Mode Panggil** meminta golongan yang sedang hadir, lalu
+membuka kartu satu mahasiswa. Ikon golongan dan tombol **Bantuan** menjelaskan alur.
+Progress dihitung per golongan; setelah selesai, otomatis kembali ke daftar dalam
+3 detik. Bisa dibatalkan, keluar sekarang, atau lanjut golongan berikutnya secara
+manual. Membuka bantuan menjeda perpindahan kartu dan countdown. Pilih status
 dengan tombol atau **1 Hadir / 2 Alpha / 3 Sakit / 4 Izin**. **←** kembali,
 **→/Enter** berikutnya setelah memilih, **Escape** menutup. Warna dan cap mengikuti
 status. Lanjut otomatis (700 ms) bisa dimatikan; pengaturannya diingat per akun/kelas.

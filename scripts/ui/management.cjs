@@ -226,16 +226,37 @@ async function noOverflow(p) {
       "custom practical week 1, template actual PDF preview/publish, draft activation",
     );
     await page.getByRole("button", { name: /Mode Panggil/ }).click();
+    await page
+      .getByLabel("Keluar otomatis 3 detik setelah golongan selesai")
+      .uncheck();
+    await page.locator(".call-start").click();
     await page.getByLabel("Lanjut otomatis").uncheck();
-    const rosterLength = await page.locator(".student-row").count();
-    for (let i = 0; i < rosterLength; i++) {
-      await page.getByRole("button", { name: /Hadir 1/ }).click();
+    for (const [group, count] of [
+      ["X", 2],
+      ["Y", 1],
+    ]) {
+      for (let i = 0; i < count; i++) {
+        await page.getByRole("button", { name: /Hadir 1/ }).click();
+        await page
+          .getByRole("button", {
+            name: i === count - 1 ? /Selesaikan golongan/ : /Selanjutnya/,
+          })
+          .click();
+      }
       await page
-        .getByRole("button", {
-          name: i === rosterLength - 1 ? /Periksa hasil/ : /Selanjutnya/,
-        })
-        .click();
+        .getByText(`Golongan ${group} selesai.`, { exact: true })
+        .waitFor();
+      if (group === "X")
+        await page
+          .getByRole("button", { name: "Lanjut ke golongan Y", exact: true })
+          .click();
     }
+    await page
+      .getByRole("button", {
+        name: "Periksa presensi seluruh kelas",
+        exact: true,
+      })
+      .click();
     await page.getByRole("dialog", { name: "Periksa presensi" }).waitFor();
     await page.keyboard.press("Escape");
     ok(

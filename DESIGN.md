@@ -77,8 +77,14 @@ Tab/Shift+Tab dan Escape bekerja di dialog. Ctrl/Cmd+K menutup kartu sambil memb
 pencarian global; draf/posisi tetap ada dan timer dihentikan. Shortcut browser tetap
 tersedia. Dialog berada di atas navbar/menu agar tombol tutup tidak tertutup.
 
-Progres memakai “x dari n diperiksa”, bukan jumlah status terisi. Cakupan seluruh
-roster ditulis jelas. Review menampilkan nama yang dilewati beserta status daftar;
+Pilihan golongan memakai ikon kelompok, nama golongan, jumlah mahasiswa dan progres.
+Header popup menyediakan tombol Bantuan dengan panduan empat langkah dan shortcut.
+Bantuan tidak menumpuk dialog; timer berhenti sampai pengguna melanjutkan sendiri.
+Progres “x dari n diperiksa” hanya untuk golongan aktif, dengan ringkasan golongan
+selesai di bawahnya. Akhir golongan menampilkan ringkasan dan countdown keluar tiga
+detik, tombol batal/keluar sekarang, serta lanjut golongan berikutnya secara manual.
+Nama yang dilewati ditampilkan tanpa countdown. Review seluruh kelas tetap terpisah
+dari penyelesaian satu golongan. Review menampilkan nama beserta status daftar;
 pengguna dapat melanjutkan atau menyetujui status daftar sebelum kunci. Rincian
 implementasi dan bukti pengujian: `docs/MODE-PANGGIL.md`.
 

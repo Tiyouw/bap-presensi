@@ -117,6 +117,9 @@ export default function Presensi({
   const [autoPanggil, setAutoPanggil] = useState(() =>
     store.bacaPreferensiPanggil("preferences"),
   );
+  const [autoKeluarPanggil, setAutoKeluarPanggil] = useState(() =>
+    store.bacaKeluarOtomatisPanggil("preferences"),
+  );
   const [preferensiAman, setPreferensiAman] = useState(true);
   const [remainingApproved, setRemainingApproved] = useState(false);
   const progres = progresPanggil(panggil, peserta, baseRevision);
@@ -268,10 +271,20 @@ export default function Presensi({
 
   function ubahPanggil(patch) {
     if (!canEdit) return;
-    setPanggil((previous) => ({
-      ...progresPanggil(previous, peserta, baseRevision),
-      ...patch,
-    }));
+    setPanggil((previous) => {
+      const next = {
+        ...progresPanggil(previous, peserta, baseRevision),
+        ...patch,
+      };
+      if (patch.currentId) {
+        const person = peserta.find((p) => p.id === patch.currentId);
+        if (person) {
+          next.groupKey = String(person.golongan ?? "");
+          next.positions = { ...next.positions, [next.groupKey]: person.id };
+        }
+      }
+      return progresPanggil(next, peserta, baseRevision);
+    });
     setDirty(true);
     dirtyRef.current = true;
   }
@@ -294,6 +307,7 @@ export default function Presensi({
         !lanjutBelum && progres.reviewedIds.length === peserta.length
           ? "review"
           : "panggil",
+      resume: lanjutBelum,
     });
   }
 
@@ -906,6 +920,8 @@ export default function Presensi({
           statuses={status}
           progress={progres}
           auto={autoPanggil}
+          autoExit={autoKeluarPanggil}
+          resume={modal.resume}
           canEdit={canEdit}
           unsafe={!drafAman || !preferensiAman}
           nomor={record.nomor}
@@ -915,10 +931,27 @@ export default function Presensi({
           onAuto={(auto) => {
             setAutoPanggil(auto);
             setPreferensiAman(
-              store.simpanPreferensiPanggil("preferences", auto),
+              store.simpanPreferensiPanggil(
+                "preferences",
+                auto,
+                autoKeluarPanggil,
+              ),
             );
           }}
-          onClose={() => setModal(null)}
+          onAutoExit={(autoExit) => {
+            setAutoKeluarPanggil(autoExit);
+            setPreferensiAman(
+              store.simpanPreferensiPanggil(
+                "preferences",
+                autoPanggil,
+                autoExit,
+              ),
+            );
+          }}
+          onClose={(message) => {
+            if (typeof message === "string") setInfo(message);
+            setModal(null);
+          }}
           onReview={() => setModal({ kind: "review" })}
         />
       )}

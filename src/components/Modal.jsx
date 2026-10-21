@@ -11,6 +11,7 @@ export default function Modal({
   className = "",
   onKeyDown,
   returnFocusRef,
+  headerActions,
 }) {
   const titleId = useId();
   const ref = useRef(null);
@@ -82,6 +83,7 @@ export default function Modal({
       >
         <header className="modal-header">
           <h2 id={titleId}>{title}</h2>
+          {headerActions}
           <button
             className="button button--quiet"
             onClick={onClose}

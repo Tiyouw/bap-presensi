@@ -14,6 +14,7 @@ export function useScopedStore() {
           "simpanDetail",
           "simpanDraf",
           "bacaPreferensiPanggil",
+          "bacaKeluarOtomatisPanggil",
           "simpanPreferensiPanggil",
         ].map((name) => [
           name,

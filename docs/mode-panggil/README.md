@@ -20,8 +20,14 @@ node scripts/ui/panggil.cjs --capture-only
 ![Kartu desktop](kartu-desktop.png)
 ![Kartu HP](kartu-mobile.png)
 
-`results.json` adalah ringkasan 16 kelompok UI kartu yang lulus (8 per browser,
+| Alur per golongan | Desktop | HP |
+| --- | --- | --- |
+| Pilihan dengan ikon | ![Golongan desktop](golongan-desktop.png) | ![Golongan HP](golongan-mobile.png) |
+| Bantuan di popup | ![Bantuan desktop](bantuan-desktop.png) | ![Bantuan HP](bantuan-mobile.png) |
+| Hasil setelah countdown dibatalkan | ![Selesai desktop](selesai-desktop.png) | ![Selesai HP](selesai-mobile.png) |
+
+`results.json` adalah ringkasan 20 kelompok UI kartu yang lulus (10 per browser,
 Chromium dan WebKit). Rincian cakupan serta batas verifikasi ada di
 [`../MODE-PANGGIL.md`](../MODE-PANGGIL.md). Tes UI backend QA nyata terpisah lulus
 24 kelompok, failure injection 6 kelompok, renderer PDF 2 browser dan responsif
-manajemen 208 kombinasi viewport/tema. Tes helper dan build juga lulus.
+layout kelas 144 kombinasi viewport/tema. Tes helper dan build juga lulus.

@@ -88,10 +88,17 @@ Kartu memberi warna serta cap status, lalu bergeser. Lanjut otomatis awalnya akt
 dengan jeda 700 ms dan preferensinya diingat per akun/kelas. Key repeat tidak
 mengisi nama berikutnya. Reduced motion meniadakan gerak; dialog menjaga fokus.
 
-ATT-07: Kartu memakai draf yang sama dengan daftar; seluruh roster sesi dipanggil
-tanpa mengikuti filter daftar. Progres menghitung ID unik yang diperiksa, terpisah
-dari status Hadir bawaan. Lewati tidak mengubah status. Posisi dan progres disimpan
-bersama draf hanya setelah interaksi, terikat roster snapshot dan baseRevision.
+ATT-07: Mode Panggil dibuka dengan pilihan golongan berikon, berdasarkan roster
+sesi tanpa mengikuti filter daftar. Kartu memakai draf yang sama dengan daftar.
+Progress bar menghitung ID unik yang diperiksa pada golongan aktif, terpisah dari
+status Hadir bawaan. Lewati tidak mengubah status atau menambah progres. Setiap
+golongan menyimpan posisi sendiri bersama draf setelah interaksi, terikat roster
+snapshot dan baseRevision. Golongan selesai menampilkan ringkasan lalu kembali ke
+daftar dalam 3 detik secara default. Pengguna dapat membatalkan, keluar sekarang,
+atau melanjutkan golongan berikutnya secara eksplisit. Nama terlewati menunda
+countdown sampai diperiksa. Preferensi keluar otomatis diingat per akun/kelas.
+Tombol Bantuan di popup menjelaskan alur dan shortcut; membuka bantuan menjeda
+perpindahan kartu dan membatalkan countdown tanpa mengubah pilihan status.
 Tutup/refresh dapat melanjutkan; perubahan snapshot/revisi membatalkan progres lama.
 Nama belum diperiksa terlihat saat review: lanjutkan panggilan atau konfirmasi
 secara eksplisit penggunaan status daftar. Kartu tidak mengunci atau menyimpan ke
