@@ -35,10 +35,13 @@ async function serve(config, port) {
   proc.stdout.on("data", (b) => (log += b));
   proc.stderr.on("data", (b) => (log += b));
   for (let i = 0; i < 100; i++) {
-    try {
-      if ((await fetch(`http://127.0.0.1:${port}/`)).ok) return;
-    } catch {}
     if (proc.exitCode !== null) throw Error(log);
+    // Do not accidentally capture another chat's Vite server on this port.
+    if (log.includes(`:${port}/`)) {
+      try {
+        if ((await fetch(`http://127.0.0.1:${port}/`)).ok) return;
+      } catch {}
+    }
     await new Promise((r) => setTimeout(r, 100));
   }
   throw Error("Vite startup timed out: " + log);
