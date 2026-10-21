@@ -223,6 +223,31 @@ async function noOverflow(page) {
       }
       ({ context, page, errors } = await session(type));
     }
+    // The real Mode Panggil dialog must suspend the hover sidebar and its shortcut.
+    const sidebar = page.locator(".ws-sidebar");
+    const pin = page.locator("[data-sidebar-pin]");
+    await pin.click();
+    await page.mouse.move(1000, 100);
+    await page.locator('.ws-sidebar[data-expanded="false"]').waitFor();
+    await open(page, false);
+    await page.locator(".ws-sidebar[inert]").waitFor({ state: "attached" });
+    await page.keyboard.press("Control+b");
+    assert.equal(await pin.getAttribute("aria-pressed"), "false");
+    await page.mouse.move(35, 150);
+    await page.waitForTimeout(150);
+    assert.equal(await sidebar.getAttribute("data-expanded"), "false");
+    await page.locator(".call-help-toggle").click();
+    assert.equal(await page.getByRole("dialog").count(), 1);
+    await page.keyboard.press("Escape");
+    await page.locator(".call-start").waitFor();
+    await close(page);
+    await page
+      .locator(".ws-sidebar:not([inert])")
+      .waitFor({ state: "attached" });
+    ok(
+      engine,
+      "actual Mode Panggil and Help suspend sidebar hover/shortcut, keep one dialog and restore focus",
+    );
     await page.getByRole("searchbox").fill("Bima");
     await open(page, false);
     assert.equal(await page.locator(".call-group-option svg").count(), 4);
