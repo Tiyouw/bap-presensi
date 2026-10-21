@@ -11,6 +11,7 @@ import { RefreshHint } from "../components/Loading.jsx";
 import { usePageReady } from "../lib/usePageReady.js";
 import { useScopedStore } from "../lib/ScopedStorage.jsx";
 import ClassTabHeading from "../components/ClassTabHeading.jsx";
+import {adaPraktikum} from "../../bap-shared/jadwal.js";
 
 export default function Pertemuan({
   data,
@@ -47,7 +48,7 @@ export default function Pertemuan({
     );
 
   const today = hariIni();
-  const reguler = data.pertemuan.filter((p) => p.tipe === "REGULER");
+  const reguler = data.pertemuan.filter(adaPraktikum);
   const dikunci = reguler.filter((p) => p.status === "KUNCI").length;
   const recommended =
     reguler.find((p) => p.tanggal === today) ||
@@ -56,10 +57,11 @@ export default function Pertemuan({
     reguler[reguler.length - 1];
   const displayed = data.pertemuan.filter(
     (p) =>
+      !p.cancelled && (
       filter === "semua" ||
       (filter === "terkunci"
         ? p.status === "KUNCI" && p.tipe === "REGULER"
-        : p.status !== "KUNCI" && p.tipe === "REGULER"),
+        : p.status !== "KUNCI" && p.tipe === "REGULER")),
   );
   const status = (p) =>
     p.tipe !== "REGULER"
@@ -144,7 +146,7 @@ export default function Pertemuan({
           <div className="section-heading">
             <h2>Daftar pertemuan</h2>
             <span className="muted">
-              {data.pertemuan.length} pertemuan semester ini
+              {data.pertemuan.filter(p=>!p.cancelled).length} pertemuan aktif semester ini
             </span>
           </div>
           <div className="meeting-filters" aria-label="Filter pertemuan">

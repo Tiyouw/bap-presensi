@@ -1,7 +1,7 @@
 import { ConvexError } from "convex/values";
 import { requireClass } from "./access.js";
 import { DEFAULT_TEMPLATE } from "../../bap-shared/management.js";
-export function meetingSummary({snapshot,...meeting}) {return {...meeting,id:meeting._id};}
+export function meetingSummary({snapshot,...meeting}) {return {...meeting,hasSnapshot:Boolean(snapshot)||Boolean(meeting.hasSnapshot),id:meeting._id};}
 export async function classRows(ctx, table, kelasId) {
   if (table === "pertemuan" && (await ctx.db.get(kelasId))?.readModelReady) {
     return (await ctx.db.query("meetingView").withIndex("by_kelas", q => q.eq("kelasId", kelasId)).collect()).map(v => v.data);

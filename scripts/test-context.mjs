@@ -22,6 +22,9 @@ const INDEX = {
   revisionPayload: { by_revision:["revisionId"] },
   featureFlag: { by_key:["key"] },
   classCapability: { by_class_user:["kelasId","penggunaId"] },
+  scheduleJob: {by_class_operation:["kelasId","operationKey"],by_class_created:["kelasId","createdAt"]},
+  scheduleJobItem: {by_job_position:["jobId","position"],by_job_status:["jobId","status"]},
+  classOperation:{by_class_operation:["kelasId","operationKey"]},
   impor: { by_kelas: ["kelasId"], by_kelas_pada: ["kelasId", "pada"] },
 };
 
@@ -68,7 +71,7 @@ export function buatCtx(startSequence = 0) {
         return query(nama, row => Object.entries(eq).every(([k,v])=>row[k]===v) && search.value.toLowerCase().split(/\s+/).some(t=>String(row[search.field]).toLowerCase().includes(t)));
       },
       order: value => query(nama, filter, fields, value),
-      unique: async () => read("unique", rows().slice(0,1))[0] ?? null,
+      unique: async () => {const result=read("unique",rows().slice(0,2));if(result.length>1)throw Error(`Expected a unique ${nama} result`);return result[0]??null;},
       take: async n => read("take", rows().slice(0,n)),
       collect: async () => read("collect", rows()),
       paginate: async ({cursor,numItems}) => {

@@ -9,6 +9,7 @@ import Modal from "./Modal.jsx";
 import { Notice } from "./Layout.jsx";
 import { SkeletonRows, RefreshHint } from "./Loading.jsx";
 import { usePageReady } from "../lib/usePageReady.js";
+import HistoricalPacketPicker from "./HistoricalPacketPicker.jsx";
 
 export default function PrintPack({
   token,
@@ -19,10 +20,13 @@ export default function PrintPack({
   contextMeeting,
   kelasId,
 }) {
-  const available = useQuery(
+  const currentAvailable = useQuery(
     api.bap.ringkasanCetak,
     network.online ? { token, kelasId } : "skip",
   );
+  const controls=useQuery(api.revisions.classAvailability,{token,kelasId});
+  const [includeHistory,setIncludeHistory]=useState(false),[versionChoices,setVersionChoices]=useState({});
+  const available=useMemo(()=>currentAvailable===undefined?undefined:[...new Map([...(currentAvailable||[]),...Object.values(includeHistory?versionChoices:{})].map(p=>[p.id,p])).values()], [currentAvailable,includeHistory,versionChoices]);
   const generate = useAction(api.bapNode.paketCetak);
   const ready = usePageReady(
     available !== undefined || !network.online,
@@ -65,6 +69,7 @@ export default function PrintPack({
     const items = chosen.map((p) => ({
       pertemuanId: p.id,
       revision: p.revision,
+      ...(p.revisionId?{revisionId:p.revisionId}:{}),
     }));
     try {
       const result = await generate({ token, kelasId, items, format });
@@ -107,6 +112,7 @@ export default function PrintPack({
           cetak.
         </Notice>
       )}
+      {controls?.enabled&&<><label className="mg-check"><input type="checkbox" checked={includeHistory} disabled={busy} onChange={e=>{setIncludeHistory(e.target.checked);setPreview(null);setSuccess(null);if(!e.target.checked){setVersionChoices({});setSelected(prev=>prev.filter(id=>(currentAvailable||[]).some(p=>p.id===id)))}}}/><span>Pilih versi historis, termasuk sesi dibatalkan</span></label>{includeHistory&&<HistoricalPacketPicker token={token} kelasId={kelasId} online={network.online} onChoose={row=>{setVersionChoices(old=>({...old,[row.id]:row}));setSelected(old=>old.includes(row.id)?old:[...old,row.id]);setPreview(null);setSuccess(null)}}/>}{chosen.some(p=>p.explicitVersion)&&<Notice kind="warning">Paket memuat versi yang dipilih secara eksplisit. Periksa kembali tanggal dan revisi sebelum mengunduh.</Notice>}</>}
       {!ready && <SkeletonRows title="Memuat pertemuan terkunci" rows={3} />}
       {ready && available?.length === 0 && (
         <div className="empty-state">
@@ -239,6 +245,7 @@ export default function PrintPack({
         <label className="mg-field">
           <span>Format paket</span>
           <select
+            aria-label="Format paket"
             value={format}
             onChange={(e) => {
               setFormat(e.target.value);

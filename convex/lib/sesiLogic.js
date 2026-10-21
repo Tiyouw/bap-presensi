@@ -39,6 +39,7 @@ export async function simpanDanKunciLogic(ctx, args) {
   const revision = p.revision + 1;
   await ctx.db.patch(p._id, {
     status: "KUNCI",
+    hasAttendanceHistory:true,
     revision,
     dikunciPada: Date.now(),
     snapshot,
@@ -69,7 +70,7 @@ export async function bukaKunciLogic(ctx, args) {
     throw new ConvexError("KONFLIK_REVISI");
   if (p.status !== "KUNCI") return { ok: true, revision: p.revision };
   await appendRevision(ctx, p);
-  await ctx.db.patch(p._id, { status: "TERBUKA" });
+  await ctx.db.patch(p._id, { status: "TERBUKA",hasAttendanceHistory:true });
   await syncMeeting(ctx, p._id);
   await syncClass(ctx, p.kelasId);
   await audit(

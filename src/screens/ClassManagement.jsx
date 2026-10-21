@@ -22,6 +22,7 @@ import { Notice } from "../components/Layout.jsx";
 import { navigate } from "../lib/navigation.js";
 import { useEditorGuard } from "../lib/useEditorGuard.js";
 import { readRosterFile, suggestMapping } from "../lib/importRoster.js";
+import ScheduleManager from "./ScheduleManager.jsx";
 const defaults = {
   nama: "",
   matkulNama: "",
@@ -578,7 +579,8 @@ export function ImportDialog({ token, user, data, onClose }) {
     </Modal>
   );
 }
-export function Schedule({ token, data, manage }) {
+export function Schedule(props){return props.data.controls?.enabled?<ScheduleManager {...props}/>:<LegacySchedule {...props}/>;}
+function LegacySchedule({ token, data, manage }) {
   const [baseRevision, setBaseRevision] = useState(data.kelas.revision);
   const [rows, setRows] = useState(() =>
       data.pertemuan.map((p) => ({

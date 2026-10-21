@@ -99,6 +99,7 @@ export default defineSchema({
     .index("by_kelas", ["kelasId"]),
 
   pertemuan: defineTable({
+    hasAttendanceHistory:v.optional(v.boolean()),
     cancelled: v.optional(v.boolean()),
     kelasId: v.optional(v.id("kelas")),
     snapshot: v.optional(v.any()),
@@ -144,7 +145,7 @@ export default defineSchema({
     pesan: v.optional(v.string()),
   }).index("by_key", ["pertemuanId", "revision", "templateVersion"]),
 
-  featureFlag: defineTable({ key: v.string(), enabled: v.boolean() }).index("by_key", ["key"]),
+  featureFlag: defineTable({ key: v.string(), enabled: v.boolean(),everEnabled:v.optional(v.boolean()) }).index("by_key", ["key"]),
   meetingRevision: defineTable({
     pertemuanId: v.id("pertemuan"), kelasId: v.id("kelas"), revision: v.number(),
     nomor: v.optional(v.number()), tanggal: v.string(), tempat: v.string(), tipe: v.string(),
@@ -162,6 +163,17 @@ export default defineSchema({
   revisionPayload: defineTable({revisionId:v.id("meetingRevision"),snapshot:v.any()}).index("by_revision",["revisionId"]),
   classCapability: defineTable({ kelasId: v.id("kelas"), penggunaId: v.id("pengguna"), capabilities: v.array(v.string()) })
     .index("by_class_user", ["kelasId", "penggunaId"]),
+  scheduleJob: defineTable({kelasId:v.id("kelas"),actorId:v.id("pengguna"),operationKey:v.string(),requestHash:v.string(),
+    expectedClassRevision:v.number(),reason:v.string(),status:v.string(),mode:v.string(),createdAt:v.number(),
+    count:v.number(),applied:v.number(),skipped:v.number(),requiredCapabilities:v.array(v.string()),
+    sourceJobId:v.optional(v.id("scheduleJob")),cancelReason:v.optional(v.string()),
+  }).index("by_class_operation",["kelasId","operationKey"]).index("by_class_created",["kelasId","createdAt"]),
+  scheduleJobItem: defineTable({jobId:v.id("scheduleJob"),position:v.number(),pertemuanId:v.id("pertemuan"),
+    expectedRevision:v.number(),before:v.any(),patch:v.any(),status:v.string(),resultRevision:v.optional(v.number()),
+    error:v.optional(v.string()),undoItemId:v.optional(v.id("scheduleJobItem")),undoRevision:v.optional(v.number()),
+  }).index("by_job_position",["jobId","position"]).index("by_job_status",["jobId","status"]),
+  classOperation:defineTable({kelasId:v.id("kelas"),actorId:v.id("pengguna"),operationKey:v.string(),requestHash:v.string(),result:v.any()})
+    .index("by_class_operation",["kelasId","operationKey"]),
   sesi: defineTable({
     penggunaId: v.optional(v.id("pengguna")),
     label: v.optional(v.string()),

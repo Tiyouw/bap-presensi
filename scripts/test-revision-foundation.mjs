@@ -4,7 +4,7 @@ import {appendRevision,readRevision,revisionByNumber,controlEnabled} from "../co
 import {simpanDanKunciLogic,bukaKunciLogic} from "../convex/lib/sesiLogic.js";
 import {klaimLogic,finalisasiLogic} from "../convex/lib/bapLogic.js";
 import {syncDocument} from "../convex/lib/readModels.js";
-import {backfill,setEnabled} from "../convex/revisionRollout.js";
+import {backfill,setEnabled,backfillCounts} from "../convex/revisionRollout.js";
 import {history,detail} from "../convex/revisions.js";
 let groups=0;const test=async(name,fn)=>{await fn();groups++;console.log('OK revision foundation',name)};
 await test('complete statuses and frozen identity survive unlock and another revision',async()=>{
@@ -34,7 +34,7 @@ await test('legacy backfill is resumable/idempotent, preserves files and marks i
  for(const phase of['pertemuan','bapDoc','kelas']){let cursor;do{const page=await backfill._handler(f.ctx,{phase,...(cursor?{cursor}:{})});cursor=page.continueCursor;}while(cursor);}
  const old=await readRevision(f.ctx,await revisionByNumber(f.ctx,f.pertemuanId,1));assert.equal(old.legacyPartial,true);assert.equal(old.metadataVerified,false);assert.deepEqual(old.statuses,[]);
  const before=await f.ctx.db.get(doc);assert.equal(before.sha256,'original-hash');assert.equal(before.storageId,'original-storage');assert.equal(before.archiveMetadata.nomor,null);
- assert.equal(await controlEnabled(f.ctx),false);await setEnabled._handler(f.ctx,{enabled:true});assert.equal(await controlEnabled(f.ctx),true);assert.equal((await backfill._handler(f.ctx,{phase:'kelas'})).skipped,true);
+ assert.equal(await controlEnabled(f.ctx),false);let countCursor;do{const p=await backfillCounts._handler(f.ctx,{...(countCursor?{cursor:countCursor}:{})});countCursor=p.continueCursor;}while(countCursor);await setEnabled._handler(f.ctx,{enabled:true});assert.equal(await controlEnabled(f.ctx),true);assert.equal((await backfill._handler(f.ctx,{phase:'kelas'})).skipped,true);
 });
 await test('history and revision payload are protected by class access',async()=>{
  const f=await fixture();await appendRevision(f.ctx,await f.ctx.db.get(f.pertemuanId));await f.ctx.db.patch(f.user,{peran:'OPERATOR',kelasIds:[]});

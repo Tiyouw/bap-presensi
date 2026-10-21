@@ -6,5 +6,5 @@ export function tipePertemuan(pertemuan) {
 }
 
 export function adaPraktikum(pertemuan) {
-  return tipePertemuan(pertemuan) === "REGULER";
+  return !pertemuan.cancelled && tipePertemuan(pertemuan) === "REGULER";
 }

@@ -315,7 +315,7 @@ function ClassRoute({
     );
   if (pertemuanId) {
     const p = data.pertemuan.find((p) => p.id === pertemuanId);
-    if (!p || p.tipe !== "REGULER")
+    if (!p || p.cancelled || p.tipe !== "REGULER")
       return (
         <main className="mg-page">
           <h1>Tidak ada presensi praktikum.</h1>
@@ -405,6 +405,7 @@ function AttendanceRoute({
       {data.controls?.enabled && (data.controls.capabilities.includes("schedule") || data.controls.capabilities.includes("history")) && <div className="mg-attendance-notice"><button className="button button--outline" onClick={()=>navigate(`/kelas/${kelasId}?tab=jadwal&correct=${meeting.id}`)}>Koreksi sesi ini</button></div>}
       {meeting.revision > 0 &&
         meeting.status === "TERBUKA" &&
+        !data.controls?.enabled &&
         user.peran !== "OPERATOR" &&
         !data.kelas.arsip && (
           <div className="mg-attendance-notice">

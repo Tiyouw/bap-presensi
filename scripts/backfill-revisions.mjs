@@ -6,6 +6,9 @@ const {values}=parseArgs({options:{deployment:{type:"string"},enable:{type:"bool
 if(!values.deployment||values.enable&&values.disable)throw Error("Specify --deployment explicitly and at most one of --enable/--disable.");
 const run=(name,args)=>JSON.parse(stripVTControlCharacters(execFileSync(process.execPath,["node_modules/convex/bin/main.js","run",name,JSON.stringify(args),"--deployment",values.deployment,"--codegen","disable"],{encoding:"utf8",windowsHide:true,stdio:["ignore","pipe","inherit"]})).trim());
 if(values.disable){console.log(run("revisionRollout:setEnabled",{enabled:false}));process.exit(0);}
+// Projection migration is also resumable and is a prerequisite for bounded
+// schedule/history reads. Keep the same explicit deployment selector.
+execFileSync(process.execPath,["scripts/backfill-read-models.mjs","--deployment",values.deployment],{windowsHide:true,stdio:"inherit"});
 mkdirSync("out/revisions",{recursive:true});
 const file=`out/revisions/backfill-${createHash("sha256").update(values.deployment).digest("hex").slice(0,12)}.json`;
 const state=existsSync(file)?JSON.parse(readFileSync(file,"utf8")):{deployment:values.deployment,phase:0,cursor:null};
@@ -15,5 +18,6 @@ while(state.phase<phases.length){const phase=phases[state.phase],r=run("revision
  if(typeof r.isDone!=="boolean"||!r.isDone&&!r.continueCursor)throw Error("Unexpected backfill result");
  state.cursor=r.continueCursor;if(r.isDone){state.phase++;state.cursor=null;}
  writeFileSync(file,JSON.stringify(state,null,2));console.log(`${phase}: ${r.count} rows; ${r.isDone?"complete":"checkpoint saved"}`);}
+while(!state.countsDone){const r=run("revisionRollout:backfillCounts",{...(state.countsCursor?{cursor:state.countsCursor}:{})});if(typeof r.isDone!=="boolean"||!r.isDone&&!r.continueCursor)throw Error("Unexpected projection response");state.countsCursor=r.continueCursor;state.countsDone=r.isDone;writeFileSync(file,JSON.stringify(state,null,2));console.log(`summary counts: ${r.count} rows; ${r.isDone?"complete":"checkpoint saved"}`);}
 if(values.enable)console.log(run("revisionRollout:setEnabled",{enabled:true}));
 else console.log("Ledger ready. Feature flag unchanged. Enable explicitly after preview validation.");

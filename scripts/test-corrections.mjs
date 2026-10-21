@@ -3,6 +3,7 @@ import {fixture,transaction} from "./revision-fixture.mjs";
 import {simpanDanKunciLogic} from "../convex/lib/sesiLogic.js";
 import {CONTROL_FLAG,readRevision,revisionByNumber} from "../convex/lib/revisionLedger.js";
 import {previewCorrection,commitCorrection} from "../convex/revisions.js";
+import {refreshSnapshot} from "../convex/kelola.js";
 let groups=0;const check=async(name,fn)=>{await fn();groups++;console.log('OK correction',name)};
 async function ready(lock=true){const f=await fixture();await f.ctx.db.insert('featureFlag',{key:CONTROL_FLAG,enabled:true});if(lock)await simpanDanKunciLogic(f.ctx,{...f,baseRevision:0});return f;}
 async function request(f,extra={}){const p=await f.ctx.db.get(f.pertemuanId),c=await f.ctx.db.get(f.kelasId);return{token:f.token,pertemuanId:f.pertemuanId,expectedMeetingRevision:p.revision,expectedClassRevision:c.revision,patch:{tanggal:'2026-10-23'},reason:'Koreksi tanggal aktual',...extra};}
@@ -24,6 +25,11 @@ await check('stale meeting/class revision and mutated preview cannot write',asyn
 await check('future date edit does not snapshot/freeze roster or invent stored attendance',async()=>{
  const f=await ready(false),args=await request(f,{reason:''});const p=await previewCorrection._handler(f.ctx,args);await new Promise(r=>setTimeout(r,5));
  await commitCorrection._handler(f.ctx,{...args,previewHash:p.previewHash,operationKey:'synthetic-operation-004'});const meeting=await f.ctx.db.get(f.pertemuanId);assert.equal(meeting.status,'TERBUKA');assert.equal(meeting.snapshot,undefined);assert.equal((await f.ctx.db.query('presensi').collect()).length,0);
+});
+await check('a preparation snapshot is not proof of attendance; further date edits remain empty/open',async()=>{
+ const f=await ready(false);await f.ctx.db.patch(f.kelasId,{dosen:'Dosen Persiapan Demo'});await refreshSnapshot._handler(f.ctx,{token:f.token,pertemuanId:f.pertemuanId,baseRevision:0});
+ assert.equal((await f.ctx.db.get(f.pertemuanId)).hasAttendanceHistory,false);assert.ok((await f.ctx.db.get(f.pertemuanId)).snapshot);
+ await save(f,await request(f,{patch:{tanggal:'2026-10-25'},reason:''}),'synthetic-preparation-date');assert.equal((await f.ctx.db.query('presensi').collect()).length,0);assert.equal((await f.ctx.db.get(f.pertemuanId)).status,'TERBUKA');
 });
 await check('restore creates another revision and rejects incomplete legacy sources',async()=>{
  const f=await ready();await save(f,await request(f));await save(f,await request(f,{patch:{},restoreRevision:1}),'synthetic-operation-005');

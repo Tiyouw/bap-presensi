@@ -9,6 +9,7 @@ export const revisionByNumber = (ctx, pertemuanId, revision) => ctx.db.query("me
 export async function controlEnabled(ctx) {
   return Boolean((await ctx.db.query("featureFlag").withIndex("by_key", q => q.eq("key", CONTROL_FLAG)).unique())?.enabled);
 }
+export async function revisionProtocolEnabled(ctx){const flag=await ctx.db.query("featureFlag").withIndex("by_key",q=>q.eq("key",CONTROL_FLAG)).unique();return Boolean(flag?.enabled||flag?.everEnabled);}
 export async function activeStatuses(ctx, pertemuanId) {
   return (await ctx.db.query("presensi").withIndex("by_pertemuan", q => q.eq("pertemuanId", pertemuanId)).collect())
     .map(({pesertaId,status}) => ({pesertaId,status}));
@@ -34,7 +35,7 @@ export async function appendRevision(ctx, p, options = {}) {
   const statuses = options.statuses || await activeStatuses(ctx, p._id), byId = new Map(statuses.map(s=>[s.pesertaId,s.status]));
   const {peserta,...metadata} = snapshot;
   const rows = peserta.map(person=>({peserta:person,status:byId.get(person.id) ?? null}));
-  const incomplete = p.status === "KUNCI" && p.tipe === "REGULER" && rows.some(r=>r.status===null);
+  const incomplete = p.status === "KUNCI" && p.tipe === "REGULER" && (!rows.length||rows.some(r=>r.status===null));
   const header = {
     pertemuanId:p._id, kelasId:p.kelasId, revision:p.revision,
     ...(options.unknownNumber ? {} : {nomor:p.nomor}), tanggal:snapshot.tanggal || p.tanggal,

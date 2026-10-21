@@ -3,7 +3,7 @@ import { mutation, query } from "./_generated/server.js";
 import { requireUser, requireClass, audit, classCapabilities } from "./lib/access.js";
 import { classRows, classSnapshot, meetingSummary } from "./lib/classLogic.js";
 import { assertSnapshotSize } from "./lib/snapshotSize.js";
-import { appendRevision,controlEnabled } from "./lib/revisionLedger.js";
+import { appendRevision,controlEnabled,revisionProtocolEnabled } from "./lib/revisionLedger.js";
 import { syncClass, syncParticipant, syncMeeting, syncTemplate, visibleClasses } from "./lib/readModels.js";
 import {
   DEFAULT_TEMPLATE,
@@ -45,13 +45,13 @@ export const catalog = query({
           matkulNama: m?.nama,
           matkulKode: m?.kode,
           jumlahPeserta: peserta.filter((p) => p.aktif !== false).length,
-          jumlahPraktikum: p.filter((p) => p.tipe === "REGULER").length,
+          jumlahPraktikum: p.filter((p) => !p.cancelled && p.tipe === "REGULER").length,
           jumlahTerkunci: p.filter(
-            (p) => p.tipe === "REGULER" && p.status === "KUNCI",
+            (p) => !p.cancelled && p.tipe === "REGULER" && p.status === "KUNCI",
           ).length,
           berikutnya:
             p
-              .filter((p) => p.tipe === "REGULER" && p.status !== "KUNCI")
+              .filter((p) => !p.cancelled && p.tipe === "REGULER" && p.status !== "KUNCI")
               .sort((a, b) => a.tanggal.localeCompare(b.tanggal))[0]?.tanggal ||
             null,
         };
@@ -277,11 +277,11 @@ export const activate = mutation({
         (p) => p.aktif !== false,
       ) ||
       !(await classRows(ctx, "pertemuan", a.kelasId)).some(
-        (p) => p.tipe === "REGULER",
+        (p) => !p.cancelled && p.tipe === "REGULER",
       )
     )
       throw new ConvexError("LENGKAPI_PERSIAPAN_KELAS");
-    const meeting = (await classRows(ctx, "pertemuan", a.kelasId)).find(p => p.tipe === "REGULER");
+    const meeting = (await classRows(ctx, "pertemuan", a.kelasId)).find(p => !p.cancelled && p.tipe === "REGULER");
     assertSnapshotSize(await classSnapshot(ctx, a.kelasId, meeting));
     await ctx.db.patch(a.kelasId, { draft: false });
     await syncClass(ctx, a.kelasId);
@@ -399,6 +399,7 @@ export const saveSchedule = mutation({
       true,
       true,
     );
+    if(kelas.revisionReady&&await revisionProtocolEnabled(ctx))throw new ConvexError("GUNAKAN_EDITOR_JADWAL");
     revision(kelas, a.baseRevision);
     if (!Array.isArray(a.rows) || a.rows.length > 100)
       throw new ConvexError("JADWAL_TIDAK_VALID");
@@ -518,7 +519,8 @@ export const refreshSnapshot = mutation({
     const snapshot = await classSnapshot(ctx, p.kelasId, p);
     assertSnapshotSize(snapshot);
     await appendRevision(ctx, p);
-    await ctx.db.patch(p._id, { snapshot, revision: p.revision + 1 });
+    const priorAttendance=await ctx.db.query("presensi").withIndex("by_pertemuan",q=>q.eq("pertemuanId",p._id)).take(1);
+    await ctx.db.patch(p._id, { snapshot, revision: p.revision + 1,hasAttendanceHistory:p.hasAttendanceHistory!==undefined?p.hasAttendanceHistory:Boolean(p.dikunciPada||priorAttendance.length&&p.revision>0) });
     await appendRevision(ctx, await ctx.db.get(p._id), { snapshot,actorId:user._id,
       action:"SNAPSHOT_PERBARUI",reason:"Terapkan data kelas terbaru",parentRevision:p.revision });
     await syncMeeting(ctx, p._id);
@@ -582,6 +584,7 @@ export const search = query({
           : await ctx.db.query("searchEntry").withIndex("by_kelas", q => q.eq("kelasId", c._id)).take(limit);
         candidateBudget -= entries.length;
         for (const entry of entries) {
+          if(entry.data.cancelled&&!a.includeArsip)continue;
           if (!matches(`${entry.text} ${context}`, a.q)) continue;
           results.push({ ...entry.data, context: `${entry.data.nim ? entry.data.nim + " · " : ""}${context}` });
           if (results.length >= 80) break;
@@ -599,6 +602,7 @@ export const search = query({
           });
       for (const p of await classRows(ctx, "pertemuan", c._id))
         if (
+          (!p.cancelled||a.includeArsip)&&
           matches(
             `minggu ${p.nomor} pertemuan ${p.nomor} ${p.tanggal} ${context}`,
             a.q,
@@ -610,7 +614,7 @@ export const search = query({
             title: `Pertemuan ${p.nomor} · ${p.tanggal}`,
             context,
             path:
-              p.tipe === "REGULER"
+              !p.cancelled && p.tipe === "REGULER"
                 ? `/kelas/${c._id}/pertemuan/${p._id}`
                 : `/kelas/${c._id}?tab=jadwal`,
           });
