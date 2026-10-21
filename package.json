@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "codegen": "convex codegen",
-    "test": "node scripts/test-logic.mjs && node scripts/test-handlers.mjs && node scripts/check-convex.mjs && node scripts/test-ui-logic.mjs && node scripts/test-print.mjs && node scripts/test-management-unit.mjs && node scripts/test-document-fidelity.mjs && node scripts/test-panggil.mjs && node scripts/test-audit.mjs",
+    "test": "node scripts/test-logic.mjs && node scripts/test-handlers.mjs && node scripts/check-convex.mjs && node scripts/test-ui-logic.mjs && node scripts/test-print.mjs && node scripts/test-management-unit.mjs && node scripts/test-document-fidelity.mjs && node scripts/test-panggil.mjs && node scripts/test-audit.mjs && node scripts/test-revision-foundation.mjs",
     "test:audit-ui": "node scripts/ui/audit.cjs",
     "test:offline": "node scripts/ui/offline.cjs",
     "test:fase0": "node scripts/test-fase0.js",

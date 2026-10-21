@@ -36,6 +36,7 @@ export default defineSchema({
     dibuatOleh: v.id("pengguna"),
   }).index("by_creator", ["dibuatOleh"]),
   kelas: defineTable({
+    revisionReady: v.optional(v.boolean()),
     readModelReady: v.optional(v.boolean()),
     draft: v.optional(v.boolean()),
     matkulId: v.id("matkul"),
@@ -98,6 +99,7 @@ export default defineSchema({
     .index("by_kelas", ["kelasId"]),
 
   pertemuan: defineTable({
+    cancelled: v.optional(v.boolean()),
     kelasId: v.optional(v.id("kelas")),
     snapshot: v.optional(v.any()),
     nomor: v.number(),
@@ -123,6 +125,8 @@ export default defineSchema({
   }).index("by_pertemuan", ["pertemuanId"]),
 
   bapDoc: defineTable({
+    archiveMetadata: v.optional(v.any()),
+    revisionId: v.optional(v.id("meetingRevision")),
     format: v.optional(v.string()),
     snapshot: v.optional(v.any()),
     pertemuanId: v.id("pertemuan"),
@@ -140,6 +144,22 @@ export default defineSchema({
     pesan: v.optional(v.string()),
   }).index("by_key", ["pertemuanId", "revision", "templateVersion"]),
 
+  featureFlag: defineTable({ key: v.string(), enabled: v.boolean() }).index("by_key", ["key"]),
+  meetingRevision: defineTable({
+    pertemuanId: v.id("pertemuan"), kelasId: v.id("kelas"), revision: v.number(),
+    nomor: v.optional(v.number()), tanggal: v.string(), tempat: v.string(), tipe: v.string(),
+    status: v.string(), cancelled: v.boolean(), rowCount: v.number(),
+    legacyPartial: v.boolean(), metadataVerified: v.boolean(),
+    action: v.string(), reason: v.string(), createdAt: v.number(),
+    actorId: v.optional(v.id("pengguna")), parentRevision: v.optional(v.number()),
+    operationKey: v.optional(v.string()),
+  }).index("by_meeting_revision", ["pertemuanId", "revision"]).index("by_class", ["kelasId"])
+    .index("by_operation", ["pertemuanId", "operationKey"]),
+  revisionRows: defineTable({ revisionId: v.id("meetingRevision"), part: v.number(), rows: v.array(v.any()) })
+    .index("by_revision", ["revisionId", "part"]),
+  revisionPayload: defineTable({revisionId:v.id("meetingRevision"),snapshot:v.any()}).index("by_revision",["revisionId"]),
+  classCapability: defineTable({ kelasId: v.id("kelas"), penggunaId: v.id("pengguna"), capabilities: v.array(v.string()) })
+    .index("by_class_user", ["kelasId", "penggunaId"]),
   sesi: defineTable({
     penggunaId: v.optional(v.id("pengguna")),
     label: v.optional(v.string()),

@@ -2,6 +2,7 @@ import { ConvexError } from "convex/values";
 import { requireMeeting } from "./access.js";
 import { classSnapshot } from "./classLogic.js";
 import { syncDocument } from "./readModels.js";
+import { appendRevision } from "./revisionLedger.js";
 export const KLAIM_HIDUP_MS = 120000;
 export async function klaimLogic(ctx, args, now = Date.now()) {
   const p = await ctx.db.get(args.pertemuanId);
@@ -31,6 +32,9 @@ export async function klaimLogic(ctx, args, now = Date.now()) {
     return { status: "DIKLAIM", id: old._id, attempt: old.percobaan + 1 };
   }
   const id = await ctx.db.insert("bapDoc", {
+    ...(p.kelasId ? {revisionId:(await appendRevision(ctx,p))._id} : {}),
+    archiveMetadata: {nomor:p.nomor,tanggal:p.snapshot?.tanggal || p.tanggal,
+      tempat:p.snapshot?.tempat || p.tempat,tipe:p.tipe,metadataVerified:true},
     pertemuanId: p._id,
     revision: args.revision,
     templateVersion: version,

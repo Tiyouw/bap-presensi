@@ -3,6 +3,7 @@ import { mutation, query } from "./_generated/server.js";
 import { requireUser, requireClass, audit } from "./lib/access.js";
 import { classRows, classSnapshot, meetingSummary } from "./lib/classLogic.js";
 import { assertSnapshotSize } from "./lib/snapshotSize.js";
+import { appendRevision } from "./lib/revisionLedger.js";
 import { syncClass, syncParticipant, syncMeeting, syncTemplate, visibleClasses } from "./lib/readModels.js";
 import {
   DEFAULT_TEMPLATE,
@@ -174,6 +175,7 @@ export const saveClass = mutation({
         .unique();
       const config = validateTemplate(published?.config || DEFAULT_TEMPLATE);
       id = await ctx.db.insert("kelas", {
+        revisionReady: true,
         ...fields,
         draft: true,
         arsip: false,
@@ -514,7 +516,10 @@ export const refreshSnapshot = mutation({
       throw new ConvexError("KONFLIK_REVISI");
     const snapshot = await classSnapshot(ctx, p.kelasId, p);
     assertSnapshotSize(snapshot);
+    await appendRevision(ctx, p);
     await ctx.db.patch(p._id, { snapshot, revision: p.revision + 1 });
+    await appendRevision(ctx, await ctx.db.get(p._id), { snapshot,actorId:user._id,
+      action:"SNAPSHOT_PERBARUI",reason:"Terapkan data kelas terbaru",parentRevision:p.revision });
     await syncMeeting(ctx, p._id);
     await audit(
       ctx,

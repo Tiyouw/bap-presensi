@@ -1,4 +1,5 @@
 import { classRows } from "./classLogic.js";
+import { archiveMetadata } from "./revisionLedger.js";
 export const READ_MODEL_VERSION = "audit-read-model-v1";
 export async function readModelsReady(ctx) {
   return Boolean(await ctx.db.query("migrasi").withIndex("by_versi", q => q.eq("versi", READ_MODEL_VERSION)).unique());
@@ -53,9 +54,10 @@ export async function syncDocument(ctx, id) {
   if (!d || d.status !== "READY" || !d.storageId) return;
   const p = await ctx.db.get(d.pertemuanId);
   if (!p?.kelasId) return;
+  const frozen = await archiveMetadata(ctx,d);
   await put(ctx, "documentView", "by_source", "sourceId", id, {
     sourceId: id, kelasId: p.kelasId, pertemuanId: p._id, format: d.format || "docx", revision: d.revision, pada: d.klaimPada,
-    data: { id, pertemuanId: p._id, nomor: p.nomor, tanggal: p.tanggal, revision: d.revision,
+    data: { id, pertemuanId: p._id, nomor: frozen.nomor, tanggal: frozen.tanggal, metadataVerified:frozen.metadataVerified, revision: d.revision,
       format: d.format || "docx", templateVersion: d.templateVersion, pada: d.klaimPada, sha256: d.sha256 || null },
   });
 }
