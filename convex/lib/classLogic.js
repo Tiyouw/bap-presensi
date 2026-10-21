@@ -32,7 +32,7 @@ export async function classSnapshot(ctx, kelasId, meeting) {
     }));
   return {
     capturedAt: Date.now(),
-    kelas: { ...Object.fromEntries(Object.entries(kelas).filter(([key])=>key!=="templateDraft")), matkulNama: matkul.nama, matkulKode: matkul.kode },
+    kelas: { ...Object.fromEntries(Object.entries(kelas).filter(([key])=>key!=="templateDraft")), matkulNama: kelas.courseOverride?.nama||matkul.nama, matkulKode: kelas.courseOverride?.kode||matkul.kode },
     template: template?.config || DEFAULT_TEMPLATE,
     templateVersion: `kelas-${kelasId}-v${kelas.templateVersion}`,
     peserta,

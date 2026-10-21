@@ -28,4 +28,5 @@ jobs:
       - run: npm run test:audit-ui
       - run: npm run test:corrections-ui
       - run: npm run test:lifecycle-ui
+      - run: npm run test:class-controls-ui
       - run: npm run test:offline

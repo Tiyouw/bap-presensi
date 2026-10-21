@@ -119,10 +119,11 @@ export const FEATURES = [
     admin: true,
   },
 ];
-export function classFeatures(kelasId) {
+export function classFeatures(kelasId, capabilities) {
   return kelasId
     ? [
         {
+          capability:"roster",
           title: "Impor mahasiswa",
           aliases: "excel csv upload peserta roster",
           path: `/kelas/${kelasId}?tab=mahasiswa&import=1`,
@@ -130,6 +131,7 @@ export function classFeatures(kelasId) {
           manage: true,
         },
         {
+          capability:"schedule",
           title: "Atur jadwal",
           aliases: "tanggal minggu praktikum libur uts uas",
           path: `/kelas/${kelasId}?tab=jadwal`,
@@ -137,12 +139,13 @@ export function classFeatures(kelasId) {
           manage: true,
         },
         {
+          capability:"template",
           title: "Template BAP",
           aliases: "kop logo dosen asdos preview pdf",
           path: `/kelas/${kelasId}?tab=template`,
           kind: "Fitur kelas",
           manage: true,
         },
-      ]
+      ].map(f=>({...f,...(capabilities?{manage:false,allowed:capabilities.includes(f.capability)||f.capability==="schedule"&&capabilities.some(c=>["history","lifecycle"].includes(c))}:{})})).filter(f=>f.allowed!==false)
     : [];
 }

@@ -8,6 +8,9 @@ import {CAPABILITIES} from "../../bap-shared/control.js";
 import {CONTROL_FLAG,appendRevision} from "../../convex/lib/revisionLedger.js";
 import * as revisions from "../../convex/revisions.js";
 import * as scheduleBatches from "../../convex/scheduleBatches.js";
+import * as kelola from "../../convex/kelola.js";
+import * as classBackup from "../../convex/classBackup.js";
+import * as classAccess from "../../convex/classAccess.js";
 import * as meetingCommands from "../../convex/meetingCommands.js";
 import {bahanPaketLogic} from "../../convex/lib/printLogic.js";
 const storageKey='ui-qa.control-engine';
@@ -16,9 +19,9 @@ export async function createControlEngine({kelas,participants,server,restore,loc
  const put=(table,rows)=>ctx.tabel.set(table,new Map(rows.map(row=>{const{id,...fields}=row;return[row._id||id,fields]})));
  if(restore)for(const[table,rows]of restore)ctx.tabel.set(table,new Map(rows));
  else{
-  put('pengguna',[{_id:'qa-user',username:'demo',nama:'Admin Demo',peran:'ADMIN',aktif:true,wajibGanti:false,kelasIds:['k1']}]);
+  put('pengguna',[{_id:'qa-operator',username:'operator.demo',nama:'Operator Demo',peran:'OPERATOR',aktif:true,wajibGanti:false,kelasIds:['k1']},{_id:'qa-user',username:'demo',nama:'Admin Demo',peran:'ADMIN',aktif:true,wajibGanti:false,kelasIds:['k1']}]);
   put('sesi',[{_id:'qa-session',token:await hashToken('ui-test-token'),penggunaId:'qa-user',kedaluwarsaPada:Date.now()+86400000}]);
-  put('kelas',[{...kelas,revisionReady:true,draft:false,templateDraft:DEFAULT_TEMPLATE}]);
+  put('kelas',[{prodi:"Demo",tingkat:"3",dosenId:"",asdosId:"",...kelas,revisionReady:true,draft:false,templateDraft:DEFAULT_TEMPLATE}]);
   put('matkul',[{_id:'m1',nama:kelas.matkulNama,kode:kelas.matkulKode,dibuatOleh:'qa-user'}]);
   put('template',[{_id:'qa-template',kelasId:'k1',version:1,config:DEFAULT_TEMPLATE}]);
   put('peserta',participants.map(p=>({...p,kelasId:'k1',aktif:p.aktif!==false})));
@@ -38,15 +41,18 @@ export async function createControlEngine({kelas,participants,server,restore,loc
   cache.set('scheduleBatches:jobs',[...ctx.tabel.get('scheduleJob')?.entries()||[]].map(([id,row])=>({_id:id,...row})).sort((a,b)=>b.createdAt-a.createdAt));
   cache.set('revisions:printRows',[...ctx.tabel.get('meetingRevision')?.entries()||[]].map(([id,r])=>({_id:id,...r})).filter(r=>r.status==='KUNCI'&&r.tipe==='REGULER'&&!r.cancelled&&!r.legacyPartial&&r.metadataVerified).sort((a,b)=>b.createdAt-a.createdAt));
   for(const job of cache.get('scheduleBatches:jobs'))cache.set('scheduleBatches:jobDetail:'+job._id,await scheduleBatches.jobDetail._handler(ctx,{token:'ui-test-token',jobId:job._id}));
+  cache.set('kelola:detail',await kelola.detail._handler(ctx,{token:'ui-test-token',kelasId:'k1'}));
+  cache.set('kelola:catalog',await kelola.catalog._handler(ctx,{token:'ui-test-token'}));
+  if((await ctx.db.get('qa-user')).peran!=='OPERATOR'||(await ctx.db.query('classCapability').collect()).some(g=>g.penggunaId==='qa-user'&&g.capabilities.includes('delegate')))cache.set('classAccess:list',await classAccess.list._handler(ctx,{token:'ui-test-token',kelasId:'k1'}));else cache.delete('classAccess:list');
   persist();}
- const modules={revisions,scheduleBatches,meetingCommands};
+ const modules={revisions,scheduleBatches,meetingCommands,kelola,classAccess,classBackup};
  const engine={ctx,cache,refresh,user:()=>ctx.tabel.get('pengguna').get('qa-user'),
   packet:args=>bahanPaketLogic(ctx,args),
   query:async(name,args)=>{const[module,method]=name.split(':');if(!modules[module]?.[method]?._handler)throw Error('Unexpected test query '+name);return modules[module][method]._handler(ctx,args)},
   mutate:async(name,args)=>{const[module,method]=name.split(':');const result=await transaction(ctx,()=>modules[module][method]._handler(ctx,args));await refresh();return result;},
   advance:async(id)=>{const p=await ctx.db.get(id),c=await ctx.db.get('k1'),args={token:'ui-test-token',pertemuanId:id,expectedMeetingRevision:p.revision,expectedClassRevision:c.revision,patch:{tanggal:new Date(Date.parse(p.tanggal+'T00:00:00Z')+86400000).toISOString().slice(0,10)},reason:'Koreksi pengguna lain dalam tes'};
    const preview=await revisions.previewCorrection._handler(ctx,args);await engine.mutate('revisions:commitCorrection',{...args,previewHash:preview.previewHash,operationKey:crypto.randomUUID()});},
-  controls:()=>({enabled:true,capabilities:engine.user().peran==='OPERATOR'?ctx.tabel.get('classCapability')?.values().next().value?.capabilities||[]:[...CAPABILITIES]})
+  controls:()=>({enabled:true,capabilities:engine.user().peran==='OPERATOR'?ctx.tabel.get('classCapability')?.values().next().value?.capabilities||['history']:[...CAPABILITIES]})
  };
  await refresh();return engine;
 }

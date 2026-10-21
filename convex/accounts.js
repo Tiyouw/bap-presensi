@@ -157,6 +157,10 @@ export const update = mutation({
     }
     for (const id of a.kelasIds)
       if (!(await ctx.db.get(id))) throw new ConvexError("KELAS_TIDAK_ADA");
+    // Tombstones prevent old explicit grants from reviving after reassignment/demotion.
+    for(const grant of await ctx.db.query("classCapability").withIndex("by_user",q=>q.eq("penggunaId",a.id)).collect()){
+      if(user.peran!==a.peran||!a.aktif||!a.kelasIds.includes(grant.kelasId))await ctx.db.patch(grant._id,{capabilities:[],revision:(grant.revision||0)+1});
+    }
     await ctx.db.patch(a.id, {
       nama: text(a.nama, "Nama"),
       peran: a.peran,

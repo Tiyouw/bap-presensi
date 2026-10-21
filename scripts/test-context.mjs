@@ -21,7 +21,7 @@ const INDEX = {
   revisionRows: { by_revision:["revisionId","part"] },
   revisionPayload: { by_revision:["revisionId"] },
   featureFlag: { by_key:["key"] },
-  classCapability: { by_class_user:["kelasId","penggunaId"] },
+  classCapability: { by_class_user:["kelasId","penggunaId"],by_user:["penggunaId"] },
   scheduleJob: {by_class_operation:["kelasId","operationKey"],by_class_created:["kelasId","createdAt"]},
   scheduleJobItem: {by_job_position:["jobId","position"],by_job_status:["jobId","status"]},
   classOperation:{by_class_operation:["kelasId","operationKey"]},

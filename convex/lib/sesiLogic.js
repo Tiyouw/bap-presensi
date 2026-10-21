@@ -1,5 +1,5 @@
 import { ConvexError } from "convex/values";
-import { requireMeeting, audit } from "./access.js";
+import { requireMeeting, audit, requireHistoricalAttendance } from "./access.js";
 import { classSnapshot, readableDetail } from "./classLogic.js";
 import { assertSnapshotSize } from "./snapshotSize.js";
 import { syncClass, syncMeeting } from "./readModels.js";
@@ -12,6 +12,7 @@ export async function simpanDanKunciLogic(ctx, args) {
     args.pertemuanId,
     true,
   );
+  await requireHistoricalAttendance(ctx,args.token,p);
   if (p.tipe !== "REGULER") throw new ConvexError("TANPA_PRAKTIKUM");
   if (p.revision !== args.baseRevision) throw new ConvexError("KONFLIK_REVISI");
   if (p.status !== "TERBUKA") throw new ConvexError("SUDAH_DIKUNCI");
@@ -65,6 +66,7 @@ export async function bukaKunciLogic(ctx, args) {
     args.pertemuanId,
     true,
   );
+  await requireHistoricalAttendance(ctx,args.token,p);
   if (p.tipe !== "REGULER") throw new ConvexError("TANPA_PRAKTIKUM");
   if (p.revision !== args.expectedRevision)
     throw new ConvexError("KONFLIK_REVISI");

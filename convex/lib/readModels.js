@@ -68,7 +68,7 @@ export async function syncClass(ctx, kelasId) {
   const { templateDraft, ...data } = c;
   await put(ctx, "classView", "by_kelas", "kelasId", kelasId, {
     kelasId, matkulId: c.matkulId,
-    data: { ...data, matkulNama: m.nama, matkulKode: m.kode,
+    data: { ...data, matkulNama: c.courseOverride?.nama||m.nama, matkulKode: c.courseOverride?.kode||m.kode,
       jumlahPeserta: participants.filter(p => p.aktif !== false).length,
       jumlahPraktikum: meetings.filter(p => !p.cancelled && p.tipe === "REGULER").length,
       jumlahTerkunci: meetings.filter(p => !p.cancelled && p.tipe === "REGULER" && p.status === "KUNCI").length,

@@ -27,7 +27,7 @@ await check('future date edit does not snapshot/freeze roster or invent stored a
  await commitCorrection._handler(f.ctx,{...args,previewHash:p.previewHash,operationKey:'synthetic-operation-004'});const meeting=await f.ctx.db.get(f.pertemuanId);assert.equal(meeting.status,'TERBUKA');assert.equal(meeting.snapshot,undefined);assert.equal((await f.ctx.db.query('presensi').collect()).length,0);
 });
 await check('a preparation snapshot is not proof of attendance; further date edits remain empty/open',async()=>{
- const f=await ready(false);await f.ctx.db.patch(f.kelasId,{dosen:'Dosen Persiapan Demo'});await refreshSnapshot._handler(f.ctx,{token:f.token,pertemuanId:f.pertemuanId,baseRevision:0});
+ const f=await ready(false);const flag=await f.ctx.db.query('featureFlag').withIndex('by_key',q=>q.eq('key',CONTROL_FLAG)).unique();await f.ctx.db.patch(flag._id,{enabled:false});await f.ctx.db.patch(f.kelasId,{dosen:'Dosen Persiapan Demo'});await refreshSnapshot._handler(f.ctx,{token:f.token,pertemuanId:f.pertemuanId,baseRevision:0});await f.ctx.db.patch(flag._id,{enabled:true});
  assert.equal((await f.ctx.db.get(f.pertemuanId)).hasAttendanceHistory,false);assert.ok((await f.ctx.db.get(f.pertemuanId)).snapshot);
  await save(f,await request(f,{patch:{tanggal:'2026-10-25'},reason:''}),'synthetic-preparation-date');assert.equal((await f.ctx.db.query('presensi').collect()).length,0);assert.equal((await f.ctx.db.get(f.pertemuanId)).status,'TERBUKA');
 });

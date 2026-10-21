@@ -42,7 +42,7 @@ export async function appendRevision(ctx, p, options = {}) {
     tempat:snapshot.tempat || p.tempat, tipe:p.tipe, status:p.status, cancelled:Boolean(p.cancelled),
     rowCount:rows.length,legacyPartial:Boolean(options.legacyPartial || incomplete),
     metadataVerified:!options.unknownNumber, action:options.action || "BASELINE",reason:options.reason || "Baseline data tersimpan",
-    createdAt:Date.now(), ...(options.actorId?{actorId:options.actorId}:{}),
+    createdAt:Date.now(), ...(options.actorId?{actorId:options.actorId,actorName:(await ctx.db.get(options.actorId))?.nama||"Akun terdahulu"}:{}),
     ...(options.parentRevision!==undefined?{parentRevision:options.parentRevision}:{}),
     ...(options.operationKey?{operationKey:options.operationKey}:{}),
     ...(options.operationHash?{operationHash:options.operationHash}:{}),

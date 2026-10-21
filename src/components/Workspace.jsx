@@ -59,6 +59,7 @@ export function Search({ token, user, catalog, kelasId, onClose }) {
       : "skip",
   );
   const eligible = (x) =>
+    (!x.path.startsWith("/kelas/")||!x.capability||catalog.kelas.some(c=>c.id===x.path.split("/")[2]&&(!c.controlsEnabled||classFeatures(c.id,c.capabilities).some(f=>f.path===x.path))))&&
     (!x.admin || user.peran === "ADMIN") &&
     (!x.manage || user.peran !== "OPERATOR");
   const key = `bap.recent.${user.id}`,
@@ -68,7 +69,7 @@ export function Search({ token, user, catalog, kelasId, onClose }) {
     features = [
       ...FEATURES,
       ...featureClasses.flatMap((c) =>
-        classFeatures(c.id).map((feature) => ({
+        classFeatures(c.id,c.controlsEnabled?c.capabilities:undefined).map((feature) => ({
           ...feature,
           context: `${c.matkulKode} · ${c.nama} · ${c.semester} ${c.tahunAkademik}`,
           aliases: `${feature.aliases} ${c.matkulNama} ${c.matkulKode} ${c.nama}`,

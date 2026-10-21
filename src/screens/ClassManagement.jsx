@@ -49,7 +49,7 @@ const classFields = [
   ["asdosId", "Identitas asdos (opsional)"],
   ["tempat", "Ruang bawaan"],
 ];
-export function ClassForm({ token, catalog, existing, copy, onClose }) {
+export function ClassForm({ token, catalog, existing, copy, onClose,scopeCourse=false }) {
   const source = existing || copy,
     [form, setForm] = useState({
       ...defaults,
@@ -116,7 +116,7 @@ export function ClassForm({ token, catalog, existing, copy, onClose }) {
           ]}
         />
       )}
-      {!existing && !matkulId && (
+      {(scopeCourse||!existing && !matkulId) && (
         <div className="mg-form-grid">
           <Field
             label="Nama mata kuliah"
@@ -174,7 +174,7 @@ export function Participants({ token, user, data, openImport = false }) {
     [edit, setEdit] = useState(null),
     [importing, setImporting] = useState(openImport),
     [limit, setLimit] = useState(50);
-  const manage = user.peran !== "OPERATOR" && !data.kelas.arsip,
+  const manage = (data.controls?.enabled?data.controls.capabilities.includes("roster"):user.peran !== "OPERATOR") && !data.kelas.arsip,
     save = useMutation(api.kelola.saveParticipant),
     task = useTask();
   const rows = data.peserta.filter(
@@ -379,6 +379,7 @@ export function ImportDialog({ token, user, data, onClose }) {
     [mapping, setMapping] = useState({ nim: "", nama: "", golongan: "" }),
     [source, setSource] = useState(""),
     [allowUpdate, setAllow] = useState(false),
+    [updateNims,setUpdateNims]=useState([]),[reactivateNims,setReactivateNims]=useState([]),
     [errorsOnly, setErrorsOnly] = useState(false),
     task = useTask(),
     commit = useMutation(api.kelola.importRoster);
@@ -395,7 +396,7 @@ export function ImportDialog({ token, user, data, onClose }) {
   const mappingKey = `bap.mapping.${user.id}.${data.kelas.id}`;
   const choose = (index, list = sheets) => {
     setSheet(String(index));
-    setAllow(false);
+    setAllow(false);setUpdateNims([]);setReactivateNims([]);
     const s = list[+index];
     let map = suggestMapping(s.headers);
     try {
@@ -456,7 +457,7 @@ export function ImportDialog({ token, user, data, onClose }) {
                 key={k}
                 label={label}
                 value={mapping[k]}
-                onChange={(v) => { setMapping((m) => ({ ...m, [k]: v })); setAllow(false); }}
+                onChange={(v) => { setMapping((m) => ({ ...m, [k]: v })); setAllow(false);setUpdateNims([]);setReactivateNims([]); }}
                 options={[
                   {
                     value: "",
@@ -515,7 +516,7 @@ export function ImportDialog({ token, user, data, onClose }) {
                 Preview menampilkan hingga 100 baris; seluruh {preview.length}{" "}
                 baris divalidasi. Batas impor 2000 baris.
               </p>
-              {updates.length > 0 && (
+              {data.controls?.enabled?<div className="mg-panel"><h3>Pilih pembaruan peserta</h3><p>Peserta baru ditambahkan. Identitas yang tidak dipilih dan peserta nonaktif tetap dipertahankan.</p>{updates.map(r=><label className="mg-check" key={r.nim}><input type="checkbox" checked={updateNims.includes(r.nim)} onChange={e=>setUpdateNims(ids=>e.target.checked?[...ids,r.nim]:ids.filter(id=>id!==r.nim))}/><span>Perbarui {r.nim}: {r.nama} · {r.golongan}</span></label>)}{preview.filter(r=>data.peserta.some(p=>p.nim.toUpperCase()===r.nim.toUpperCase()&&p.aktif===false)).map(r=><label className="mg-check" key={r.nim}><input type="checkbox" checked={reactivateNims.includes(r.nim)} onChange={e=>setReactivateNims(ids=>e.target.checked?[...ids,r.nim]:ids.filter(id=>id!==r.nim))}/><span>Aktifkan kembali {r.nim}</span></label>)}</div>:updates.length > 0 && (
                 <label className="mg-check">
                   <input
                     type="checkbox"
@@ -532,7 +533,7 @@ export function ImportDialog({ token, user, data, onClose }) {
                   task.busy ||
                   errors.length > 0 ||
                   preview.length > 2000 ||
-                  (updates.length > 0 && !allowUpdate)
+                  (!data.controls?.enabled && updates.length > 0 && !allowUpdate)
                 }
                 onClick={() =>
                   task
@@ -548,6 +549,7 @@ export function ImportDialog({ token, user, data, onClose }) {
                         source,
                         baseRevision,
                         allowUpdate,
+                        ...(data.controls?.enabled?{updateNims,reactivateNims}:{}),
                       });
                       try {
                         localStorage.setItem(

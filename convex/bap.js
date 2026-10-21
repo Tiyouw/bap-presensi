@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 import { internalMutation, internalQuery, query } from "./_generated/server.js";
-import { requireMeeting, requireClass } from "./lib/access.js";
+import { requireMeeting, requireClass, requireClassControl } from "./lib/access.js";
 import { classRows, classSnapshot } from "./lib/classLogic.js";
 import { bahanGenerateLogic, klaimLogic, finalisasiLogic } from "./lib/bapLogic.js";
 import { bahanPaketLogic, ringkasanCetakLogic } from "./lib/printLogic.js";
@@ -147,7 +147,7 @@ export const historyPage = query({
 export const previewData = internalQuery({
   args: { token: v.string(), kelasId: v.id("kelas") },
   handler: async (ctx, a) => {
-    const { kelas } = await requireClass(ctx, a.token, a.kelasId, true);
+    const { kelas } = await requireClassControl(ctx, a.token, a.kelasId, ["template"],false);
     const m = {
       nomor: 1,
       tanggal: new Date().toISOString().slice(0, 10),
