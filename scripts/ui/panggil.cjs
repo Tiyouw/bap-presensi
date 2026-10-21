@@ -4,6 +4,7 @@ const { spawn, execFileSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 const assert = require("node:assert/strict");
+const { stripVTControlCharacters } = require("node:util");
 const base = "b1c7ee1";
 const out = "out/panggil",
   shots = "docs/mode-panggil";
@@ -37,7 +38,7 @@ async function serve(config, port) {
   for (let i = 0; i < 100; i++) {
     if (proc.exitCode !== null) throw Error(log);
     // Do not accidentally capture another chat's Vite server on this port.
-    if (log.includes(`:${port}/`)) {
+    if (stripVTControlCharacters(log).includes(`:${port}/`)) {
       try {
         if ((await fetch(`http://127.0.0.1:${port}/`)).ok) return;
       } catch {}
