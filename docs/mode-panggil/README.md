@@ -1,6 +1,6 @@
 # Bukti UI Mode Panggil
 
-Base: `b1c7ee1c86f0fe90134c42a95c169f3585ab0a9e` (merge PR #6).
+Base: `56e8b5eecd751e80ff697cebf5a1d077a3394581` (merge sidebar PR #8).
 Sumber sebelum diekstrak langsung dari commit base oleh `git archive`, bukan
 merekonstruksi tampilan lama lewat CSS pada kode sesudah.
 
@@ -26,7 +26,7 @@ node scripts/ui/panggil.cjs --capture-only
 | Bantuan di popup | ![Bantuan desktop](bantuan-desktop.png) | ![Bantuan HP](bantuan-mobile.png) |
 | Hasil setelah countdown dibatalkan | ![Selesai desktop](selesai-desktop.png) | ![Selesai HP](selesai-mobile.png) |
 
-`results.json` adalah ringkasan 20 kelompok UI kartu yang lulus (10 per browser,
+`results.json` adalah ringkasan 22 kelompok UI kartu yang lulus (11 per browser,
 Chromium dan WebKit). Rincian cakupan serta batas verifikasi ada di
 [`../MODE-PANGGIL.md`](../MODE-PANGGIL.md). Tes UI backend QA nyata terpisah lulus
 24 kelompok, failure injection 6 kelompok, renderer PDF 2 browser dan responsif

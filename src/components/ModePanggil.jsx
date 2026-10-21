@@ -1,4 +1,11 @@
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Modal from "./Modal.jsx";
 import { LABEL } from "../lib/presensi.js";
 import { STATUS_PANGGIL, golonganPanggil } from "../lib/panggil.js";
@@ -114,6 +121,14 @@ export default function ModePanggil({
     travelling.current = false;
   }
   useEffect(() => () => cancel(), []);
+  useLayoutEffect(() => {
+    if (!help) return;
+    // Keep Escape inside this dialog even when WebKit doesn't focus a clicked button.
+    root.current
+      ?.querySelector(".call-help-panel h3")
+      ?.focus({ preventScroll: true });
+    root.current?.closest(".call-modal")?.scrollTo({ top: 0 });
+  }, [help]);
   useEffect(() => {
     if (!canEdit || unsafe) {
       cancel();
@@ -189,7 +204,6 @@ export default function ModePanggil({
       requestAnimationFrame(() =>
         helpButton.current?.focus({ preventScroll: true }),
       );
-    else focusPanel(".call-help-panel h3");
   }
 
   function focusStatus() {

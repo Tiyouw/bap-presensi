@@ -1,7 +1,12 @@
 {
-  "base": "b1c7ee1",
+  "base": "56e8b5eecd751e80ff697cebf5a1d077a3394581",
   "passed": true,
   "results": [
+    {
+      "engine": "chromium",
+      "name": "actual Mode Panggil and Help suspend sidebar hover/shortcut, keep one dialog and restore focus",
+      "passed": true
+    },
     {
       "engine": "chromium",
       "name": "same draft, full roster despite filter, same-default choice, 1–4/Enter/arrows, correction, unique progress and focus return",
@@ -50,6 +55,11 @@
     {
       "engine": "chromium",
       "name": "storage failure is visible; expired session removes editable card",
+      "passed": true
+    },
+    {
+      "engine": "webkit",
+      "name": "actual Mode Panggil and Help suspend sidebar hover/shortcut, keep one dialog and restore focus",
       "passed": true
     },
     {

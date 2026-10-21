@@ -1,8 +1,8 @@
 # Mode Panggil — Kartu Geser + Keyboard
 
-Implementasi pada branch `codex/mode-panggil`, berangkat dari merge PR #6,
-`b1c7ee1c86f0fe90134c42a95c169f3585ab0a9e`. Target rilis PR/preview untuk review;
-tidak melakukan merge atau migrasi produksi.
+Implementasi pada branch `codex/mode-panggil`, diperbarui setelah sidebar PR #8
+masuk main (`56e8b5eecd751e80ff697cebf5a1d077a3394581`). Kedua suite UI dijalankan
+bersama, termasuk prioritas popup Mode Panggil terhadap hover dan shortcut sidebar.
 
 ## Perilaku
 
