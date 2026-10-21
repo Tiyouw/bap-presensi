@@ -18,6 +18,7 @@ import {
 import Pertemuan from "./Pertemuan.jsx";
 import { authenticatedDocument, unduhDokumen } from "../lib/presensi.js";
 import { SkeletonRows } from "../components/Loading.jsx";
+import CorrectionEditor from "./CorrectionEditor.jsx";
 export function ClassCard({ item, onCopy, manage }) {
   return (
     <article className="mg-class-card">
@@ -303,7 +304,9 @@ export function ClassWorkspace({
           </section>
         )}
         <Feedback task={task} />
-        {tab === "pertemuan" ? (
+        {params.get("correct") ? (
+          data.pertemuan.some(p=>p.id===params.get("correct")) ? <CorrectionEditor key={`${c.id}:${params.get("correct")}`} token={token} data={data} pertemuanId={params.get("correct")} network={network}/> : <Notice kind="warning">Pertemuan ini bukan bagian dari kelas yang dibuka.</Notice>
+        ) : tab === "pertemuan" ? (
           <Pertemuan
             data={{
               ...data,
@@ -554,11 +557,11 @@ export function Documents({ token, catalog, onPrint, kelasId: initial }) {
             <div className="mg-list-row" key={d.id}>
               <span>
                 <strong>
-                  Pertemuan {d.nomor} · {d.format.toUpperCase()} · revisi{" "}
+                  Pertemuan {d.nomor ?? "(nomor asal belum terverifikasi)"} · {d.format.toUpperCase()} · revisi{" "}
                   {d.revision}
                 </strong>
                 <small>
-                  {d.tanggal} · Template{" "}
+                  {d.tanggal || "Tanggal asal belum terverifikasi"} · Template{" "}
                   {/-v(\d+)/.exec(String(d.templateVersion))?.[1]
                     ? `v${/-v(\d+)/.exec(String(d.templateVersion))[1]}`
                     : "lama"}
@@ -591,7 +594,7 @@ export function Documents({ token, catalog, onPrint, kelasId: initial }) {
                         () =>
                           unduhDokumen(
                             d.url,
-                            `BAP_P${d.nomor}_r${d.revision}.${d.format}`,
+                            `BAP_P${d.nomor ?? "legacy"}_r${d.revision}.${d.format}`,
                           ),
                         "Dokumen diunduh.",
                       )

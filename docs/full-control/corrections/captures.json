@@ -1,0 +1,66 @@
+{
+  "base": "db39e48b5ffc4581c7835817bf6c0603ae8ced27",
+  "source": "git archive of actual PR base; synthetic fixture, light, reduced motion",
+  "shots": [
+    {
+      "file": "before-schedule-desktop.png",
+      "version": "before",
+      "viewport": {
+        "name": "desktop",
+        "width": 1280,
+        "height": 900
+      },
+      "input": "93 synthetic; p3 locked r1; first Alpha; 2026-09-14"
+    },
+    {
+      "file": "before-schedule-mobile.png",
+      "version": "before",
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      },
+      "input": "93 synthetic; p3 locked r1; first Alpha; 2026-09-14"
+    },
+    {
+      "file": "after-schedule-desktop.png",
+      "version": "after",
+      "viewport": {
+        "name": "desktop",
+        "width": 1280,
+        "height": 900
+      },
+      "input": "93 synthetic; p3 locked r1; first Alpha; 2026-09-14"
+    },
+    {
+      "file": "editor-desktop.png",
+      "version": "new-flow",
+      "viewport": {
+        "name": "desktop",
+        "width": 1280,
+        "height": 900
+      },
+      "input": "same class, draft date 2026-09-16"
+    },
+    {
+      "file": "after-schedule-mobile.png",
+      "version": "after",
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      },
+      "input": "93 synthetic; p3 locked r1; first Alpha; 2026-09-14"
+    },
+    {
+      "file": "editor-mobile.png",
+      "version": "new-flow",
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      },
+      "input": "same class, draft date 2026-09-16"
+    }
+  ]
+}

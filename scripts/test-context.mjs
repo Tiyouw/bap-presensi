@@ -25,9 +25,9 @@ const INDEX = {
   impor: { by_kelas: ["kelasId"], by_kelas_pada: ["kelasId", "pada"] },
 };
 
-export function buatCtx() {
+export function buatCtx(startSequence = 0) {
   const tabel = new Map();
-  let seq = 0;
+  let seq = startSequence;
   const reads = [];
   const T = (n) => {
     if (!tabel.has(n)) tabel.set(n, new Map());

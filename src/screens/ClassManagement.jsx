@@ -736,6 +736,7 @@ export function Schedule({ token, data, manage }) {
                 </button>
               )}
               {locked && <small>Riwayat dipertahankan</small>}
+              {data.controls?.enabled && <button className="button button--outline" disabled={!manage} onClick={()=>navigate(`/kelas/${data.kelas.id}?tab=jadwal&correct=${r.id}`)}>Koreksi sesi {r.nomor}</button>}
             </div>
           );
         })}

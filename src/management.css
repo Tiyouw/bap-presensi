@@ -335,6 +335,14 @@ textarea {
   flex-shrink: 0;
   accent-color: var(--bap-accent);
 }
+.correction-editor { min-width: 0; }
+.correction-options { margin: 20px 0; }
+.correction-options > summary,
+.correction-review summary { min-height: 44px; padding: 10px 0; cursor: pointer; font-weight: 600; }
+.correction-roster .mg-field { max-width: 210px; width: 100%; }
+.correction-review { overflow-wrap: anywhere; }
+.correction-review ul { padding-left: 20px; }
+.correction-review li { margin-bottom: 8px; }
 .mg-filter-line {
   display: flex;
   align-items: center;

@@ -26,4 +26,5 @@ jobs:
       - run: npm run test:faults
       - run: npm run test:pdf-ui
       - run: npm run test:audit-ui
+      - run: npm run test:corrections-ui
       - run: npm run test:offline

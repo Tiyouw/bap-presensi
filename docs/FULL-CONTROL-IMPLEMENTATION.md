@@ -39,9 +39,29 @@ parsial, flag default mati dan ACL. `npm test` mencakup invariant aplikasi lama.
 Handler in-memory bukan bukti transaksi native; deployment preview diuji sebelum
 hasil seluruh tahap dinyatakan selesai.
 
+## Tahap 2 — koreksi satu sesi
+
+Editor dari Jadwal atau Presensi mengubah tanggal/nomor/ruang, memilih snapshot
+terbaru per kategori, mengoreksi status dan memulihkan nilai revisi sebelumnya.
+Preview baca-saja dipin oleh hash isi, versi kelas/sesi, pelaku dan catatan.
+Commit memvalidasi ulang ACL, review roster, versi, hash dan idempotency key.
+Sesi historis siap dipakai dalam satu commit; file sebelumnya tetap utuh.
+
+Draf tersimpan per akun/kelas/sesi, memakai Web Lock yang sama dengan presensi.
+Konflik dapat direbase dengan mempertahankan hanya perubahan pengguna, bukan
+menimpa nilai lain yang sudah berubah di server. Offline tetap dapat menyunting;
+publish hanya online. Kegagalan storage mempertahankan input di memori dan
+menyediakan unduhan draf. Retry operation yang sudah berhasil tidak membuat
+revisi kedua; izin yang dicabut tetap diperiksa.
+
+`scripts/test-corrections.mjs`: delapan kelompok handler. `scripts/ui/corrections.cjs`:
+Chromium/WebKit untuk reload, konflik, restore, kuota storage, dua tab, offline,
+responsivitas dan runtime error. `scripts/ui/audit.cjs` tetap lulus. Capture berasal
+dari base PR sebenarnya `db39e48`, memakai 93 peserta sintetis dan sesi p3 yang
+terkunci pada revisi 1. Bukti di `docs/full-control/corrections/`.
+
 ## Tahap berikutnya (belum selesai)
 
-2. Koreksi satu sesi, preview/commit, restore, pemulihan draf dan Word/PDF.
 3. Jadwal massal, job resumable, batal/pulih, perubahan jenis dan rekap/paket.
 4. Data kelas selektif, roster reaktivasi, portabilitas dan delegasi Operator.
 

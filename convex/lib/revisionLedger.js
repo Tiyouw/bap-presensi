@@ -44,6 +44,8 @@ export async function appendRevision(ctx, p, options = {}) {
     createdAt:Date.now(), ...(options.actorId?{actorId:options.actorId}:{}),
     ...(options.parentRevision!==undefined?{parentRevision:options.parentRevision}:{}),
     ...(options.operationKey?{operationKey:options.operationKey}:{}),
+    ...(options.operationHash?{operationHash:options.operationHash}:{}),
+    ...(options.requiredCapabilities?{requiredCapabilities:options.requiredCapabilities}:{}),
   };
   if (getConvexSize(metadata)>800000) throw new ConvexError("REVISI_TERLALU_BESAR");
   const id=await ctx.db.insert("meetingRevision",header);

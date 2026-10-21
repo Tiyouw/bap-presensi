@@ -153,6 +153,8 @@ export default defineSchema({
     action: v.string(), reason: v.string(), createdAt: v.number(),
     actorId: v.optional(v.id("pengguna")), parentRevision: v.optional(v.number()),
     operationKey: v.optional(v.string()),
+    operationHash: v.optional(v.string()),
+    requiredCapabilities: v.optional(v.array(v.string())),
   }).index("by_meeting_revision", ["pertemuanId", "revision"]).index("by_class", ["kelasId"])
     .index("by_operation", ["pertemuanId", "operationKey"]),
   revisionRows: defineTable({ revisionId: v.id("meetingRevision"), part: v.number(), rows: v.array(v.any()) })
