@@ -76,3 +76,16 @@ viewport dan data sintetis yang sama dengan sesudah. Screenshot kartu memperliha
 status Izin sebagai contoh. WebKit otomatis di Windows bukan pengujian iPhone/Mac,
 VoiceOver atau printer fisik. Mode ini memakai animasi geser; gesture swipe untuk
 memilih status bukan bagian rancangan yang dipilih.
+
+## Preview
+
+[Preview Mode Panggil](https://bap-presensi-git-codex-mode-panggil-tiyouws-projects.vercel.app)
+memakai deployment Convex branch `preview/codex-mode-panggil` yang diinisialisasi
+dengan data demo sintetis. Login, pilihan status/cap, Enter/angka, sinkronisasi
+daftar dan pemulihan posisi/progres setelah reload telah diperiksa melalui browser
+aplikasi Codex. Browser eksternal dapat meminta login Vercel sebelum masuk aplikasi;
+proteksi proyek tidak diubah. Kredensial akun demo tetap di berkas privat lokal,
+bukan Git atau deskripsi PR.
+
+CI menjalankan `npm run test:panggil` sesudah memasang Chromium/WebKit, selain
+pengujian dokumen, layout kelas dan failure injection yang sudah ada.

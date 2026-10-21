@@ -20,6 +20,7 @@ jobs:
           VITE_CONVEX_URL: https://example.convex.cloud
       - run: npm audit --audit-level=moderate
       - run: npx playwright install --with-deps chromium webkit
+      - run: npm run test:panggil
       - run: npm run test:class-layout
       - run: npm run test:faults
       - run: npm run test:pdf-ui
