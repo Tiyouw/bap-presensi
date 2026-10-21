@@ -97,7 +97,12 @@ async function session(type, port = 5194, options = {}) {
 async function open(page, start = true) {
   await page.getByRole("button", { name: /Mode Panggil/ }).click();
   await page.getByRole("dialog", { name: "Mode Panggil" }).waitFor();
-  if (start) await page.locator(".call-start").click();
+  if (start) {
+    await page.locator(".call-start").click();
+    await page
+      .locator(".call-choice:focus, .call-group-result h3:focus")
+      .waitFor();
+  }
 }
 async function close(page) {
   await page.keyboard.press("Escape");
@@ -282,11 +287,16 @@ async function noOverflow(page) {
     await open(page);
     await reviewed(page, 4);
     await page.keyboard.press("ArrowLeft");
+    await page
+      .locator(".call-person h3")
+      .filter({ hasText: "Citra" })
+      .waitFor();
     assert.equal(
       await page.locator(".call-choice.SAKIT").getAttribute("aria-pressed"),
       "true",
     );
     await page.keyboard.press("1");
+    await page.locator('.call-choice.HADIR[aria-pressed="true"]').waitFor();
     await reviewed(page, 4);
     await page
       .getByRole("button", { name: "Lewati dulu", exact: true })
