@@ -102,15 +102,27 @@ async function reviewed(page, n) {
   await page.getByText(`${n} dari 93 diperiksa`, { exact: true }).waitFor();
 }
 async function noOverflow(page) {
+  const layout = await page.evaluate(() => {
+    const modal = document.querySelector(".call-modal");
+    return {
+      viewport: innerWidth,
+      page: document.documentElement.scrollWidth,
+      dialog: modal?.clientWidth,
+      content: modal?.scrollWidth,
+      overflow: [...(modal?.querySelectorAll("*") || [])]
+        .filter(
+          (e) =>
+            e.getBoundingClientRect().right >
+            modal.getBoundingClientRect().right + 1,
+        )
+        .map((e) => e.className)
+        .slice(0, 10),
+    };
+  });
   assert.ok(
-    await page.evaluate(() => {
-      const modal = document.querySelector(".call-modal");
-      return (
-        document.documentElement.scrollWidth <= innerWidth + 1 &&
-        (!modal || modal.scrollWidth <= modal.clientWidth + 1)
-      );
-    }),
-    "viewport/dialog horizontal overflow",
+    layout.page <= layout.viewport + 1 &&
+      (!layout.dialog || layout.content <= layout.dialog + 1),
+    `viewport/dialog horizontal overflow: ${JSON.stringify(layout)}`,
   );
 }
 (async () => {
@@ -135,7 +147,10 @@ async function noOverflow(page) {
           path: `${shots}/after-presensi-${device}.png`,
         });
       }
-      for (const [device, width, height] of [["desktop", 1280, 1000], ["mobile", 390, 844]]) {
+      for (const [device, width, height] of [
+        ["desktop", 1280, 1000],
+        ["mobile", 390, 844],
+      ]) {
         await page.setViewportSize({ width, height });
         await open(page);
         await page.getByLabel("Lanjut otomatis").uncheck();
@@ -145,7 +160,11 @@ async function noOverflow(page) {
       }
       await before.context.close();
       await context.close();
-      if (captureOnly) { await browser.close(); browser = null; return; }
+      if (captureOnly) {
+        await browser.close();
+        browser = null;
+        return;
+      }
       ({ context, page, errors } = await session(type));
     }
     await page.getByRole("searchbox").fill("Bima");
