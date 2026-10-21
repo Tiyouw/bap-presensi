@@ -995,7 +995,8 @@ button:active:not(:disabled) {
   position: fixed;
   inset: 0;
   background: #0a181d80;
-  z-index: 30;
+  /* Above workspace navigation/menus (40–80), below global search (100). */
+  z-index: 90;
   display: flex;
   align-items: center;
   justify-content: center;

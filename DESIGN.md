@@ -61,6 +61,33 @@ Tap presensi hanya menulis lokal. Jika penyimpanan lokal gagal, tampilkan pering
 
 Draf dan rincian sesi dicache per pertemuan. Detail terkunci yang belum pernah dicache tidak boleh ditampilkan sebagai semua Hadir. Konflik revisi mempertahankan draf; muat server mencadangkan draf terlebih dahulu. Memakai draf sebagai pengganti memerlukan konfirmasi tersendiri dan tetap divalidasi backend saat simpan.
 
+## Mode Panggil
+
+Tombol sekunder bertanda tumpukan kartu berada setelah identitas/status pertemuan
+dan sebelum ringkasan. Di HP tombol selebar area kerja. Daftar tetap menjadi layar
+awal. Dialog desktop maksimal 540 px; HP memakai seluruh viewport dengan header
+tutup yang tetap terjangkau saat bergulir. Kartu bertumpuk, nama besar, metadata
+monospace, empat tombol status 2 × 2 dengan target minimum 48 px mengikuti artifact
+Kartu Geser + Keyboard. Tidak menambah menu sidebar.
+
+Pilihan memberi latar warna status dan cap teks/ikon, feedback 700 ms sebelum
+lanjut otomatis. Pergeseran keluar 160 ms dan masuk 220 ms hanya transform/opacity.
+Reduced motion mempertahankan warna/cap tanpa gerak. Angka 1–4, kiri/kanan, Enter,
+Tab/Shift+Tab dan Escape bekerja di dialog. Ctrl/Cmd+K menutup kartu sambil membuka
+pencarian global; draf/posisi tetap ada dan timer dihentikan. Shortcut browser tetap
+tersedia. Dialog berada di atas navbar/menu agar tombol tutup tidak tertutup.
+
+Pilihan golongan memakai ikon kelompok, nama golongan, jumlah mahasiswa dan progres.
+Header popup menyediakan tombol Bantuan dengan panduan empat langkah dan shortcut.
+Bantuan tidak menumpuk dialog; timer berhenti sampai pengguna melanjutkan sendiri.
+Progres “x dari n diperiksa” hanya untuk golongan aktif, dengan ringkasan golongan
+selesai di bawahnya. Akhir golongan menampilkan ringkasan dan countdown keluar tiga
+detik, tombol batal/keluar sekarang, serta lanjut golongan berikutnya secara manual.
+Nama yang dilewati ditampilkan tanpa countdown. Review seluruh kelas tetap terpisah
+dari penyelesaian satu golongan. Review menampilkan nama beserta status daftar;
+pengguna dapat melanjutkan atau menyetujui status daftar sebelum kunci. Rincian
+implementasi dan bukti pengujian: `docs/MODE-PANGGIL.md`.
+
 ## Batas cakupan
 
 Logo aplikasi tidak masuk kop BAP resmi. Format cetak tetap template prodi.

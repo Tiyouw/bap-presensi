@@ -66,6 +66,12 @@ const wait = () => new Promise((resolve) => setTimeout(resolve, requestDelay));
 
 window.__qa = {
   calls,
+  renameParticipant(id, nama) {
+    const person = participants.find((p) => p.id === id);
+    if (!person) throw new Error("Unknown synthetic participant");
+    person.nama = nama;
+    publish();
+  },
   holdQuery(name, held = true) {
     if (held) heldQueries.add(name);
     else heldQueries.delete(name);

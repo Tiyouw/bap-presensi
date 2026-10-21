@@ -81,6 +81,30 @@ berganti akun tidak menampilkannya. Draf lama ditawarkan untuk diambil alih satu
 oleh pengguna yang boleh mengakses kelas PPB. Offline mendukung draf/data yang telah
 dicache; tidak menjanjikan simpan server, manajemen data, atau generate offline.
 
+ATT-06: Mode Panggil tersedia dari header presensi pertemuan yang dapat diedit.
+Satu kartu berisi nama, NIM, golongan dan pilihan Hadir/Alpha/Sakit/Izin (1/2/3/4).
+Panah kiri kembali, kanan/Enter melanjutkan setelah memilih; Escape menutup.
+Kartu memberi warna serta cap status, lalu bergeser. Lanjut otomatis awalnya aktif
+dengan jeda 700 ms dan preferensinya diingat per akun/kelas. Key repeat tidak
+mengisi nama berikutnya. Reduced motion meniadakan gerak; dialog menjaga fokus.
+
+ATT-07: Mode Panggil dibuka dengan pilihan golongan berikon, berdasarkan roster
+sesi tanpa mengikuti filter daftar. Kartu memakai draf yang sama dengan daftar.
+Progress bar menghitung ID unik yang diperiksa pada golongan aktif, terpisah dari
+status Hadir bawaan. Lewati tidak mengubah status atau menambah progres. Setiap
+golongan menyimpan posisi sendiri bersama draf setelah interaksi, terikat roster
+snapshot dan baseRevision. Golongan selesai menampilkan ringkasan lalu kembali ke
+daftar dalam 3 detik secara default. Pengguna dapat membatalkan, keluar sekarang,
+atau melanjutkan golongan berikutnya secara eksplisit. Nama terlewati menunda
+countdown sampai diperiksa. Preferensi keluar otomatis diingat per akun/kelas.
+Tombol Bantuan di popup menjelaskan alur dan shortcut; membuka bantuan menjeda
+perpindahan kartu dan membatalkan countdown tanpa mengubah pilihan status.
+Tutup/refresh dapat melanjutkan; perubahan snapshot/revisi membatalkan progres lama.
+Nama belum diperiksa terlihat saat review: lanjutkan panggilan atau konfirmasi
+secara eksplisit penggunaan status daftar. Kartu tidak mengunci atau menyimpan ke
+server. Sesudah lengkap, buka kembali menuju review. Izin, kelas arsip, konflik,
+offline, storage gagal dan sesi kedaluwarsa tetap mengikuti perlindungan editor.
+
 ## 6. Template dan dokumen
 
 DOC-01: DOCX asli adalah acuan format. Formulir pengaturan mencakup kop institusi,

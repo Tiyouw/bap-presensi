@@ -14,6 +14,7 @@ const K = {
   draft: (id) => `bap.draft.${id}`,
   detail: (id) => `bap.cache.detail.${id}`,
   backup: (id) => `bap.draft.backup.${id}`,
+  panggil: (id) => `bap.panggil.preferences.${id}`,
 };
 
 export function bacaToken() {
@@ -62,11 +63,55 @@ export function bacaCache(scope = "") {
   }
 }
 
-export function simpanDraf(pertemuanId, { baseRevision, statuses }) {
+export function simpanDraf(pertemuanId, { baseRevision, statuses, panggil }) {
   try {
     localStorage.setItem(
       K.draft(pertemuanId),
-      JSON.stringify({ baseRevision, statuses, ts: Date.now() }),
+      JSON.stringify({ baseRevision, statuses, panggil, ts: Date.now() }),
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function bacaPreferensiPanggil(id) {
+  try {
+    return (
+      JSON.parse(localStorage.getItem(K.panggil(id)) || "null")?.auto !== false
+    );
+  } catch {
+    return true;
+  }
+}
+
+export function bacaKeluarOtomatisPanggil(id) {
+  try {
+    return (
+      JSON.parse(localStorage.getItem(K.panggil(id)) || "null")?.autoExit !==
+      false
+    );
+  } catch {
+    return true;
+  }
+}
+
+export function simpanPreferensiPanggil(id, auto, autoExit) {
+  try {
+    let previous = {};
+    try {
+      previous =
+        JSON.parse(localStorage.getItem(K.panggil(id)) || "null") || {};
+    } catch {
+      /* replace malformed preferences */
+    }
+    localStorage.setItem(
+      K.panggil(id),
+      JSON.stringify({
+        ...previous,
+        auto,
+        ...(typeof autoExit === "boolean" ? { autoExit } : {}),
+      }),
     );
     return true;
   } catch {

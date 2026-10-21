@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "codegen": "convex codegen",
-    "test": "node scripts/test-logic.mjs && node scripts/test-handlers.mjs && node scripts/check-convex.mjs && node scripts/test-ui-logic.mjs && node scripts/test-print.mjs && node scripts/test-management-unit.mjs && node scripts/test-document-fidelity.mjs",
+    "test": "node scripts/test-logic.mjs && node scripts/test-handlers.mjs && node scripts/check-convex.mjs && node scripts/test-ui-logic.mjs && node scripts/test-print.mjs && node scripts/test-management-unit.mjs && node scripts/test-document-fidelity.mjs && node scripts/test-panggil.mjs",
     "test:fase0": "node scripts/test-fase0.js",
     "test:ui": "node scripts/ui/management.cjs && node scripts/ui/faults.cjs && node scripts/ui/pdf.cjs && node scripts/ui/responsive.cjs",
     "embed": "node scripts/embed-template.mjs",
@@ -19,6 +19,7 @@
     "test:pdf-ui": "node scripts/ui/pdf.cjs",
     "test:responsive": "node scripts/ui/responsive.cjs",
     "test:class-layout": "node scripts/ui/class-layout.cjs",
+    "test:panggil": "node scripts/test-panggil.mjs && node scripts/ui/panggil.cjs",
     "test:sidebar": "node scripts/ui/sidebar.cjs"
   },
   "dependencies": {

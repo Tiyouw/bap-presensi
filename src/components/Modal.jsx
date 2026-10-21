@@ -8,6 +8,10 @@ export default function Modal({
   busy = false,
   wide = false,
   initialFocusSelector,
+  className = "",
+  onKeyDown,
+  returnFocusRef,
+  headerActions,
 }) {
   const titleId = useId();
   const ref = useRef(null);
@@ -57,7 +61,8 @@ export default function Modal({
     return () => {
       document.body.style.overflow = overflow;
       document.removeEventListener("keydown", keydown);
-      if (previous?.isConnected) previous.focus();
+      const target = returnFocusRef?.current || previous;
+      if (target?.isConnected) target.focus({ preventScroll: true });
     };
   }, []);
 
@@ -70,13 +75,15 @@ export default function Modal({
     >
       <section
         ref={ref}
-        className={`modal${wide ? " modal--wide" : ""}`}
+        className={`modal${wide ? " modal--wide" : ""} ${className}`}
+        onKeyDown={onKeyDown}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
       >
         <header className="modal-header">
           <h2 id={titleId}>{title}</h2>
+          {headerActions}
           <button
             className="button button--quiet"
             onClick={onClose}

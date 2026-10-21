@@ -13,6 +13,9 @@ export function useScopedStore() {
           "hapusDraf",
           "simpanDetail",
           "simpanDraf",
+          "bacaPreferensiPanggil",
+          "bacaKeluarOtomatisPanggil",
+          "simpanPreferensiPanggil",
         ].map((name) => [
           name,
           (id, ...args) => store[name](scope ? `${scope}:${id}` : id, ...args),

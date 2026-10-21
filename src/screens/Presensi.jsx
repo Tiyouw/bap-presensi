@@ -3,6 +3,8 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api.js";
 import { ConnectionStatus, Header, Notice } from "../components/Layout.jsx";
 import Modal from "../components/Modal.jsx";
+import ModePanggil, { PanggilIcon } from "../components/ModePanggil.jsx";
+import { progresPanggil } from "../lib/panggil.js";
 import { RefreshHint, SkeletonRows } from "../components/Loading.jsx";
 import { usePageReady } from "../lib/usePageReady.js";
 import { useScopedStore } from "../lib/ScopedStorage.jsx";
@@ -52,6 +54,8 @@ function initialState(pertemuan, peserta, store) {
     conflict: useDraft && draft.baseRevision !== record.revision,
     known: record.status !== "KUNCI" || cacheMatches,
     restored: useDraft ? draft.ts : null,
+    panggil:
+      useDraft && draft.baseRevision === record.revision ? draft.panggil : null,
   };
 }
 
@@ -108,6 +112,30 @@ export default function Presensi({
       : "",
   );
   const [drafAman, setDrafAman] = useState(true);
+  const [panggil, setPanggil] = useState(initial.panggil);
+  const panggilTriggerRef = useRef(null);
+  const [autoPanggil, setAutoPanggil] = useState(() =>
+    store.bacaPreferensiPanggil("preferences"),
+  );
+  const [autoKeluarPanggil, setAutoKeluarPanggil] = useState(() =>
+    store.bacaKeluarOtomatisPanggil("preferences"),
+  );
+  const [preferensiAman, setPreferensiAman] = useState(true);
+  const [remainingApproved, setRemainingApproved] = useState(false);
+  const progres = progresPanggil(panggil, peserta, baseRevision);
+  const persistedDraftRef = useRef(
+    JSON.stringify({
+      baseRevision: initial.base,
+      statuses: initial.statuses,
+      panggil: progresPanggil(initial.panggil, peserta, initial.base),
+    }),
+  );
+  const belumDiperiksa = progres.started
+    ? peserta.filter((p) => !progres.reviewedIds.includes(p.id))
+    : [];
+  useEffect(() => {
+    setRemainingApproved(false);
+  }, [modal?.kind]);
   useEffect(
     () =>
       registerNavigationGuard(() =>
@@ -195,13 +223,19 @@ export default function Presensi({
       setDirty(false);
       dirtyRef.current = false;
       setRiwayat([]);
+      setPanggil(null);
     }
   }, [detail, peserta, pertemuan.id, baseRevision, sibuk]);
 
   useEffect(() => {
     if (!dirty || terkunci || !peserta.length) return;
-    setDrafAman(simpanDraf(pertemuan.id, { baseRevision, statuses: status }));
-  }, [status, baseRevision, dirty, terkunci, pertemuan.id, peserta.length]);
+    const draft = { baseRevision, statuses: status, panggil: progres };
+    const serialized = JSON.stringify(draft);
+    if (persistedDraftRef.current === serialized) return;
+    const saved = simpanDraf(pertemuan.id, draft);
+    if (saved) persistedDraftRef.current = serialized;
+    setDrafAman(saved);
+  }, [status, panggil, baseRevision, dirty, terkunci, pertemuan.id, peserta]);
 
   useEffect(() => {
     if (!toast) return;
@@ -235,6 +269,48 @@ export default function Presensi({
     });
   }
 
+  function ubahPanggil(patch) {
+    if (!canEdit) return;
+    setPanggil((previous) => {
+      const next = {
+        ...progresPanggil(previous, peserta, baseRevision),
+        ...patch,
+      };
+      if (patch.currentId) {
+        const person = peserta.find((p) => p.id === patch.currentId);
+        if (person) {
+          next.groupKey = String(person.golongan ?? "");
+          next.positions = { ...next.positions, [next.groupKey]: person.id };
+        }
+      }
+      return progresPanggil(next, peserta, baseRevision);
+    });
+    setDirty(true);
+    dirtyRef.current = true;
+  }
+
+  function pilihPanggil(id, nilai) {
+    if (!canEdit) return;
+    setSatu(id, nilai);
+    ubahPanggil({
+      reviewedIds: [...new Set([...progres.reviewedIds, id])],
+      started: true,
+    });
+  }
+
+  function bukaPanggil(lanjutBelum = false) {
+    if (!canEdit || !peserta.length) return;
+    if (lanjutBelum && belumDiperiksa.length)
+      ubahPanggil({ currentId: belumDiperiksa[0].id });
+    setModal({
+      kind:
+        !lanjutBelum && progres.reviewedIds.length === peserta.length
+          ? "review"
+          : "panggil",
+      resume: lanjutBelum,
+    });
+  }
+
   function undo() {
     if (!canEdit || !riwayat.length) return;
     const last = riwayat[riwayat.length - 1];
@@ -249,7 +325,11 @@ export default function Presensi({
     if (!detail) return;
     if (
       dirtyRef.current &&
-      !cadangkanDraf(pertemuan.id, { baseRevision, statuses: status })
+      !cadangkanDraf(pertemuan.id, {
+        baseRevision,
+        statuses: status,
+        panggil: progres,
+      })
     ) {
       setGalat(
         "Draf belum dapat dicadangkan. Kosongkan ruang penyimpanan perangkat sebelum mengganti draf.",
@@ -264,6 +344,7 @@ export default function Presensi({
     dirtyRef.current = false;
     setKnown(true);
     setRiwayat([]);
+    setPanggil(null);
     setModal(null);
     setGalat("");
     hapusDraf(pertemuan.id);
@@ -311,6 +392,7 @@ export default function Presensi({
 
   async function simpan() {
     if (!network.online || !canEdit || operationRef.current) return;
+    if (belumDiperiksa.length && !remainingApproved) return;
     setModal(null);
     setGalat("");
     setInfo("");
@@ -338,6 +420,7 @@ export default function Presensi({
       setDirty(false);
       dirtyRef.current = false;
       setRiwayat([]);
+      setPanggil(null);
       hapusDraf(pertemuan.id);
       simpanDetail(pertemuan.id, {
         pertemuan: nextRecord,
@@ -428,11 +511,11 @@ export default function Presensi({
     : () => setModal({ kind: "review" });
   const primaryDisabled = Boolean(
     sibuk ||
-    !network.online ||
-    konflik ||
-    !known ||
-    !peserta.length ||
-    (!terkunci && (!detail || readOnly)),
+      !network.online ||
+      konflik ||
+      !known ||
+      !peserta.length ||
+      (!terkunci && (!detail || readOnly)),
     // readOnly still permits downloads of locked attendance.
   );
 
@@ -497,6 +580,23 @@ export default function Presensi({
           </span>
           <ConnectionStatus network={network} />
         </div>
+        {!terkunci && !readOnly && (
+          <div className="call-entry">
+            <button
+              ref={panggilTriggerRef}
+              className="button button--outline"
+              disabled={!canEdit || !peserta.length}
+              onClick={() => bukaPanggil()}
+            >
+              <PanggilIcon /> Mode Panggil
+              {progres.started && (
+                <span>
+                  · {progres.reviewedIds.length}/{peserta.length}
+                </span>
+              )}
+            </button>
+          </div>
+        )}
         {!network.online && (
           <Notice kind="warning">
             {network.deviceOnline
@@ -511,6 +611,12 @@ export default function Presensi({
             Draf belum tersimpan di perangkat. Jangan tutup halaman; periksa
             ruang penyimpanan atau sambungkan internet untuk menyimpan ke
             server.
+          </Notice>
+        )}
+        {!preferensiAman && (
+          <Notice kind="warning">
+            Pengaturan lanjut otomatis belum tersimpan di perangkat. Pilihan
+            tetap berlaku selama halaman ini terbuka.
           </Notice>
         )}
         {konflik && (
@@ -806,12 +912,95 @@ export default function Presensi({
         </Modal>
       )}
 
+      {modal?.kind === "panggil" && peserta.length > 0 && (
+        <ModePanggil
+          key={`${progres.roster}:${baseRevision}`}
+          returnFocusRef={panggilTriggerRef}
+          peserta={peserta}
+          statuses={status}
+          progress={progres}
+          auto={autoPanggil}
+          autoExit={autoKeluarPanggil}
+          resume={modal.resume}
+          canEdit={canEdit}
+          unsafe={!drafAman || !preferensiAman}
+          nomor={record.nomor}
+          kode={classInfo.kode}
+          onChoose={pilihPanggil}
+          onProgress={ubahPanggil}
+          onAuto={(auto) => {
+            setAutoPanggil(auto);
+            setPreferensiAman(
+              store.simpanPreferensiPanggil(
+                "preferences",
+                auto,
+                autoKeluarPanggil,
+              ),
+            );
+          }}
+          onAutoExit={(autoExit) => {
+            setAutoKeluarPanggil(autoExit);
+            setPreferensiAman(
+              store.simpanPreferensiPanggil(
+                "preferences",
+                autoPanggil,
+                autoExit,
+              ),
+            );
+          }}
+          onClose={(message) => {
+            if (typeof message === "string") setInfo(message);
+            setModal(null);
+          }}
+          onReview={() => setModal({ kind: "review" })}
+        />
+      )}
+
       {modal?.kind === "review" && (
         <Modal title="Periksa presensi" onClose={() => setModal(null)}>
           <p className="modal-description">
             Pertemuan {record.nomor} ·{" "}
             {hariTanggal(record.tanggal).replace(" / ", ", ")}
           </p>
+          {belumDiperiksa.length > 0 && (
+            <section
+              className="call-unreviewed"
+              aria-label="Nama belum diperiksa"
+            >
+              <strong>
+                {belumDiperiksa.length} nama belum diperiksa di Mode Panggil
+              </strong>
+              <p>
+                Nama yang dilewati tetap memakai status pada daftar. Periksa
+                kembali sebelum mengunci.
+              </p>
+              <ul>
+                {belumDiperiksa.map((p) => (
+                  <li key={p.id}>
+                    {p.nama} · Golongan {p.golongan} · {LABEL[status[p.id]]}
+                  </li>
+                ))}
+              </ul>
+              <button
+                className="button button--outline button--full"
+                disabled={!canEdit}
+                onClick={() => bukaPanggil(true)}
+              >
+                Lanjutkan nama yang belum diperiksa
+              </button>
+              <label className="call-auto">
+                <input
+                  type="checkbox"
+                  checked={remainingApproved}
+                  onChange={(event) =>
+                    setRemainingApproved(event.target.checked)
+                  }
+                />
+                Saya sudah memeriksa nama tersebut dan menggunakan status pada
+                daftar.
+              </label>
+            </section>
+          )}
           <div className="review-stats">
             {["HADIR", "ALPHA", "SAKIT", "IZIN"].map((s) => (
               <span key={s} className={`status-badge ${s}`}>
@@ -847,7 +1036,10 @@ export default function Presensi({
           <div className="modal-actions">
             <button
               className="button button--primary button--full"
-              disabled={primaryDisabled}
+              disabled={
+                primaryDisabled ||
+                (belumDiperiksa.length > 0 && !remainingApproved)
+              }
               onClick={simpan}
             >
               Kunci sekarang<span aria-hidden="true">→</span>
