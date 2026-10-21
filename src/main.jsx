@@ -10,6 +10,12 @@ import "./management.css";
 const url = import.meta.env.VITE_CONVEX_URL;
 const client = url ? new ConvexReactClient(url) : null;
 
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {});
+  }, { once: true });
+}
+
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <ThemeProvider>

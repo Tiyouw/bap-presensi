@@ -2,7 +2,8 @@
 
 Ruang kerja **mata kuliah → kelas/semester → mahasiswa, jadwal, presensi, BAP**.
 Setiap kelas memiliki dosen, roster, jadwal, template, dan arsip sendiri.
-Status: PR/preview untuk review; **belum di-merge atau dimigrasikan ke produksi**.
+Perbaikan integritas draf, revisi, query dan offline memiliki
+[catatan rollout dan verifikasi](docs/AUDIT-FUNCTIONAL-FIXES.md).
 
 - [Spesifikasi](PRD.md) · [Pedoman Kontras](DESIGN.md)
 - [Bukti verifikasi](docs/VERIFICATION-V2.md) · [Migrasi/rollback](docs/MIGRATION-V2.md)
@@ -67,12 +68,22 @@ Tidak ada signup publik, OAuth atau verifikasi email. Password 12–128 karakter
 hash scrypt dengan salt acak. Reset/penonaktifan mencabut sesi. Admin terakhir
 dilindungi. Profil menyediakan sesi perangkat dan kode pemulihan admin sekali
 pakai; simpan kode secara privat. Server hanya menyimpan hash.
+Perubahan/reset password, demosi admin dan penonaktifan membatalkan kode
+pemulihan lama. Buat kode baru setelah perubahan password bila diperlukan.
 
 ## Draf, snapshot dan arsip
 
 Draf/cache terpisah per akun/kelas/pertemuan. Logout mempertahankan draf. Offline
 mendukung data yang sudah dicache; simpan server, manajemen dan generate memerlukan
 internet. Draf aplikasi lama ditawarkan untuk diambil alih sekali pada kelas PPB.
+
+Build produksi menyimpan app-shell setelah kunjungan online pertama selesai,
+sehingga aplikasi dapat dibuka ulang ketika origin tidak tersedia. Respons server
+berizin tidak masuk cache service worker. Pengeditan memakai satu tab aktif per
+akun/kelas/pertemuan; tab kedua membaca sampai tab pengedit ditutup. Browser
+modern dengan HTTPS/localhost diperlukan. Vite development tidak menyediakan
+cold start offline. Batas pengujian WebKit dan backfill read model dijelaskan
+pada catatan rollout di atas.
 
 Kunci membekukan roster/nama/NIM/golongan, dosen, identitas kelas dan versi template.
 Perubahan kelas tidak mengubah arsip. Buka kunci mempertahankan snapshot.

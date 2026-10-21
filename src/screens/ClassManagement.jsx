@@ -1,7 +1,7 @@
 import PdfPreview from "../components/PdfPreview.jsx";
 import ClassTabHeading from "../components/ClassTabHeading.jsx";
 import { useEffect, useMemo, useState } from "react";
-import { useMutation, useAction } from "convex/react";
+import { useMutation, useAction, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api.js";
 import {
   DEFAULT_TEMPLATE,
@@ -20,6 +20,7 @@ import {
 import Modal from "../components/Modal.jsx";
 import { Notice } from "../components/Layout.jsx";
 import { navigate } from "../lib/navigation.js";
+import { useEditorGuard } from "../lib/useEditorGuard.js";
 import { readRosterFile, suggestMapping } from "../lib/importRoster.js";
 const defaults = {
   nama: "",
@@ -59,6 +60,7 @@ export function ClassForm({ token, catalog, existing, copy, onClose }) {
     [baseRevision, setBaseRevision] = useState(existing?.revision);
   const save = useMutation(api.kelola.saveClass),
     task = useTask();
+  const guard = useEditorGuard({ form, matkulId, copyRoster }, true, task.busy);
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   return (
     <TaskForm
@@ -77,6 +79,7 @@ export function ClassForm({ token, catalog, existing, copy, onClose }) {
               ...(existing ? { kelasId: existing.id, baseRevision } : {}),
               ...(copy ? { copyId: copy.id, copyRoster } : {}),
             });
+            guard.markSaved();
             if (existing) {
               setBaseRevision((r) => r + 1);
               onClose?.();
@@ -92,6 +95,7 @@ export function ClassForm({ token, catalog, existing, copy, onClose }) {
           current={existing.revision}
           onReload={() => {
             setForm({ ...defaults, ...existing });
+            guard.markSaved({ form: { ...defaults, ...existing }, matkulId, copyRoster });
             setBaseRevision(existing.revision);
             task.clear();
           }}
@@ -314,23 +318,25 @@ export function Participants({ token, user, data, openImport = false }) {
 }
 function ParticipantEditor({ edit, task, onClose, onSave }) {
   const [form, setForm] = useState(edit);
+  const guard = useEditorGuard(form, true, task.busy);
   return (
     <Modal
       title={edit.id ? "Ubah mahasiswa" : "Tambah mahasiswa"}
-      onClose={onClose}
+      onClose={() => { if (guard.canDiscard()) onClose(); }}
       busy={task.busy}
     >
       <TaskForm
         task={task}
         onSubmit={() =>
-          task.run(() =>
-            onSave({
+          task.run(async () => {
+            await onSave({
               nim: form.nim,
               nama: form.nama,
               golongan: form.golongan,
               aktif: form.aktif,
-            }),
-          )
+            });
+            guard.markSaved();
+          })
         }
       >
         {[
@@ -388,6 +394,7 @@ export function ImportDialog({ token, user, data, onClose }) {
   const mappingKey = `bap.mapping.${user.id}.${data.kelas.id}`;
   const choose = (index, list = sheets) => {
     setSheet(String(index));
+    setAllow(false);
     const s = list[+index];
     let map = suggestMapping(s.headers);
     try {
@@ -415,11 +422,13 @@ export function ImportDialog({ token, user, data, onClose }) {
               task
                 .run(async () => {
                   const list = await readRosterFile(file);
-                  if (!list.length || !list[0].headers.length)
+                  const first = list.findIndex(s => s.headers.length && s.rows.length);
+                  if (first < 0)
                     throw Error("File kosong atau tidak memiliki header.");
                   setSheets(list);
                   setSource(file.name);
-                  choose(0, list);
+                  choose(first, list);
+                  setAllow(false);
                 }, "File dibaca. Periksa pemetaan kolom.")
                 .catch(() => {});
           }}
@@ -446,7 +455,7 @@ export function ImportDialog({ token, user, data, onClose }) {
                 key={k}
                 label={label}
                 value={mapping[k]}
-                onChange={(v) => setMapping((m) => ({ ...m, [k]: v }))}
+                onChange={(v) => { setMapping((m) => ({ ...m, [k]: v })); setAllow(false); }}
                 options={[
                   {
                     value: "",
@@ -586,24 +595,25 @@ export function Schedule({ token, data, manage }) {
     [confirm, setConfirm] = useState(false);
   const [saved, setSaved] = useState(false);
   useEffect(() => {
-    if (saved) {
-      setRows(
-        data.pertemuan.map((p) => ({
+    if (saved && data.kelas.revision >= saved) {
+      const next = data.pertemuan.map((p) => ({
           id: p.id,
           nomor: p.nomor,
           tanggal: p.tanggal,
           tempat: p.tempat,
           tipe: p.tipe,
-        })),
-      );
+        }));
+      setRows(next);
+      guard.markSaved(next);
       setSaved(false);
     }
-  }, [data.pertemuan, saved]);
+  }, [data.pertemuan, data.kelas.revision, saved]);
   const save = useMutation(api.kelola.saveSchedule),
     task = useTask(),
     lockedIds = new Set(
       data.pertemuan.filter((p) => p.revision > 0).map((p) => p.id),
     );
+  const guard = useEditorGuard(rows, manage, task.busy);
   const change = (i, k, v) =>
     setRows((r) => r.map((row, j) => (i === j ? { ...row, [k]: v } : row)));
   const generate = () =>
@@ -633,7 +643,7 @@ export function Schedule({ token, data, manage }) {
         current={data.kelas.revision}
         onReload={() => {
           setBaseRevision(data.kelas.revision);
-          setSaved(true);
+          setSaved(data.kelas.revision);
           task.clear();
         }}
       />
@@ -788,7 +798,8 @@ export function Schedule({ token, data, manage }) {
                     baseRevision,
                   });
                   setBaseRevision((r) => r + 1);
-                  setSaved(true);
+                  guard.markSaved(rows);
+                  setSaved(baseRevision + 1);
                   setConfirm(false);
                 }, "Jadwal tersimpan.")
                 .catch(() => {})
@@ -812,10 +823,19 @@ export function TemplateEditor({ token, data, manage }) {
     task = useTask(),
     save = useMutation(api.kelola.saveTemplate),
     makePreview = useAction(api.bapNode.preview);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const historicalConfig = useQuery(api.kelola.templateConfig, selectedTemplate ? { token, id: selectedTemplate } : "skip");
+  const guard = useEditorGuard(config, manage, task.busy);
   const setConfig = (value) => {
     setRawConfig(value);
     setPreview(null);
   };
+  useEffect(() => {
+    if (historicalConfig && selectedTemplate) {
+      setConfig({ ...DEFAULT_TEMPLATE, ...historicalConfig });
+      setSelectedTemplate(null);
+    }
+  }, [historicalConfig, selectedTemplate]);
   useEffect(
     () => () => {
       if (preview?.url) URL.revokeObjectURL(preview.url);
@@ -831,6 +851,7 @@ export function TemplateEditor({ token, data, manage }) {
       baseRevision,
     });
     setBaseRevision((r) => r + 1);
+    guard.markSaved(config);
     return result;
   };
   return (
@@ -844,6 +865,7 @@ export function TemplateEditor({ token, data, manage }) {
           current={data.kelas.revision}
           onReload={() => {
             setConfig({ ...DEFAULT_TEMPLATE, ...data.kelas.templateDraft });
+            guard.markSaved({ ...DEFAULT_TEMPLATE, ...data.kelas.templateDraft });
             setBaseRevision(data.kelas.revision);
             setPreview(null);
             task.clear();
@@ -988,7 +1010,8 @@ export function TemplateEditor({ token, data, manage }) {
                 {manage && (
                   <button
                     className="button button--quiet"
-                    onClick={() => setConfig({ ...DEFAULT_TEMPLATE, ...t.config })}
+                    disabled={task.busy || Boolean(selectedTemplate)}
+                    onClick={() => t.config ? setConfig({ ...DEFAULT_TEMPLATE, ...t.config }) : setSelectedTemplate(t.id)}
                   >
                     Salin ke editor
                   </button>

@@ -314,6 +314,7 @@ await assert.rejects(
   /AKSES_DITOLAK/,
 );
 await client.mutation(api.sesi.bukaKunci, {
+  expectedRevision: 1,
   token: manager,
   pertemuanId: p.id,
 });
@@ -524,7 +525,7 @@ await client.mutation(api.kelola.archive, {
   arsip: true,
 });
 await assert.rejects(
-  client.mutation(api.sesi.bukaKunci, { token: manager, pertemuanId: p.id }),
+  client.mutation(api.sesi.bukaKunci, { token: manager, pertemuanId: p.id, expectedRevision: 2 }),
   /KELAS_DIARSIPKAN/,
 );
 await client.query(api.bap.history, { token: manager, kelasId: a });

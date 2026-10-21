@@ -1,0 +1,95 @@
+{
+  "base": "5bd0d6f650c419a2c1486d0c79817147fce98c48",
+  "startedAt": "2026-10-21T05:59:22.696Z",
+  "sourceFingerprint": "9a524807b748a822aa25c9ea3782f75230010fd8e838c8a8748d3bb0414d6855",
+  "checks": [
+    {
+      "script": "scripts/test-logic.mjs",
+      "passed": true,
+      "durationMs": 248
+    },
+    {
+      "script": "scripts/test-handlers.mjs",
+      "passed": true,
+      "durationMs": 211
+    },
+    {
+      "script": "scripts/check-convex.mjs",
+      "passed": true,
+      "durationMs": 147
+    },
+    {
+      "script": "scripts/test-ui-logic.mjs",
+      "passed": true,
+      "durationMs": 123
+    },
+    {
+      "script": "scripts/test-print.mjs",
+      "passed": true,
+      "durationMs": 3039
+    },
+    {
+      "script": "scripts/test-management-unit.mjs",
+      "passed": true,
+      "durationMs": 1045
+    },
+    {
+      "script": "scripts/test-document-fidelity.mjs",
+      "passed": true,
+      "durationMs": 852
+    },
+    {
+      "script": "scripts/test-panggil.mjs",
+      "passed": true,
+      "durationMs": 107
+    },
+    {
+      "script": "scripts/test-audit.mjs",
+      "passed": true,
+      "durationMs": 249
+    },
+    {
+      "script": "scripts/test-documents-v2.mjs",
+      "passed": true,
+      "durationMs": 13502
+    },
+    {
+      "script": "scripts/ui/audit.cjs",
+      "passed": true,
+      "durationMs": 37068
+    },
+    {
+      "script": "scripts/ui/panggil.cjs",
+      "passed": true,
+      "durationMs": 129865
+    },
+    {
+      "script": "scripts/ui/sidebar.cjs",
+      "passed": true,
+      "durationMs": 59403
+    },
+    {
+      "script": "scripts/ui/faults.cjs",
+      "passed": true,
+      "durationMs": 9558
+    },
+    {
+      "script": "scripts/ui/class-layout.cjs",
+      "passed": true,
+      "durationMs": 17673
+    },
+    {
+      "script": "scripts/ui/pdf.cjs",
+      "passed": true,
+      "durationMs": 11401
+    },
+    {
+      "script": "scripts/ui/offline.cjs",
+      "passed": true,
+      "durationMs": 27118
+    }
+  ],
+  "passed": true,
+  "sourceUnchanged": true,
+  "finishedAt": "2026-10-21T06:04:34.349Z"
+}

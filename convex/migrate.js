@@ -2,6 +2,7 @@ import { internalMutation, internalQuery } from "./_generated/server.js";
 import { v, ConvexError } from "convex/values";
 import { DEFAULT_TEMPLATE } from "../bap-shared/management.js";
 import { classSnapshot, classRows } from "./lib/classLogic.js";
+import { syncClass } from "./lib/readModels.js";
 export const inspect = internalQuery({
   args: {},
   handler: async (ctx) => ({
@@ -145,6 +146,7 @@ export const initialize = internalMutation({
       pada: Date.now(),
       ringkas: `Kelas legacy ditautkan; demo=${demo}`,
     });
+    await syncClass(ctx, kelasId);
     return { skipped: false, kelasId };
   },
 });

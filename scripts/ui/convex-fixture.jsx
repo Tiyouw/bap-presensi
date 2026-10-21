@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useSyncExternalStore } from "react";
+import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import { getFunctionName } from "convex/server";
 import { PESERTA } from "./data-fixture.js";
 import { adaPraktikum } from "../../bap-shared/jadwal.js";
@@ -12,7 +12,7 @@ const read = (key, fallback) => {
     return fallback;
   }
 };
-const participants = PESERTA.map((p) => ({ ...p, id: p.nim }));
+const participants = read("ui-qa.roster", PESERTA.map((p) => ({ ...p, id: p.nim })));
 const kelas = {
   id: "k1",
   _id: "k1",
@@ -66,10 +66,36 @@ const wait = () => new Promise((resolve) => setTimeout(resolve, requestDelay));
 
 window.__qa = {
   calls,
+  seedHistory(count) {
+    kelas.readModelReady = true;
+    server.history = Array.from({ length: count }, (_, i) => ({ id: `archive-${i}`, nomor: 3, tanggal: "2026-10-21", revision: count - i, format: "docx", templateVersion: "kelas-k1-v1", url: "https://example.test/bap.docx", pada: count - i }));
+    publish();
+  },
   renameParticipant(id, nama) {
     const person = participants.find((p) => p.id === id);
     if (!person) throw new Error("Unknown synthetic participant");
     person.nama = nama;
+    localStorage.setItem("ui-qa.roster", JSON.stringify(participants));
+    publish();
+  },
+  addParticipant(person) {
+    participants.push(person);
+    localStorage.setItem("ui-qa.roster", JSON.stringify(participants));
+    publish();
+  },
+  advanceOpenWithParticipant(person) {
+    participants.push(person);
+    localStorage.setItem("ui-qa.roster", JSON.stringify(participants));
+    const p = server.pertemuan.find(p => p.id === "p3");
+    p.revision++;
+    p.status = "TERBUKA";
+    p.snapshot = { peserta: participants.map(p => ({ ...p })) };
+    publish();
+  },
+  removeParticipant(id) {
+    const index = participants.findIndex(p => p.id === id);
+    if (index >= 0) participants.splice(index, 1);
+    localStorage.setItem("ui-qa.roster", JSON.stringify(participants));
     publish();
   },
   holdQuery(name, held = true) {
@@ -175,7 +201,7 @@ export function useQuery(reference, args) {
       };
     if (name === "sesi:detail")
       return {
-        peserta: participants,
+        peserta: server.pertemuan.find(p => p.id === args.pertemuanId)?.snapshot?.peserta || participants,
         kelas,
         pertemuan: {
           ...server.pertemuan.find((p) => p.id === args.pertemuanId),
@@ -183,6 +209,11 @@ export function useQuery(reference, args) {
         presensi: server.presensi[args.pertemuanId] || [],
       };
     if (name === "bap:forSesi") return server.docs[args.pertemuanId] || null;
+    if (name === "bap:historyPage") {
+      const start = Number(args.paginationOpts.cursor || 0), count = args.paginationOpts.numItems;
+      const rows = server.history || [];
+      return { page: rows.slice(start, start + count), isDone: start + count >= rows.length, continueCursor: String(start + count) };
+    }
     if (name === "bap:ringkasanCetak")
       return server.pertemuan
         .filter((p) => adaPraktikum(p) && p.status === "KUNCI")
@@ -200,7 +231,13 @@ export function useQuery(reference, args) {
           };
         });
     return null;
-  }, [tick, name, args === "skip", args?.pertemuanId, args?.token]);
+  }, [tick, name, args === "skip", args?.pertemuanId, args?.token, args?.id, args?.kelasId, args?.paginationOpts?.numItems, args?.paginationOpts?.cursor]);
+}
+export function usePaginatedQuery(reference, args, { initialNumItems }) {
+  const [count, setCount] = useState(initialNumItems);
+  const value = useQuery(reference, args === "skip" ? "skip" : { ...args, paginationOpts: { cursor: null, numItems: count } });
+  const loadMore = useCallback(n => setCount(c => c + n), []);
+  return { results: value?.page || [], status: args === "skip" || value?.isDone ? "Exhausted" : value ? "CanLoadMore" : "LoadingFirstPage", loadMore };
 }
 export function useMutation(reference) {
   const name = getFunctionName(reference);
@@ -217,7 +254,8 @@ export function useMutation(reference) {
           error.data = "KONFLIK_REVISI";
           throw error;
         }
-        if (args.statuses.length !== 93) throw new Error("PESERTA_KURANG");
+        if (args.statuses.length !== (meeting.snapshot?.peserta || participants).length) throw new Error("PESERTA_KURANG");
+        meeting.snapshot ||= { peserta: participants.map(p => ({ ...p })) };
         meeting.revision++;
         meeting.status = "KUNCI";
         server.presensi[args.pertemuanId] = args.statuses;
@@ -225,9 +263,17 @@ export function useMutation(reference) {
         return { ok: true, revision: meeting.revision };
       }
       if (name === "sesi:bukaKunci") {
+        if (meeting.revision !== args.expectedRevision) throw { data: "KONFLIK_REVISI" };
         meeting.status = "TERBUKA";
         publish();
         return { ok: true, revision: meeting.revision };
+      }
+      if (name === "kelola:refreshSnapshot") {
+        if (meeting.revision !== args.baseRevision || meeting.status !== "TERBUKA") throw { data: "KONFLIK_REVISI" };
+        meeting.revision++;
+        meeting.snapshot = { peserta: participants.map(p => ({ ...p })) };
+        publish();
+        return { pertemuan: { ...meeting }, peserta: meeting.snapshot.peserta, kelas, presensi: server.presensi[meeting.id] || [] };
       }
       return { ok: true };
     },

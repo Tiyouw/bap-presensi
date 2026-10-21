@@ -5,7 +5,9 @@ export function useScopedStore() {
   const scope = useContext(StorageScope);
   return useMemo(
     () =>
-      Object.fromEntries(
+      ({
+        scope,
+        ...Object.fromEntries(
         [
           "bacaDetail",
           "bacaDraf",
@@ -20,7 +22,8 @@ export function useScopedStore() {
           name,
           (id, ...args) => store[name](scope ? `${scope}:${id}` : id, ...args),
         ]),
-      ),
+        ),
+      }),
     [scope],
   );
 }

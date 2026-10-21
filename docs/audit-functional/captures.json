@@ -1,0 +1,74 @@
+{
+  "base": "5bd0d6f650c419a2c1486d0c79817147fce98c48",
+  "synthetic": true,
+  "records": [
+    {
+      "version": "before",
+      "device": "desktop",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "rows": 93,
+      "firstStatus": "Hadir",
+      "secondTabEditable": true
+    },
+    {
+      "version": "before",
+      "device": "desktop",
+      "scenario": "server roster 93, draft roster 92, Bima Alpha",
+      "review": "93 Hadir\n0 Alpha\n0 Sakit\n0 Izin"
+    },
+    {
+      "version": "before",
+      "device": "mobile",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "rows": 93,
+      "firstStatus": "Hadir",
+      "secondTabEditable": true
+    },
+    {
+      "version": "before",
+      "device": "mobile",
+      "scenario": "server roster 93, draft roster 92, Bima Alpha",
+      "review": "93 Hadir\n0 Alpha\n0 Sakit\n0 Izin"
+    },
+    {
+      "version": "after",
+      "device": "desktop",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "rows": 93,
+      "firstStatus": "Hadir",
+      "secondTabEditable": false
+    },
+    {
+      "version": "after",
+      "device": "desktop",
+      "scenario": "server roster 93, draft roster 92, Bima Alpha",
+      "review": "92 Hadir\n1 Alpha\n0 Sakit\n0 Izin"
+    },
+    {
+      "version": "after",
+      "device": "mobile",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "rows": 93,
+      "firstStatus": "Hadir",
+      "secondTabEditable": false
+    },
+    {
+      "version": "after",
+      "device": "mobile",
+      "scenario": "server roster 93, draft roster 92, Bima Alpha",
+      "review": "92 Hadir\n1 Alpha\n0 Sakit\n0 Izin"
+    }
+  ]
+}

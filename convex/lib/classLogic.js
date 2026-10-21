@@ -3,6 +3,9 @@ import { requireClass } from "./access.js";
 import { DEFAULT_TEMPLATE } from "../../bap-shared/management.js";
 export function meetingSummary({snapshot,...meeting}) {return {...meeting,id:meeting._id};}
 export async function classRows(ctx, table, kelasId) {
+  if (table === "pertemuan" && (await ctx.db.get(kelasId))?.readModelReady) {
+    return (await ctx.db.query("meetingView").withIndex("by_kelas", q => q.eq("kelasId", kelasId)).collect()).map(v => v.data);
+  }
   return ctx.db
     .query(table)
     .withIndex("by_kelas", (q) => q.eq("kelasId", kelasId))

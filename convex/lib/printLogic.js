@@ -18,7 +18,7 @@ export async function ringkasanCetakLogic(ctx, { token, kelasId }) {
       return {
         id: p._id,
         nomor: p.nomor,
-        tanggal: p.snapshot?.tanggal || p.tanggal,
+        tanggal: p.snapshot?.tanggal || p.snapshotTanggal || p.tanggal,
         revision: p.revision,
         jumlahAbsen,
         jumlahForm: jumlahForm(jumlahAbsen),

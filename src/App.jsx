@@ -1,4 +1,6 @@
-import { Component, useEffect, useState } from "react";
+import { Component, useEffect, useRef, useState } from "react";
+import { reconcileDraft } from "./lib/draft.js";
+import { pesanGalat } from "./lib/presensi.js";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api.js";
 import Login from "./screens/Login.jsx";
@@ -371,7 +373,10 @@ function AttendanceRoute({
     [override, setOverride] = useState(null),
     refresh = useMutation(api.kelola.refreshSnapshot),
     [confirm, setConfirm] = useState(false),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [snapshotBusy, setSnapshotBusy] = useState(false),
+    [resumeDraft, setResumeDraft] = useState(null),
+    snapshotControls = useRef(null);
   if (!detail && network.online)
     return (
       <main className="mg-page">
@@ -420,6 +425,9 @@ function AttendanceRoute({
         peserta={peserta}
         kelas={kelas}
         readOnly={data.kelas.arsip || data.kelas.draft}
+        snapshotControls={snapshotControls}
+        resumeDraft={resumeDraft}
+        onResumeCleared={() => setResumeDraft(null)}
         network={network}
         onKembali={() => navigate(`/kelas/${kelasId}`)}
         onHelp={onHelp}
@@ -429,6 +437,7 @@ function AttendanceRoute({
         <Modal
           title="Perbarui data sesi dari kelas?"
           onClose={() => setConfirm(false)}
+          busy={snapshotBusy}
         >
           <p>
             Peserta akan mengikuti{" "}
@@ -440,20 +449,35 @@ function AttendanceRoute({
           {error && <Notice kind="error">{error}</Notice>}
           <button
             className="button button--primary"
+            disabled={snapshotBusy || !network.online}
             onClick={async () => {
+              if (snapshotBusy) return;
+              setSnapshotBusy(true);
+              setError("");
               try {
+                const draft = snapshotControls.current?.prepare();
+                if (!draft) throw Error("Editor presensi belum siap. Tunggu data selesai dimuat.");
                 const updated = await refresh({
                   token,
                   pertemuanId: meeting.id,
-                  baseRevision: meeting.revision,
+                  baseRevision: draft.baseRevision,
                 });
-                store.hapusDraf(meeting.id);
+                const reconciled = reconcileDraft(draft, updated.peserta, updated.presensi);
+                const nextDraft = { ...reconciled, baseRevision: updated.pertemuan.revision,
+                  panggil: null, needsRosterReview: true, ts: Date.now() };
+                // Keep the in-memory copy too: a post-mutation storage failure must
+                // not discard corrections that were already safely backed up.
+                const persisted = store.simpanDraf(meeting.id, nextDraft);
+                setResumeDraft(persisted ? null : nextDraft);
                 store.simpanDetail(meeting.id, updated);
                 setOverride(updated);
                 setRefreshKey((k) => k + 1);
                 setConfirm(false);
               } catch (e) {
-                setError(String(e.data || e.message));
+                setError(e.data?.message || (e.data ? pesanGalat(e) : String(e.message || e)));
+                snapshotControls.current?.abort();
+              } finally {
+                setSnapshotBusy(false);
               }
             }}
           >
@@ -466,6 +490,8 @@ function AttendanceRoute({
 }
 function LegacyDrafts({ user, data }) {
   const [done, setDone] = useState(false),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState(""),
     scope = `${user.id}:${data.kelas.id}`;
   let claimed = false;
   try {
@@ -483,17 +509,30 @@ function LegacyDrafts({ user, data }) {
         draf tersebut milikmu.
         <button
           className="button button--outline"
-          onClick={() => {
-            for (const p of drafts) simpanDraf(`${scope}:${p.id}`, p.draft);
+          disabled={busy}
+          onClick={async () => {
+            if (!navigator.locks?.request) { setError("Gunakan browser terbaru melalui HTTPS untuk mengambil draf dengan aman."); return; }
+            setBusy(true);
+            setError("");
             try {
+              for (const p of drafts) {
+                await navigator.locks.request(`bap.draft.editor.${scope}:${p.id}`, { ifAvailable: true }, lock => {
+                  if (!lock) throw Error("Tutup tab presensi yang sedang mengedit sebelum mengambil draf lama.");
+                  // Never replace a newer account-scoped draft with legacy data.
+                  if (!bacaDraf(`${scope}:${p.id}`) && !simpanDraf(`${scope}:${p.id}`, p.draft))
+                    throw Error("Draf belum dapat disimpan. Periksa ruang penyimpanan lalu coba lagi.");
+                });
+              }
               localStorage.setItem("bap.legacyDraftClaimed", user.id);
-            } catch {}
-            setDone(true);
+              setDone(true);
+            } catch (e) { setError(e.message); }
+            finally { setBusy(false); }
           }}
         >
           Ambil {drafts.length} draf untuk akun ini
         </button>
       </Notice>
+      {error && <Notice kind="error">{error}</Notice>}
     </div>
   );
 }

@@ -84,11 +84,16 @@ export const generate = action({
       const storageId = await ctx.storage.store(
         new Blob([buf], { type: MIME[format] }),
       );
-      await ctx.runMutation(internal.bap.selesai, {
+      const finalized = await ctx.runMutation(internal.bap.selesai, {
         id: claim.id,
+        attempt: claim.attempt,
         storageId,
         sha256,
       });
+      if (!finalized.accepted) {
+        await ctx.storage.delete(storageId);
+        return { status: "BUSY" };
+      }
       return {
         status: "READY",
         revision,
@@ -99,6 +104,7 @@ export const generate = action({
     } catch (e) {
       await ctx.runMutation(internal.bap.gagal, {
         id: claim.id,
+        attempt: claim.attempt,
         pesan: e.message || "Gagal render",
       });
       throw new ConvexError({ code: "GENERATE_GAGAL", message: e.message });

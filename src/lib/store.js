@@ -63,11 +63,11 @@ export function bacaCache(scope = "") {
   }
 }
 
-export function simpanDraf(pertemuanId, { baseRevision, statuses, panggil }) {
+export function simpanDraf(pertemuanId, { baseRevision, statuses, panggil, roster, rosterReviewIds, needsRosterReview }) {
   try {
     localStorage.setItem(
       K.draft(pertemuanId),
-      JSON.stringify({ baseRevision, statuses, panggil, ts: Date.now() }),
+      JSON.stringify({ baseRevision, statuses, panggil, roster, rosterReviewIds, needsRosterReview, ts: Date.now() }),
     );
     return true;
   } catch {

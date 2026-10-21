@@ -1,10 +1,11 @@
 import PdfPreview from "../components/PdfPreview.jsx";
 import ClassTabHeading from "../components/ClassTabHeading.jsx";
-import { useEffect, useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useEffect, useRef, useState } from "react";
+import { useMutation, useQuery, usePaginatedQuery } from "convex/react";
 import { api } from "../../convex/_generated/api.js";
 import { navigate, linkClick } from "../lib/navigation.js";
-import { Field, TaskForm, useTask, Feedback } from "../components/Form.jsx";
+import { Field, TaskForm, useTask, Feedback, RevisionNotice } from "../components/Form.jsx";
+import { useEditorGuard } from "../lib/useEditorGuard.js";
 import { Notice } from "../components/Layout.jsx";
 import Modal from "../components/Modal.jsx";
 import { matches } from "../../bap-shared/management.js";
@@ -442,6 +443,8 @@ function CourseSettings({ token, data }) {
     [kode, setKode] = useState(data.kelas.matkulKode),
     save = useMutation(api.kelola.saveCourse),
     task = useTask();
+  const [baseRevision, setBaseRevision] = useState(data.kelas.matkulRevision || 0);
+  const guard = useEditorGuard({ nama, kode }, true, task.busy);
   return (
     <section className="mg-panel">
       <h3>Mata kuliah induk</h3>
@@ -452,9 +455,21 @@ function CourseSettings({ token, data }) {
       <TaskForm
         task={task}
         onSubmit={() =>
-          task.run(() => save({ token, id: data.kelas.matkulId, nama, kode }))
+          task.run(async () => {
+            const result = await save({ token, id: data.kelas.matkulId, nama, kode, expectedRevision: baseRevision });
+            setBaseRevision(result.revision);
+            guard.markSaved();
+          })
         }
       >
+        <RevisionNotice base={baseRevision} current={data.kelas.matkulRevision || 0}
+          onReload={() => {
+            setNama(data.kelas.matkulNama);
+            setKode(data.kelas.matkulKode);
+            setBaseRevision(data.kelas.matkulRevision || 0);
+            guard.markSaved({ nama: data.kelas.matkulNama, kode: data.kelas.matkulKode });
+            task.clear();
+          }} />
         <div className="mg-form-grid">
           <Field
             label="Nama mata kuliah"
@@ -478,8 +493,21 @@ function CourseSettings({ token, data }) {
 export function Documents({ token, catalog, onPrint, kelasId: initial }) {
   const [kelasId, setClass] = useState(initial || catalog.kelas[0]?.id || ""),
     [preview, setPreview] = useState(null),
-    task = useTask(),
-    docs = useQuery(api.bap.history, kelasId ? { token, kelasId } : "skip");
+    task = useTask();
+  const projected = Boolean(catalog.kelas.find(c => c.id === kelasId)?.readModelReady);
+  const legacy = useQuery(api.bap.history, kelasId && !projected ? { token, kelasId } : "skip");
+  const { results, status, loadMore } = usePaginatedQuery(api.bap.historyPage,
+    kelasId && projected ? { token, kelasId } : "skip", { initialNumItems: 30 });
+  const docs = projected ? status === "LoadingFirstPage" ? undefined : results : legacy;
+  const nextPage = useRef(null);
+  useEffect(() => {
+    if (!projected || status !== "CanLoadMore" || !nextPage.current) return;
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(e => e.isIntersecting)) loadMore(30);
+    }, { rootMargin: "240px" });
+    observer.observe(nextPage.current);
+    return () => observer.disconnect();
+  }, [projected, status, loadMore, kelasId]);
   useEffect(
     () => () => {
       if (preview?.url) URL.revokeObjectURL(preview.url);
@@ -575,6 +603,7 @@ export function Documents({ token, catalog, onPrint, kelasId: initial }) {
               </div>
             </div>
           ))}
+          {projected && <div ref={nextPage} aria-label="Memuat dokumen berikutnya" aria-busy={status === "LoadingMore"} style={{ minHeight: 1 }} />}
           {!docs.length && (
             <div className="empty-state">
               <h2>Belum ada dokumen</h2>
