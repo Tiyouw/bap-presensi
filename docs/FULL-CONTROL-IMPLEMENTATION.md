@@ -54,7 +54,7 @@ publish hanya online. Kegagalan storage mempertahankan input di memori dan
 menyediakan unduhan draf. Retry operation yang sudah berhasil tidak membuat
 revisi kedua; izin yang dicabut tetap diperiksa.
 
-`scripts/test-corrections.mjs`: delapan kelompok handler. `scripts/ui/corrections.cjs`:
+`scripts/test-corrections.mjs`: sembilan kelompok handler. `scripts/ui/corrections.cjs`:
 Chromium/WebKit untuk reload, konflik, restore, kuota storage, dua tab, offline,
 responsivitas dan runtime error. `scripts/ui/audit.cjs` tetap lulus. Capture berasal
 dari base PR sebenarnya `db39e48`, memakai 93 peserta sintetis dan sesi p3 yang
@@ -108,7 +108,9 @@ Word/PDF tetap diunduh terpisah. JSON menyertakan manifest hash, tanpa kredensia
 URL autentikasi atau bytes storage.
 
 Restore memvalidasi format/namespace/ID, whitelist akademik, pemetaan peserta,
-versi tujuan dan hash preview. Lintas kelas/deployment memerlukan pilihan eksplisit;
+versi tujuan dan hash preview. Preview menampilkan nilai identitas/template,
+jadwal/lifecycle dan status peserta sebelum–sesudah; boolean tidak dikoersi dari
+string. Perubahan unlock tanpa kenaikan nomor revisi tetap membatalkan preview. Lintas kelas/deployment memerlukan pilihan eksplisit;
 server tidak membaca ID sumber dari file. ID stabil diprioritaskan untuk kelas
 yang sama; lintas kelas memakai NIM/pemetaan manual. Satu versi sesi per commit,
 roster maksimal 500 peserta yang ditulis per kelompok; UI menyediakan pemilihan
@@ -118,16 +120,25 @@ file sumber tidak digunakan sebagai penulis baru. File dan ledger lama tidak dit
 
 Draf koreksi/jadwal dapat diunduh dan dimuat kembali dengan namespace
 akun/kelas/sesi/server. Import memeriksa operation yang sudah diterapkan untuk
-mencegah duplikasi. Draf yang usang tetap perlu rebase dan preview; kegagalan
+mencegah duplikasi. Aksi Buang draf menghapus hanya draf lokal; data server tetap. Pembersihan operation
+yang selesai tidak boleh menghapus draf lebih baru dari tab lain. Draf yang ternyata
+sudah diterapkan dipertahankan dengan publikasi diblokir sampai pengguna memilih
+buang atau memakai isinya sebagai operasi baru setelah preview. Pilihan izin juga
+dipertahankan bila grant diubah oleh orang lain, dengan reload eksplisit.
+Draf yang usang tetap perlu rebase dan preview; kegagalan
 storage mempertahankan isi di memori.
 
-Validasi tahap ini: unit kelas 13, lifecycle 5 dan batch 9 kelompok; browser koreksi
-18 dan kontrol kelas 24 pemeriksaan di Chromium/WebKit. Native preview terpisah
-`preview/preview-codex-full-control-data` menguji 9 kelompok integrasi dan 8 browser
+Validasi tahap ini: unit kelas 16, lifecycle 5 dan batch 9 kelompok; browser koreksi
+22 dan kontrol kelas 28 pemeriksaan di Chromium/WebKit. Native preview terpisah
+`preview/preview-codex-full-control-data` menguji 9 kelompok integrasi dan 12 browser
 produksi, hash/isi Word/PDF, konflik, ACL, backup/restore dan halaman 320/390/1280
 dengan teks aktual 200%. Tambahan native membuktikan rollback setelah penulisan
 ledger/proyeksi/presensi, >75 versi dengan restore lama, serta kelompok 500 peserta.
 Probe internal sementara dibatasi ke URL preview yang persis dan telah dihapus.
+Migrasi native memakai old main sebenarnya, checkpoint dua halaman lalu proses
+terpisah melanjutkan hingga selesai; hash dokumen lama utuh dan riwayat parsial
+tidak direkonstruksi. Uji dokumen593 absen menghasilkan Word serta PDF50 halaman,
+dengan peserta terakhir diverifikasi. Lihat bukti final tersanitasi pada checklist.
 
 Screenshot tahap 4 memakai archive base sebenarnya `24a6305`, data sintetis dan
 viewport yang sama; manifest di `docs/full-control/data/captures.json`. Pengujian

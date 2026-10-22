@@ -1,3 +1,4 @@
+const state=ctx=>JSON.stringify([...ctx.tabel].map(([name,rows])=>[name,[...rows]]).filter(([,rows])=>rows.length).sort(([a],[b])=>a.localeCompare(b)));
 import assert from "node:assert/strict";
 import {fixture,transaction} from "./revision-fixture.mjs";
 import {simpanDanKunciLogic} from "../convex/lib/sesiLogic.js";
@@ -13,7 +14,7 @@ await check('date-only correction preserves roster/template/identity/statuses an
  await save(f,args);const after=await readRevision(f.ctx,await revisionByNumber(f.ctx,f.pertemuanId,2));assert.equal(after.tanggal,'2026-10-23');assert.equal(after.status,'KUNCI');assert.deepEqual(after.statuses,before.statuses);assert.deepEqual(after.snapshot.kelas,before.snapshot.kelas);assert.deepEqual(after.snapshot.template,before.snapshot.template);assert.deepEqual(after.snapshot.peserta,before.snapshot.peserta);
 });
 await check('preview is read-only and retries are idempotent',async()=>{
- const f=await ready(),args=await request(f),before=JSON.stringify([...f.ctx.tabel]);const p=await previewCorrection._handler(f.ctx,args);assert.equal(JSON.stringify([...f.ctx.tabel]),before);
+ const f=await ready(),args=await request(f),before=state(f.ctx);const p=await previewCorrection._handler(f.ctx,args);assert.equal(state(f.ctx),before);
  const a={...args,previewHash:p.previewHash,operationKey:'synthetic-operation-002'};const first=await commitCorrection._handler(f.ctx,a),second=await commitCorrection._handler(f.ctx,a);assert.equal(first.id,second.id);assert.equal(second.replayed,true);
  await assert.rejects(()=>commitCorrection._handler(f.ctx,{...a,previewHash:'different'}),/KUNCI_OPERASI_DIPAKAI/);
 });

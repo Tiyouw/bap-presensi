@@ -113,3 +113,10 @@ const freeGroups = [
 ];
 assert.equal(cariPeserta(freeGroups, null, "").length, 2);
 assert.equal(cariPeserta(freeGroups, "SEMUA", "").length, 1);
+
+// Late completions in another tab must not erase the active tab's newer draft.
+const {removeCompletedDraft,discardStoredDraft}=await import('../src/lib/draftStorage.js');
+const draftMemory=new Map();globalThis.localStorage={getItem:k=>draftMemory.get(k)||null,setItem:(k,v)=>draftMemory.set(k,v),removeItem:k=>draftMemory.delete(k)};
+draftMemory.set('scope',JSON.stringify({operationKey:'new-operation',value:'keep'}));assert.equal(removeCompletedDraft('scope','old-operation'),true);assert.equal(JSON.parse(draftMemory.get('scope')).value,'keep');assert.equal(removeCompletedDraft('scope','new-operation'),true);assert.equal(draftMemory.has('scope'),false);
+draftMemory.set('scope',JSON.stringify({operationKey:'old-operation'}));localStorage.removeItem=()=>{throw Error('blocked delete')};assert.equal(discardStoredDraft('scope',{operationKey:'fresh-operation'}),true);assert.equal(JSON.parse(draftMemory.get('scope')).operationKey,'fresh-operation');localStorage.setItem=()=>{throw Error('blocked storage')};assert.equal(discardStoredDraft('scope',{operationKey:'cannot-save'}),false);assert.equal(JSON.parse(draftMemory.get('scope')).operationKey,'fresh-operation');
+console.log('Draft storage: newer-tab preservation, explicit discard, overwrite fallback and failed deletion reporting passed.');

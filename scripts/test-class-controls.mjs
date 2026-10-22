@@ -1,3 +1,4 @@
+const state=ctx=>JSON.stringify([...ctx.tabel].map(([name,rows])=>[name,[...rows]]).filter(([,rows])=>rows.length).sort(([a],[b])=>a.localeCompare(b)));
 import assert from "node:assert/strict";
 import {fixture,transaction} from "./revision-fixture.mjs";
 import {hashToken} from "../convex/lib/auth.js";
@@ -43,7 +44,7 @@ await check("paged backup is sanitized, consistent and export ACL applies to dir
  const u=await operator(f);await assert.rejects(()=>backup.manifest._handler(f.ctx,{...f,token:u.token}),/IZIN_KELAS_KURANG/);const m=await backup.manifest._handler(f.ctx,f);await bukaKunciLogic(f.ctx,{...f,expectedRevision:1});await assert.rejects(()=>backup.page._handler(f.ctx,{...f,guard:m.guard,section:"participants",paginationOpts:{cursor:null,numItems:20}}),/BACKUP_DATA_BERUBAH/);
 });
 await check("restore preview is read-only; restore is new revision, retry idempotent, source author ignored",async()=>{
- const f=await ready();await simpanDanKunciLogic(f.ctx,{...f,baseRevision:0});const b=await exportAll(f),r=b.meetings[0];r.version.tanggal="2026-10-23";r.version.snapshot.tanggal=r.version.tanggal;r.version.provenance={actor:"spoof",createdAt:1};const a=request(f,b,{targetMeetingId:f.pertemuanId,expectedMeetingRevision:1,payload:{...request(f,b).payload,meeting:r}}),before=JSON.stringify([...f.ctx.tabel]);await backup.previewRestore._handler(f.ctx,a);assert.equal(JSON.stringify([...f.ctx.tabel]),before);
+ const f=await ready();await simpanDanKunciLogic(f.ctx,{...f,baseRevision:0});const b=await exportAll(f),r=b.meetings[0];r.version.tanggal="2026-10-23";r.version.snapshot.tanggal=r.version.tanggal;r.version.provenance={actor:"spoof",createdAt:1};const a=request(f,b,{targetMeetingId:f.pertemuanId,expectedMeetingRevision:1,payload:{...request(f,b).payload,meeting:r}}),before=state(f.ctx);await backup.previewRestore._handler(f.ctx,a);assert.equal(state(f.ctx),before);
  const{result,args}=await save(f,a);assert.equal(result.revision,2);assert.deepEqual(await backup.commitRestore._handler(f.ctx,args),result);assert.equal((await f.ctx.db.get(f.pertemuanId)).tanggal,"2026-10-23");const rev=await readRevision(f.ctx,await revisionByNumber(f.ctx,f.pertemuanId,2));assert.equal(rev.actorName,"Admin Demo");assert.notEqual(rev.createdAt,1);assert.ok(await revisionByNumber(f.ctx,f.pertemuanId,1));assert.deepEqual(rev.statuses,f.statuses);
 });
 await check("same-class stable ID survives changed NIM; cross-class matching needs explicit namespace review",async()=>{
@@ -53,15 +54,15 @@ await check("same-class stable ID survives changed NIM; cross-class matching nee
 await check("stale/hash/foreign-ID/partial sources reject before writes and injected failure rolls back cohort",async()=>{
  const f=await ready(),b=await exportAll(f),a=request(f,b,{updateRoster:true});const preview=await backup.previewRestore._handler(f.ctx,a);await assert.rejects(()=>backup.commitRestore._handler(f.ctx,{...a,expectedClassRevision:99,previewHash:preview.previewHash,operationKey:crypto.randomUUID()}),/KONFLIK_REVISI/);await assert.rejects(()=>backup.commitRestore._handler(f.ctx,{...a,reason:"Different",previewHash:preview.previewHash,operationKey:crypto.randomUUID()}),/PREVIEW_KOREKSI_BERUBAH/);
  await assert.rejects(()=>backup.previewRestore._handler(f.ctx,{...a,mapping:[{sourceId:b.participants[0].id,targetId:"foreign-id"}]}),/BACKUP_PESERTA_ASING/);const partial=structuredClone(b.meetings[0]);partial.version.legacyPartial=true;await assert.rejects(()=>backup.previewRestore._handler(f.ctx,request(f,b,{payload:{...a.payload,meeting:partial}})),/REVISI_LAMA_PARSIAL/);
- const before=JSON.stringify([...f.ctx.tabel]),insert=f.ctx.db.insert;f.ctx.db.insert=async(t,d)=>{if(t==="audit")throw Error("Injected failure");return insert(t,d)};await assert.rejects(()=>transaction(f.ctx,()=>backup.commitRestore._handler(f.ctx,{...a,previewHash:preview.previewHash,operationKey:crypto.randomUUID()})),/Injected failure/);assert.equal(JSON.stringify([...f.ctx.tabel]),before);
+ const before=state(f.ctx),insert=f.ctx.db.insert;f.ctx.db.insert=async(t,d)=>{if(t==="audit")throw Error("Injected failure");return insert(t,d)};await assert.rejects(()=>transaction(f.ctx,()=>backup.commitRestore._handler(f.ctx,{...a,previewHash:preview.previewHash,operationKey:crypto.randomUUID()})),/Injected failure/);assert.equal(state(f.ctx),before);
 });
 await check("capacity has actionable cohorts, CSV quotes and formula escaping preserve Unicode",async()=>{
  const f=await ready(),b=await exportAll(f),participants=Array.from({length:501},(_,i)=>({id:`src-${i}`,nim:`NEW${i}`,nama:`Demo ${i}`,golongan:"A",aktif:true,urut:i+1}));await assert.rejects(()=>backup.previewRestore._handler(f.ctx,request(f,b,{updateRoster:true,payload:{...request(f,b).payload,participants}})),/BACKUP_PILIH_BAGIAN/);
  const value=csv([["=SUM(1,2)"," \t@formula","Dwi, \"Ä\"","line\nnext","00123"]]);assert(value.includes('"\'=SUM(1,2)"'));assert(value.includes('"\' \t@formula"'));assert(value.includes('"Dwi, ""Ä"""'));assert(value.includes('"00123"'));
 });
 await check("legacy roster clients cannot silently skip updates after protocol enable/disable",async()=>{
- const f=await ready(),flag=await f.ctx.db.query("featureFlag").withIndex("by_key",q=>q.eq("key",CONTROL_FLAG)).unique();await f.ctx.db.patch(flag._id,{enabled:false});const before=JSON.stringify([...f.ctx.tabel]);
- await assert.rejects(()=>classes.importRoster._handler(f.ctx,{...f,baseRevision:1,source:"legacy.csv",allowUpdate:true,rows:[{nim:"QA1",nama:"Legacy overwrite",golongan:"B"}]}),/GUNAKAN_EDITOR_ROSTER/);assert.equal(JSON.stringify([...f.ctx.tabel]),before);
+ const f=await ready(),flag=await f.ctx.db.query("featureFlag").withIndex("by_key",q=>q.eq("key",CONTROL_FLAG)).unique();await f.ctx.db.patch(flag._id,{enabled:false});const before=state(f.ctx);
+ await assert.rejects(()=>classes.importRoster._handler(f.ctx,{...f,baseRevision:1,source:"legacy.csv",allowUpdate:true,rows:[{nim:"QA1",nama:"Legacy overwrite",golongan:"B"}]}),/GUNAKAN_EDITOR_ROSTER/);assert.equal(state(f.ctx),before);
 });
 await check("empty grants protect all class data mutations and template reads",async()=>{
  const f=await ready(),u=await operator(f);await grant(f,u,[]);const args={token:u.token,kelasId:f.kelasId,baseRevision:1};
@@ -71,5 +72,15 @@ await check("empty grants protect all class data mutations and template reads",a
 await check("backup creation respects the same 100 active session limit as ordinary creation",async()=>{
  const f=await ready(),b=await exportAll(f);for(let i=0;i<99;i++)await f.ctx.db.insert("pertemuan",{kelasId:f.kelasId,nomor:100+i,tanggal:"2026-12-01",tipe:"REGULER",tempat:"QA",status:"TERBUKA",revision:0});
  const a=request(f,b,{payload:{...request(f,b).payload,meeting:b.meetings[0]}});await assert.rejects(()=>backup.previewRestore._handler(f.ctx,a),/BATAS_SESI_AKTIF/);
+});
+await check("backup preview shows exact lifecycle, identity, template and attendance changes",async()=>{
+ const f=await ready();await simpanDanKunciLogic(f.ctx,{...f,baseRevision:0});const b=await exportAll(f),source=structuredClone(b.meetings[0]);Object.assign(source.version,{tanggal:"2026-10-24",tipe:"LIBUR",status:"TERBUKA",cancelled:true});source.version.snapshot.kelas.dosen="Dosen Impor Demo";source.version.snapshot.template.judul="JUDUL IMPOR DEMO";source.version.statuses[1].status="SAKIT";
+ const a=request(f,b,{targetMeetingId:f.pertemuanId,expectedMeetingRevision:1,payload:{...request(f,b).payload,meeting:source}}),p=await backup.previewRestore._handler(f.ctx,a);assert.deepEqual(p.impact.meeting.find(r=>r.field==="cancelled"),{field:"cancelled",before:false,after:true});assert.equal(p.impact.meeting.find(r=>r.field==="tanggal").after,"2026-10-24");assert.equal(p.impact.sessionIdentity.find(r=>r.field==="dosen").after,"Dosen Impor Demo");assert.equal(p.impact.sessionTemplate.find(r=>r.field==="judul").after,"JUDUL IMPOR DEMO");assert.equal(p.impact.attendance[1].before.status,"ALPHA");assert.equal(p.impact.attendance[1].after.status,"SAKIT");
+});
+await check("backup files reject string booleans instead of silently reactivating or cancelling",async()=>{
+ const f=await ready(),b=await exportAll(f),a=request(f,b,{updateRoster:true}),bad=structuredClone(a);bad.payload.participants[0].aktif="false";await assert.rejects(()=>backup.previewRestore._handler(f.ctx,bad),/BACKUP_TIDAK_VALID/);const meeting=structuredClone(b.meetings[0]);meeting.version.cancelled="false";await assert.rejects(()=>backup.previewRestore._handler(f.ctx,request(f,b,{payload:{...a.payload,meeting}})),/BACKUP_TIDAK_VALID/);
+});
+await check("unlock invalidates a restore preview even when the numeric meeting revision is unchanged",async()=>{
+ const f=await ready();await simpanDanKunciLogic(f.ctx,{...f,baseRevision:0});const b=await exportAll(f),a=request(f,b,{targetMeetingId:f.pertemuanId,expectedMeetingRevision:1,payload:{...request(f,b).payload,meeting:b.meetings[0]}}),p=await backup.previewRestore._handler(f.ctx,a);await bukaKunciLogic(f.ctx,{...f,expectedRevision:1});assert.equal((await f.ctx.db.get(f.pertemuanId)).revision,1);const before=state(f.ctx);await assert.rejects(()=>backup.commitRestore._handler(f.ctx,{...a,previewHash:p.previewHash,operationKey:crypto.randomUUID()}),/PREVIEW_KOREKSI_BERUBAH/);assert.equal(state(f.ctx),before);
 });
 console.log(`${groups} class control groups passed.`);

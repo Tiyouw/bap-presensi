@@ -75,6 +75,7 @@ const restoredControls=restoreControlEngine();const controlsReady=restoredContro
 window.__qa = {
   calls,
   controlsReady(){return Boolean(controlEngine)},
+  async controlOtherGrant(){const g=await controlEngine.ctx.db.query('classCapability').withIndex('by_class_user',q=>q.eq('kelasId','k1').eq('penggunaId','qa-operator')).unique();await controlEngine.ctx.db.patch(g._id,{capabilities:['schedule'],revision:g.revision+1});await controlEngine.refresh();publish();},
   async enableControls(options={}){controlEngine=await createControlEngine({kelas,participants,server,...options});syncControls();publish();},
   async controlRole(peran,caps){await controlEngine.ctx.db.patch('qa-user',{peran});if(caps){const old=await controlEngine.ctx.db.query('classCapability').withIndex('by_class_user',q=>q.eq('kelasId','k1').eq('penggunaId','qa-user')).unique();if(old)await controlEngine.ctx.db.patch(old._id,{capabilities:caps,revision:(old.revision||0)+1});else await controlEngine.ctx.db.insert('classCapability',{kelasId:'k1',penggunaId:'qa-user',capabilities:caps,revision:1});}await controlEngine.refresh();publish();},
   async controlAdvance(id='p3'){await controlEngine.advance(id);syncControls();publish();},
@@ -228,7 +229,7 @@ export function useQuery(reference, args) {
       };
     if(name==='revisions:classAvailability')return controlEngine?{enabled:true}:null;
     if(name==='revisions:historyPage'||name==='revisions:printVersionsPage'){if(!controlEngine)return undefined;const rows=controlEngine.cache.get(name==='revisions:historyPage'?'revisions:historyRows:'+args.pertemuanId:'revisions:printRows')||[],start=Number(args.paginationOpts.cursor||0),count=args.paginationOpts.numItems;return{page:rows.slice(start,start+count),isDone:start+count>=rows.length,continueCursor:String(start+count)};}
-    if(name.startsWith('revisions:'))return controlEngine?.cache.get(name+':'+args.pertemuanId);
+    if(name.startsWith('revisions:')){const model=controlEngine?.cache.get(name+':'+args.pertemuanId);if(name==='revisions:editor'&&model&&args.operationKey){const op=[...controlEngine.ctx.tabel.get('meetingRevision')?.values()||[]].find(r=>r.pertemuanId===args.pertemuanId&&r.operationKey===args.operationKey&&r.actorId==='qa-user');return{...model,completedOperation:op?{operationKey:op.operationKey,revision:op.revision,date:op.tanggal}:null};}return model;}
     if(name==='scheduleBatches:jobsPage'){if(!controlEngine)return undefined;const rows=controlEngine.cache.get('scheduleBatches:jobs')||[],start=Number(args.paginationOpts.cursor||0),count=args.paginationOpts.numItems;return{page:rows.slice(start,start+count),isDone:start+count>=rows.length,continueCursor:String(start+count)};}
     if(name==='scheduleBatches:jobDetail')return controlEngine?.cache.get(name+':'+args.jobId);
     if (name === "bap:forSesi") return server.docs[args.pertemuanId] || null;
@@ -254,7 +255,7 @@ export function useQuery(reference, args) {
           };
         });
     return null;
-  }, [tick, name, args === "skip", args?.pertemuanId, args?.token, args?.id, args?.kelasId,args?.jobId, args?.paginationOpts?.numItems, args?.paginationOpts?.cursor]);
+  }, [tick, name, args === "skip", args?.pertemuanId, args?.token, args?.id, args?.kelasId,args?.jobId,args?.operationKey, args?.paginationOpts?.numItems, args?.paginationOpts?.cursor]);
 }
 export function usePaginatedQuery(reference, args, { initialNumItems }) {
   const [count, setCount] = useState(initialNumItems);

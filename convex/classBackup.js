@@ -7,7 +7,7 @@ import {controlEnabled,readRevision,activeStatuses,appendRevision} from "./lib/r
 import {syncParticipant,syncClass,syncMeeting,syncTemplate} from "./lib/readModels.js";
 import {hashToken} from "./lib/auth.js";
 import {assertSnapshotSize} from "./lib/snapshotSize.js";
-import {BACKUP_FORMAT,BACKUP_VERSION,identityData,participantData,versionData,normalizeBackupSelection} from "../bap-shared/backup.js";
+import {BACKUP_FORMAT,BACKUP_VERSION,identityData,participantData,versionData,normalizeBackupSelection,IDENTITY_FIELDS} from "../bap-shared/backup.js";
 const namespace=()=>process.env.CONVEX_CLOUD_URL||process.env.CONVEX_SITE_URL||"local-handler-tests";
 async function access(ctx,a,caps=["export"],write=false){
  const result=await requireCapability(ctx,a.token,a.kelasId,caps,write);
@@ -57,7 +57,8 @@ async function prepare(ctx,a){
   if(used.has(id))throw new ConvexError("BACKUP_PESERTA_DOBEL");used.add(id);
   if(a.updateRoster&&existing.some(p=>p._id!==target?._id&&p.nim.toUpperCase()===source.nim.toUpperCase()))throw new ConvexError("NIM_SUDAH_ADA");
   if(!target)newCount++;if(!target||a.updateRoster)touched++;
-  mappings.push({sourceId:source.id,targetId:target?._id||null,source,action:!target?"Tambah":a.updateRoster?"Perbarui":"Pertahankan identitas aktif"});
+  const academic=p=>p?{nim:p.nim,nama:p.nama,golongan:p.golongan,aktif:p.aktif!==false}:null;
+  mappings.push({sourceId:source.id,targetId:target?._id||null,source,before:academic(target),after:academic(!target||a.updateRoster?source:target),action:!target?"Tambah":a.updateRoster?"Perbarui":"Pertahankan identitas aktif"});
  }
  if(touched>500)throw new ConvexError("BACKUP_PILIH_BAGIAN");
  let meeting=null,snapshot=null;
@@ -73,10 +74,30 @@ async function prepare(ctx,a){
   assertSnapshotSize(snapshot);
  }
  if(!a.updateRoster&&!data.identity&&!data.template&&!data.meeting)throw new ConvexError("KOREKSI_TANPA_PERUBAHAN");
- const previewHash=await hashToken(JSON.stringify({actor:user._id,kelasId:kelas._id,revision:kelas.revision,target:a.targetMeetingId||null,meetingRevision:meeting?.revision??null,data,mappings,crossClass:a.crossClass,updateRoster:a.updateRoster,reason:a.reason.trim()}));
- return{user,kelas,data,caps:[...new Set(caps)],meeting,snapshot,mappings,newCount,touched,previewHash,reason:a.reason.trim(),sameClass};
+ const previousStatuses=meeting?await activeStatuses(ctx,meeting._id):[];
+ const impact=await restoreImpact(ctx,{kelas,data,meeting,mappings,previousStatuses});
+ // Unlock changes state without increasing the attendance revision. Bind the
+ // complete stored meeting and statuses, not only its numeric revision.
+ const previewHash=await hashToken(JSON.stringify({actor:user._id,kelasId:kelas._id,revision:kelas.revision,target:a.targetMeetingId||null,meetingBefore:meeting,previousStatuses,data,mappings,crossClass:a.crossClass,updateRoster:a.updateRoster,reason:a.reason.trim()}));
+ return{user,kelas,data,caps:[...new Set(caps)],meeting,snapshot,mappings,newCount,touched,impact,previewHash,reason:a.reason.trim(),sameClass};
 }
-function summary(p){return{previewHash:p.previewHash,participants:p.mappings.map(({source,...m})=>({...m,nim:source.nim,nama:source.nama})),newCount:p.newCount,touched:p.touched,crossClass:!p.sameClass,
+const diff=(before,after,fields)=>fields.filter(k=>JSON.stringify(before?.[k]??null)!==JSON.stringify(after?.[k]??null)).map(field=>({field,before:before?.[field]??null,after:after?.[field]??null}));
+async function restoreImpact(ctx,{kelas,data,meeting,mappings,previousStatuses}){
+ const result={identity:[],template:[],meeting:[],sessionIdentity:[],sessionTemplate:[],attendance:[]};
+ if(data.identity){const course=await ctx.db.get(kelas.matkulId);result.identity=diff(identityData({...kelas,matkulNama:kelas.courseOverride?.nama||course.nama,matkulKode:kelas.courseOverride?.kode||course.kode}),data.identity,IDENTITY_FIELDS);}
+ if(data.template){const published=await ctx.db.query("template").withIndex("by_kelas_version",q=>q.eq("kelasId",kelas._id).eq("version",kelas.templateVersion)).unique();result.template=diff(published?.config,data.template,Object.keys(data.template)).map(r=>r.field==="logo"?{...r,before:r.before?"Logo sebelumnya":"Tanpa logo",after:r.after?"Logo dari backup":"Tanpa logo"}:r);}
+ if(data.meeting){
+  const r=data.meeting.version,oldSnapshot=meeting?.snapshot||(meeting?await classSnapshot(ctx,kelas._id,meeting):null);
+  result.meeting=diff(meeting?{...meeting,cancelled:Boolean(meeting.cancelled)}:null,r,["nomor","tanggal","tempat","tipe","status","cancelled"]);
+  result.sessionIdentity=diff(oldSnapshot?.kelas,r.snapshot.kelas,IDENTITY_FIELDS);
+  result.sessionTemplate=diff(oldSnapshot?.template,r.snapshot.template,Object.keys(r.snapshot.template)).map(row=>row.field==="logo"?{...row,before:row.before?"Logo sebelumnya":"Tanpa logo",after:row.after?"Logo dari backup":"Tanpa logo"}:row);
+  const beforePeople=new Map((oldSnapshot?.peserta||[]).map(p=>[p.id,p])),beforeStatus=new Map(previousStatuses.map(s=>[s.pesertaId,s.status])),afterStatus=new Map(r.statuses.map(s=>[s.pesertaId,s.status])),mapping=new Map(mappings.map(m=>[m.sourceId,m.targetId])),used=new Set();
+  for(const person of r.snapshot.peserta){const target=mapping.get(person.id),old=beforePeople.get(target);if(target)used.add(target);result.attendance.push({key:person.id,before:old?{nim:old.nim,nama:old.nama,golongan:old.golongan,status:beforeStatus.get(target)||null}:null,after:{nim:person.nim,nama:person.nama,golongan:person.golongan,status:afterStatus.get(person.id)||null}});}
+  for(const old of beforePeople.values())if(!used.has(old.id))result.attendance.push({key:`removed:${old.id}`,before:{nim:old.nim,nama:old.nama,golongan:old.golongan,status:beforeStatus.get(old.id)||null},after:null});
+ }
+ return result;
+}
+function summary(p){return{previewHash:p.previewHash,impact:p.impact,participants:p.mappings.map(({source,...m})=>({...m,nim:source.nim,nama:source.nama})),newCount:p.newCount,touched:p.touched,crossClass:!p.sameClass,
  changes:{identity:Boolean(p.data.identity),template:Boolean(p.data.template),roster:p.touched,meeting:p.data.meeting?{nomor:p.data.meeting.version.nomor,tanggal:p.data.meeting.version.tanggal,fromRevision:p.meeting?.revision??null,toRevision:(p.meeting?.revision||0)+1}:null},
  warning:"Simpan membuat revisi baru dengan pelaku dan waktu sekarang. File serta riwayat lama tidak ditimpa."};}
 export const previewRestore=query({args:restoreArgs,handler:async(ctx,a)=>summary(await prepare(ctx,a))});

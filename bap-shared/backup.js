@@ -3,8 +3,8 @@ export const BACKUP_FORMAT="bap-class-backup",BACKUP_VERSION=1;
 export const IDENTITY_FIELDS=["nama","semester","tahunAkademik","tingkat","prodi","dosen","dosenId","asdos","asdosId","tempat","matkulNama","matkulKode"];
 export function validateBackupFile(b){
  if(b?.format!==BACKUP_FORMAT||b.version!==BACKUP_VERSION||typeof b.source?.namespace!=="string"||typeof b.source?.kelasId!=="string"||!Array.isArray(b.participants)||b.participants.length>2000||!Array.isArray(b.meetings)||b.meetings.length>10000||!Array.isArray(b.versions)||b.versions.length>50000)throw Error("Format backup BAP tidak dikenali.");
- if(b.participants.some(p=>!p||["id","nim","nama","golongan"].some(k=>typeof p[k]!=="string"||p[k].length>200)))throw Error("Data peserta backup tidak valid.");
- for(const m of [...b.meetings,...b.versions]){const r=m?.version;if(typeof m?.sourceId!=="string"||!r||!Number.isInteger(r.revision)||["tanggal","tempat","tipe","status"].some(k=>typeof r[k]!=="string")||!r.snapshot||!Array.isArray(r.snapshot.peserta)||r.snapshot.peserta.length>2000||!Array.isArray(r.statuses))throw Error("Data versi backup tidak valid.");}
+ if(b.participants.some(p=>!p||typeof p.aktif!=="boolean"||["id","nim","nama","golongan"].some(k=>typeof p[k]!=="string"||p[k].length>200)))throw Error("Data peserta backup tidak valid.");
+ for(const m of [...b.meetings,...b.versions]){const r=m?.version;if(typeof m?.sourceId!=="string"||!r||!Number.isInteger(r.revision)||["cancelled","legacyPartial","metadataVerified"].some(k=>typeof r[k]!=="boolean")||["tanggal","tempat","tipe","status"].some(k=>typeof r[k]!=="string")||!r.snapshot||!Array.isArray(r.snapshot.peserta)||r.snapshot.peserta.length>2000||!Array.isArray(r.statuses))throw Error("Data versi backup tidak valid.");}
  if(b.identity)b.identity=validateIdentity(b.identity);
  return b;
 }
@@ -23,17 +23,17 @@ export function versionData(r){return{revision:r.revision,nomor:r.nomor??null,ta
 export function normalizeBackupSelection(b){
  if(b?.format!==BACKUP_FORMAT||b.version!==BACKUP_VERSION||typeof b.source?.namespace!=="string"||typeof b.source?.kelasId!=="string"||b.source.namespace.length>300||b.source.kelasId.length>200)throw Error("BACKUP_TIDAK_VALID");
  if(!Array.isArray(b.participants)||b.participants.length>2000)throw Error("BACKUP_PILIH_BAGIAN");
- const participants=b.participants.map(p=>{if(typeof p.id!=="string"||!p.id||p.id.length>200)throw Error("BACKUP_TIDAK_VALID");const [row]=normalizeRoster([p]);return{...row,id:p.id,aktif:p.aktif!==false,urut:Number.isInteger(p.urut)&&p.urut>0?p.urut:1};});
+ const participants=b.participants.map(p=>{if(!p||typeof p.id!=="string"||!p.id||p.id.length>200||typeof p.aktif!=="boolean"||["nim","nama","golongan"].some(k=>typeof p[k]!=="string"))throw Error("BACKUP_TIDAK_VALID");const [row]=normalizeRoster([p]);return{...row,id:p.id,aktif:p.aktif,urut:Number.isInteger(p.urut)&&p.urut>0?p.urut:1};});
  if(new Set(participants.map(p=>p.id)).size!==participants.length||new Set(participants.map(p=>p.nim.toUpperCase())).size!==participants.length)throw Error("BACKUP_PESERTA_DOBEL");
  const result={format:BACKUP_FORMAT,version:BACKUP_VERSION,source:{namespace:b.source.namespace,kelasId:b.source.kelasId},participants};
  if(b.identity)result.identity=validateIdentity(b.identity);
  if(b.template)result.template=validateTemplate(b.template);
  if(b.meeting){
-  const r=b.meeting.version;if(!r||r.legacyPartial||r.metadataVerified!==true)throw Error("REVISI_LAMA_PARSIAL");
+  const r=b.meeting.version;if(!r||["cancelled","legacyPartial","metadataVerified"].some(k=>typeof r[k]!=="boolean")||!Number.isInteger(r.revision)||r.revision<0)throw Error("BACKUP_TIDAK_VALID");if(r.legacyPartial||!r.metadataVerified)throw Error("REVISI_LAMA_PARSIAL");
   if(!Number.isInteger(r.nomor)||r.nomor<1||r.nomor>1000||!TYPES.includes(r.tipe)||!["KUNCI","TERBUKA"].includes(r.status))throw Error("BACKUP_TIDAK_VALID");
   validDate(r.tanggal);const tempat=text(r.tempat,"Ruang",80),ids=new Set();
   if(!Array.isArray(r.snapshot?.peserta)||r.snapshot.peserta.length>2000)throw Error("BACKUP_TIDAK_VALID");
-  const peserta=r.snapshot.peserta.map(p=>{if(typeof p.id!=="string"||!participants.some(x=>x.id===p.id)||ids.has(p.id))throw Error("BACKUP_PESERTA_ASING");ids.add(p.id);const [row]=normalizeRoster([p]);return{...row,id:p.id,urut:Number.isInteger(p.urut)&&p.urut>0?p.urut:1};});
+  const peserta=r.snapshot.peserta.map(p=>{if(!p||typeof p.id!=="string"||!participants.some(x=>x.id===p.id)||ids.has(p.id))throw Error("BACKUP_PESERTA_ASING");if(["nim","nama","golongan"].some(k=>typeof p[k]!=="string"))throw Error("BACKUP_TIDAK_VALID");ids.add(p.id);const [row]=normalizeRoster([p]);return{...row,id:p.id,urut:Number.isInteger(p.urut)&&p.urut>0?p.urut:1};});
   if(!Array.isArray(r.statuses)||new Set(r.statuses.map(s=>s.pesertaId)).size!==r.statuses.length||r.statuses.some(s=>!ids.has(s.pesertaId)||!["HADIR","ALPHA","SAKIT","IZIN"].includes(s.status)))throw Error("PRESENSI_KOREKSI_TIDAK_LENGKAP");
   if(r.status==="KUNCI"&&r.tipe==="REGULER"&&(!ids.size||r.statuses.length!==ids.size))throw Error("PRESENSI_KOREKSI_TIDAK_LENGKAP");
   result.meeting={sourceId:text(b.meeting.sourceId,"Sesi sumber",200),version:{revision:Number.isInteger(r.revision)?r.revision:0,nomor:r.nomor,tanggal:r.tanggal,tempat,tipe:r.tipe,status:r.status,cancelled:Boolean(r.cancelled),snapshot:{kelas:validateIdentity(r.snapshot.kelas),template:validateTemplate(r.snapshot.template),templateVersion:String(r.snapshot.templateVersion).slice(0,200),peserta,tanggal:r.tanggal,tempat},statuses:r.statuses.map(s=>({pesertaId:s.pesertaId,status:s.status}))}};
