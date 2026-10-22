@@ -120,7 +120,7 @@ async function captureBeforeAfter(page) {
     await page.keyboard.press("Escape"); await side.hover({ position: { x: 35, y: 85 } });
     await until(async () => await side.getAttribute("data-expanded") === "true", "Reveal after dialog");
     await side.getByRole("button", { name: "Bantuan & panduan", exact: true }).click();
-    await page.getByRole("dialog", { name: "Bantuan presensi" }).waitFor(); assert.equal(await side.getAttribute("data-expanded"), "false");
+    await page.getByRole("dialog", { name: "Bantuan & panduan" }).waitFor(); assert.equal(await side.getAttribute("data-expanded"), "false");
     await page.keyboard.press("Escape"); await leave(page);
     results.push({ engine, check: "keyboard, Mac modifier, modal priority, input shortcut guard and persistence", passed: true });
     // All desktop/tablet widths retain the sidebar; only mobile widths use a drawer.

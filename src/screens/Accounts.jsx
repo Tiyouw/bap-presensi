@@ -1,3 +1,4 @@
+import { PageHelp, HelpGroup, useHelpScope } from "../components/Help.jsx";
 import { useState } from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../convex/_generated/api.js";
@@ -91,6 +92,7 @@ export function PasswordForm({
   );
 }
 export function Profile({ token, user, onLogout, forced = false }) {
+  useHelpScope({userId:user.id,role:user.peran,area:"profil",classId:"",enabled:false,capabilities:[]},30);
   const profile = useMutation(api.accounts.profile),
     revoke = useMutation(api.auth.revokeSession),
     getCodes = useAction(api.authNode.recoveryCodes),
@@ -103,14 +105,14 @@ export function Profile({ token, user, onLogout, forced = false }) {
     return (
       <main className="mg-page mg-narrow">
         <p className="eyebrow">Akun {user.username}</p>
-        <h1>Amankan akunmu.</h1>
+        <h1>Amankan akunmu.</h1><PageHelp area="profil" tour={false}/>
         <PasswordForm token={token} user={user} forced onLogout={onLogout} />
       </main>
     );
   return (
     <main className="mg-page">
       <p className="eyebrow">Akun & preferensi</p>
-      <h1>Pengaturan.</h1>
+      <h1>Pengaturan.</h1><PageHelp area="profil" tour={false}/>
       <div className="mg-settings-grid">
         <section className="mg-panel">
           <h2>Profil</h2>
@@ -131,7 +133,7 @@ export function Profile({ token, user, onLogout, forced = false }) {
           </TaskForm>
         </section>
         <section className="mg-panel">
-          <h2>Ganti password</h2>
+          <HelpGroup topic="profile"><h2>Ganti password</h2></HelpGroup>
           <PasswordForm token={token} user={user} onLogout={onLogout} />
         </section>
         <section className="mg-panel">
@@ -166,7 +168,7 @@ export function Profile({ token, user, onLogout, forced = false }) {
         </section>
         {user.peran === "ADMIN" && (
           <section className="mg-panel">
-            <h2>Pemulihan admin</h2>
+            <HelpGroup topic="recovery"><h2>Pemulihan admin</h2></HelpGroup>
             <p>
               Simpan kode pemulihan secara privat. Setiap kode hanya berlaku
               sekali. Membuat kode baru membatalkan kode lama.
@@ -243,7 +245,7 @@ export default function Accounts({ token, user, catalog }) {
       <div className="mg-page-heading">
         <div>
           <p className="eyebrow">Kendali administrator</p>
-          <h1>Akun & akses.</h1>
+          <h1>Akun & akses.</h1><PageHelp area="akun" tour={false}/><HelpGroup topic="accounts"><span>Peran dan penugasan kelas</span></HelpGroup>
           <p>Atur peran dan kelas yang dapat dibuka setiap pengguna.</p>
         </div>
         <button

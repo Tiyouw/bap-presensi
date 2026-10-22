@@ -4,6 +4,7 @@ import { ConvexProvider, ConvexReactClient } from "convex/react";
 import App from "./App.jsx";
 import { ThemeProvider } from "./components/Theme.jsx";
 import Brand from "./components/Brand.jsx";
+import { HelpProvider } from "./components/Help.jsx";
 import "./styles.css";
 import "./management.css";
 
@@ -21,7 +22,7 @@ createRoot(document.getElementById("root")).render(
     <ThemeProvider>
       {client ? (
         <ConvexProvider client={client}>
-          <App />
+          <HelpProvider><App /></HelpProvider>
         </ConvexProvider>
       ) : (
         <main className="page recovery-page">

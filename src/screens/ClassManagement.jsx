@@ -1,3 +1,4 @@
+import { HelpButton } from "../components/Help.jsx";
 import PdfPreview from "../components/PdfPreview.jsx";
 import ClassTabHeading from "../components/ClassTabHeading.jsx";
 import { useEffect, useMemo, useState } from "react";
@@ -406,7 +407,7 @@ export function ImportDialog({ token, user, data, onClose }) {
     setMapping(map);
   };
   return (
-    <Modal title="Impor mahasiswa" onClose={onClose} wide busy={task.busy}>
+    <Modal title="Impor mahasiswa" onClose={onClose} wide busy={task.busy} headerActions={<HelpButton topic="import"/>}>
       <Feedback task={task} />
       <p>
         Unggah .xlsx atau .csv, cocokkan kolom, lalu periksa sebelum memasukkan

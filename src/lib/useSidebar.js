@@ -1,3 +1,4 @@
+import { lockBodyScroll } from "./scrollLock.js";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 const storageKey = (userId) => `bap.sidebar.v1.${userId}`;
@@ -143,15 +144,14 @@ export default function useSidebar({ userId, path, suspended }) {
 
   useLayoutEffect(() => {
     if (!mobile || !mobileOpen) return;
-    const previousOverflow = document.body.style.overflow;
+    const releaseScroll=lockBodyScroll();
     const background = [topbarRef.current, workspaceRef.current].filter(Boolean);
     const previousInert = background.map(el => el.inert);
-    document.body.style.overflow = "hidden";
     background.forEach(el => { el.inert = true; });
     if (sidebarRef.current) sidebarRef.current.inert = false;
     sidebarRef.current?.querySelector('[data-sidebar-close]')?.focus();
     return () => {
-      document.body.style.overflow = previousOverflow;
+      releaseScroll();
       background.forEach((el, i) => { el.inert = previousInert[i]; });
       if (restoreFocus.current && triggerRef.current?.getClientRects().length) triggerRef.current.focus({ preventScroll: true });
     };

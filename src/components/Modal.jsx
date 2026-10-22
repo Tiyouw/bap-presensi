@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
+import { helpIsActive } from "../lib/helpActivity.js";
+import { lockBodyScroll } from "../lib/scrollLock.js";
 
 export default function Modal({
   title,
@@ -22,12 +24,12 @@ export default function Modal({
 
   useEffect(() => {
     const previous = document.activeElement;
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const releaseScroll = lockBodyScroll();
     ref.current
       ?.querySelector(initialFocusSelector || "button:not(:disabled)")
       ?.focus();
     const keydown = (event) => {
+      if (event.defaultPrevented || helpIsActive()) return;
       if (event.key === "Escape" && !busyRef.current) closeRef.current();
       if (event.key !== "Tab") return;
       const focusable = [
@@ -59,7 +61,7 @@ export default function Modal({
     };
     document.addEventListener("keydown", keydown);
     return () => {
-      document.body.style.overflow = overflow;
+      releaseScroll();
       document.removeEventListener("keydown", keydown);
       const target = returnFocusRef?.current || previous;
       if (target?.isConnected) target.focus({ preventScroll: true });

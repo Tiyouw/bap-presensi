@@ -21,6 +21,7 @@ import Pertemuan from "./Pertemuan.jsx";
 import { authenticatedDocument, unduhDokumen } from "../lib/presensi.js";
 import { SkeletonRows } from "../components/Loading.jsx";
 import CorrectionEditor from "./CorrectionEditor.jsx";
+import { PageHelp, HelpGroup, DisabledReason } from "../components/Help.jsx";
 export function ClassCard({ item, onCopy, manage }) {
   return (
     <article className="mg-class-card">
@@ -113,6 +114,7 @@ export function ClassList({ catalog, user, home = false }) {
           </button>
         )}
       </div>
+      <PageHelp area="home" tour={false}/>
       {home && upcoming.length > 0 && (
         <section className="mg-upcoming">
           <h2>Praktikum yang belum selesai</h2>
@@ -192,6 +194,7 @@ export function NewClass({ token, user, catalog, path }) {
     <main className="mg-page mg-form-page">
       <p className="eyebrow">Persiapan kelas · langkah 1 dari 5</p>
       <h1>{copy ? "Salin untuk semester baru." : "Kelas baru."}</h1>
+      <PageHelp area="home" tour={false}/>
       <p className="lede">
         Atur identitas terlebih dahulu. Kamu bisa melanjutkan persiapan kapan
         saja.
@@ -256,11 +259,12 @@ export function ClassWorkspace({
             {c.arsip ? "Arsip" : c.draft ? "Draf kelas" : "Kelas aktif"}
           </span>
         </div>
-        <nav className="mg-class-tabs" aria-label="Bagian kelas">
+        <nav className="mg-class-tabs" aria-label="Bagian kelas" data-tour="class-tabs">
           {tabs.map(([id, label]) => (
             <a
               href={`/kelas/${c.id}?tab=${id}`}
               key={id}
+              data-tour={`tab-${id}`}
               aria-current={tab === id ? "page" : undefined}
               className={tab === id ? "is-active" : ""}
               onClick={(e) => linkClick(e, `/kelas/${c.id}?tab=${id}`)}
@@ -271,6 +275,7 @@ export function ClassWorkspace({
         </nav>
       </div>
       <div className="mg-class-body">
+        <PageHelp/>
         {c.arsip && (
           <Notice kind="warning">
             Kelas diarsipkan. Data dan dokumen dapat dibaca; pengubahan
@@ -301,6 +306,7 @@ export function ClassWorkspace({
             >
               Periksa & aktifkan
             </button>
+            <DisabledReason>{!can("identity")?"Akunmu belum memiliki izin identitas untuk mengaktifkan kelas ini.":!checks.every(Boolean)?"Lengkapi dosen, mahasiswa aktif, jadwal praktikum dan template terbit sebelum aktivasi.":null}</DisabledReason>
           </section>
         )}
         <Feedback task={task} />
@@ -345,10 +351,11 @@ export function ClassWorkspace({
               />
               {!data.controls?.enabled&&<CourseSettings token={token} data={data} />}
             </fieldset>
+            <DisabledReason>{c.arsip?"Pulihkan kelas arsip untuk mengubah identitas.":!can("identity")?"Akunmu belum memiliki izin identitas pada kelas ini. Hubungi Pengelola.":null}</DisabledReason>
             {data.controls?.enabled&&can("export")&&<ClassBackup token={token} data={data}/>}
             {data.controls?.enabled&&can("delegate")&&<ClassPermissions token={token} data={data}/>}
             <div className="mg-panel">
-              <h3>Arsip kelas</h3>
+              <HelpGroup topic="archive"><h3>Arsip kelas</h3></HelpGroup>
               <p>
                 Arsip menjaga semua presensi dan dokumen. Kelas tetap dapat
                 dicari dengan opsi Sertakan arsip.
@@ -360,6 +367,7 @@ export function ClassWorkspace({
               >
                 {c.arsip ? "Pulihkan kelas" : "Arsipkan kelas"}
               </button>
+              <DisabledReason>{!can("lifecycle")?"Akunmu belum memiliki izin pembatalan/pemulihan pada kelas ini. Hubungi Pengelola.":null}</DisabledReason>
             </div>
           </>
         ) : tab === "riwayat" ? (
@@ -526,7 +534,7 @@ export function Documents({ token, catalog, onPrint, kelasId: initial }) {
       <div className="mg-page-heading">
         <div>
           <p className="eyebrow">Dokumen & revisi tersimpan</p>
-          <h1>Arsip BAP.</h1>
+          <h1>Arsip BAP.</h1><PageHelp area="dokumen" tour={false}/><HelpGroup topic="documents"><span>Periksa versi dokumen sebelum mengunduh.</span></HelpGroup>
           <p>Word untuk penyuntingan, PDF untuk pratinjau dan cetak.</p>
         </div>
         {kelasId && (

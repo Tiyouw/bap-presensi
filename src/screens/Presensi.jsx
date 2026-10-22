@@ -654,7 +654,8 @@ export default function Presensi({
       />
       <main className="page attendance-page page-enter">
         <RefreshHint value={detail} pending={!detail && network.online} />
-        <div className="attendance-heading">
+        <PageHelp area="presensi"/>
+        <div className="attendance-heading" data-tour="attendance-heading">
           <div>
             <p className="eyebrow">{classInfo.nama}</p>
             <h1>PRESENSI</h1>
@@ -681,6 +682,7 @@ export default function Presensi({
                 : "Draf presensi"}
           </span>
           <ConnectionStatus network={network} />
+          <HelpButton topic="localDraft"/>
         </div>
         {editor.ready && !editor.owned && !readOnly && (
           <Notice kind="warning">
@@ -709,7 +711,7 @@ export default function Presensi({
                   · {progres.reviewedIds.length}/{peserta.length}
                 </span>
               )}
-            </button>
+            </button><HelpButton topic="calling"/>
           </div>
         )}
         {!network.online && (
@@ -809,7 +811,7 @@ export default function Presensi({
         </section>
 
         <section className="roster-section" aria-label="Presensi mahasiswa">
-          <div className="roster-tools">
+          <div className="roster-tools" data-tour="attendance-filter">
             <div className="group-filters" aria-label="Filter golongan">
               {[null, ...golongan].map((g) => (
                 <button
@@ -836,10 +838,11 @@ export default function Presensi({
               />
             </label>
             {!terkunci && (
-              <div className="brush-toolbar">
+              <div className="brush-toolbar" data-tour="attendance-mode">
                 <div className="brush-label">
                   <span>Tandai sebagai</span>
                   <span>Ketuk nama untuk mengubah</span>
+                  <HelpButton topic="statuses"/>
                 </div>
                 <div className="brush-modes" aria-label="Mode status">
                   {URUT_STATUS.map((s) => (
@@ -858,7 +861,7 @@ export default function Presensi({
               </div>
             )}
           </div>
-          <div className="roster-label">
+          <div className="roster-label" data-tour="attendance-list">
             <span>
               Mahasiswa <span className="roster-count">{daftar.length}</span>
               {gol !== null && <span> · Golongan {gol}</span>}
@@ -928,11 +931,12 @@ export default function Presensi({
                 : "Menunggu rincian presensi"}
             </strong>
           </div>
-          <div className="attendance-footer-actions">
+          <div className="attendance-footer-actions" data-tour="attendance-save">
             <button
               className="button button--outline"
               disabled={Boolean(sibuk)}
               onClick={() => onPrint(record)}
+              data-tour="attendance-documents"
             >
               Siapkan cetak
             </button>
@@ -945,6 +949,7 @@ export default function Presensi({
               <span aria-hidden="true">{terkunci ? "↓" : "→"}</span>
             </button>
           </div>
+          <DisabledReason>{primaryDisabled?(sibuk?"Tunggu proses yang sedang berjalan selesai.":!network.online?"Hubungkan internet untuk menyimpan atau membuat dokumen; draf lokal tetap ada.":konflik?"Ada perubahan server. Periksa konflik sebelum menyimpan.":!known||!detail?"Tunggu rincian presensi selesai dimuat.":!peserta.length?"Tambahkan mahasiswa aktif sebelum mencatat presensi.":readOnly&&!terkunci?"Kelas draf/arsip hanya dapat dibaca. Aktifkan atau pulihkan kelas sesuai akses.":!editor.owned&&!terkunci?"Tab ini hanya membaca. Gunakan tab pengedit atau browser yang mendukung penguncian.":null):null}</DisabledReason>
           {!network.online && (
             <p className="footer-hint">
               Mengunci dan mengunduh membutuhkan koneksi.
@@ -1384,3 +1389,4 @@ export default function Presensi({
     </div>
   );
 }
+import { PageHelp, HelpButton, DisabledReason } from "../components/Help.jsx";

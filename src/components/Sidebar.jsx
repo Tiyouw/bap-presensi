@@ -5,7 +5,7 @@ const icons = { "/": "home", "/kelas": "classes", "/dokumen": "documents", "/aku
 
 export default function Sidebar({ navigation: n, nav, path, onHelp, apple }) {
   const modifier = apple ? "⌘" : "Ctrl";
-  const help = () => { n.onNavigate(); onHelp(); };
+  const help = (event) => { const anchor=event.currentTarget;n.onNavigate();onHelp(anchor); };
   return (
     <>
       {n.mobile && n.mobileOpen && <button className="ws-sidebar-backdrop" aria-label="Tutup menu utama" onClick={() => n.closeMobile()} />}
