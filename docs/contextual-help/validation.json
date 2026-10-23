@@ -1,158 +1,399 @@
 {
   "date": "2026-10-23",
+  "revision": "compact-header-help-and-session-label",
   "frozen": {
-    "base": "1b2cc52b52d220af975ece6234fc679563b2a52b",
-    "startedAt": "2026-10-22T23:49:43.641Z",
-    "sourceFingerprint": "b0a35f7532e53544a2d701fbe9a0be15323db039fafd00737e0ef36cf343e451",
-    "checks": [
+    "passed": true,
+    "sourceFingerprint": "c4a03f5a6c8763b8926e001789f6d75e46e549689d835c739a4bdfe195d89d4b",
+    "sourceUnchanged": false,
+    "evidenceModel": "26-passed-baseline-plus-4-final-css-targeted-rechecks",
+    "explanation": "The full run passed26 suites and exposed a 200% mobile-header overflow in class-controls. Only3 CSS files and the help UI test changed afterward. All4 affected UI suites were verified on final sources; application JavaScript/backend stayed identical. This is not a claim that a single final-source full28-suite run completed.",
+    "baseline": {
+      "base": "c95555683f088fafbb32ed9102fbbd4a08724eeb",
+      "startedAt": "2026-10-23T13:05:16.158Z",
+      "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+      "checks": [
+        {
+          "script": "scripts/test-logic.mjs",
+          "passed": true,
+          "durationMs": 648
+        },
+        {
+          "script": "scripts/test-handlers.mjs",
+          "passed": true,
+          "durationMs": 431
+        },
+        {
+          "script": "scripts/check-convex.mjs",
+          "passed": true,
+          "durationMs": 261
+        },
+        {
+          "script": "scripts/test-ui-logic.mjs",
+          "passed": true,
+          "durationMs": 212
+        },
+        {
+          "script": "scripts/test-print.mjs",
+          "passed": true,
+          "durationMs": 6707
+        },
+        {
+          "script": "scripts/test-management-unit.mjs",
+          "passed": true,
+          "durationMs": 1931
+        },
+        {
+          "script": "scripts/test-document-fidelity.mjs",
+          "passed": true,
+          "durationMs": 1602
+        },
+        {
+          "script": "scripts/test-panggil.mjs",
+          "passed": true,
+          "durationMs": 182
+        },
+        {
+          "script": "scripts/test-audit.mjs",
+          "passed": true,
+          "durationMs": 451
+        },
+        {
+          "script": "scripts/test-revision-foundation.mjs",
+          "passed": true,
+          "durationMs": 447
+        },
+        {
+          "script": "scripts/test-corrections.mjs",
+          "passed": true,
+          "durationMs": 531
+        },
+        {
+          "script": "scripts/test-lifecycle.mjs",
+          "passed": true,
+          "durationMs": 487
+        },
+        {
+          "script": "scripts/test-schedule-batches.mjs",
+          "passed": true,
+          "durationMs": 630
+        },
+        {
+          "script": "scripts/test-meeting-commands.mjs",
+          "passed": true,
+          "durationMs": 390
+        },
+        {
+          "script": "scripts/test-class-controls.mjs",
+          "passed": true,
+          "durationMs": 575
+        },
+        {
+          "script": "scripts/test-help.mjs",
+          "passed": true,
+          "durationMs": 229
+        },
+        {
+          "script": "scripts/test-documents-v2.mjs",
+          "passed": true,
+          "durationMs": 22594
+        },
+        {
+          "script": "scripts/ui/audit.cjs",
+          "passed": true,
+          "durationMs": 63945
+        },
+        {
+          "script": "scripts/ui/panggil.cjs",
+          "passed": true,
+          "durationMs": 183745
+        },
+        {
+          "script": "scripts/ui/sidebar.cjs",
+          "passed": true,
+          "durationMs": 74879
+        },
+        {
+          "script": "scripts/ui/faults.cjs",
+          "passed": true,
+          "durationMs": 16448
+        },
+        {
+          "script": "scripts/ui/class-layout.cjs",
+          "passed": true,
+          "durationMs": 29371
+        },
+        {
+          "script": "scripts/ui/pdf.cjs",
+          "passed": true,
+          "durationMs": 19023
+        },
+        {
+          "script": "scripts/ui/offline.cjs",
+          "passed": true,
+          "durationMs": 41117
+        },
+        {
+          "script": "scripts/ui/corrections.cjs",
+          "passed": true,
+          "durationMs": 35611
+        },
+        {
+          "script": "scripts/ui/lifecycle.cjs",
+          "passed": true,
+          "durationMs": 46256
+        },
+        {
+          "script": "scripts/ui/class-controls.cjs",
+          "passed": false,
+          "error": "See out/audit/verification/failure.log",
+          "durationMs": 21507
+        }
+      ],
+      "passed": false,
+      "sourceUnchanged": true,
+      "finishedAt": "2026-10-23T13:14:46.647Z"
+    },
+    "rechecks": [
       {
-        "script": "scripts/test-logic.mjs",
+        "script": "scripts/ui/help.cjs",
         "passed": true,
-        "durationMs": 2268
-      },
-      {
-        "script": "scripts/test-handlers.mjs",
-        "passed": true,
-        "durationMs": 272
-      },
-      {
-        "script": "scripts/check-convex.mjs",
-        "passed": true,
-        "durationMs": 169
-      },
-      {
-        "script": "scripts/test-ui-logic.mjs",
-        "passed": true,
-        "durationMs": 164
-      },
-      {
-        "script": "scripts/test-print.mjs",
-        "passed": true,
-        "durationMs": 4097
-      },
-      {
-        "script": "scripts/test-management-unit.mjs",
-        "passed": true,
-        "durationMs": 14027
-      },
-      {
-        "script": "scripts/test-document-fidelity.mjs",
-        "passed": true,
-        "durationMs": 1207
-      },
-      {
-        "script": "scripts/test-panggil.mjs",
-        "passed": true,
-        "durationMs": 151
-      },
-      {
-        "script": "scripts/test-audit.mjs",
-        "passed": true,
-        "durationMs": 301
-      },
-      {
-        "script": "scripts/test-revision-foundation.mjs",
-        "passed": true,
-        "durationMs": 334
-      },
-      {
-        "script": "scripts/test-corrections.mjs",
-        "passed": true,
-        "durationMs": 341
-      },
-      {
-        "script": "scripts/test-lifecycle.mjs",
-        "passed": true,
-        "durationMs": 352
-      },
-      {
-        "script": "scripts/test-schedule-batches.mjs",
-        "passed": true,
-        "durationMs": 395
-      },
-      {
-        "script": "scripts/test-meeting-commands.mjs",
-        "passed": true,
-        "durationMs": 320
-      },
-      {
-        "script": "scripts/test-class-controls.mjs",
-        "passed": true,
-        "durationMs": 393
-      },
-      {
-        "script": "scripts/test-help.mjs",
-        "passed": true,
-        "durationMs": 159
-      },
-      {
-        "script": "scripts/test-documents-v2.mjs",
-        "passed": true,
-        "durationMs": 22453
-      },
-      {
-        "script": "scripts/ui/audit.cjs",
-        "passed": true,
-        "durationMs": 43670
-      },
-      {
-        "script": "scripts/ui/panggil.cjs",
-        "passed": true,
-        "durationMs": 133825
-      },
-      {
-        "script": "scripts/ui/sidebar.cjs",
-        "passed": true,
-        "durationMs": 60637
-      },
-      {
-        "script": "scripts/ui/faults.cjs",
-        "passed": true,
-        "durationMs": 11158
-      },
-      {
-        "script": "scripts/ui/class-layout.cjs",
-        "passed": true,
-        "durationMs": 18617
-      },
-      {
-        "script": "scripts/ui/pdf.cjs",
-        "passed": true,
-        "durationMs": 13206
-      },
-      {
-        "script": "scripts/ui/offline.cjs",
-        "passed": true,
-        "durationMs": 30751
-      },
-      {
-        "script": "scripts/ui/corrections.cjs",
-        "passed": true,
-        "durationMs": 27295
-      },
-      {
-        "script": "scripts/ui/lifecycle.cjs",
-        "passed": true,
-        "durationMs": 39722
+        "sourceFingerprint": "c4a03f5a6c8763b8926e001789f6d75e46e549689d835c739a4bdfe195d89d4b",
+        "checks": 40
       },
       {
         "script": "scripts/ui/class-controls.cjs",
         "passed": true,
-        "durationMs": 50460
+        "sourceFingerprint": "c4a03f5a6c8763b8926e001789f6d75e46e549689d835c739a4bdfe195d89d4b",
+        "durationMs": 62089
+      },
+      {
+        "script": "scripts/ui/sidebar.cjs",
+        "passed": true,
+        "sourceFingerprint": "c4a03f5a6c8763b8926e001789f6d75e46e549689d835c739a4bdfe195d89d4b",
+        "durationMs": 73955
+      },
+      {
+        "script": "scripts/ui/class-layout.cjs",
+        "passed": true,
+        "sourceFingerprint": "c4a03f5a6c8763b8926e001789f6d75e46e549689d835c739a4bdfe195d89d4b",
+        "durationMs": 27904
+      }
+    ],
+    "sourceUnchangedDuringRechecks": true,
+    "changedFiles": [
+      "scripts/ui/help.cjs",
+      "src/components/Help.css",
+      "src/components/Sidebar.css",
+      "src/management.css"
+    ],
+    "checks": [
+      {
+        "script": "scripts/test-logic.mjs",
+        "passed": true,
+        "durationMs": 648,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-handlers.mjs",
+        "passed": true,
+        "durationMs": 431,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/check-convex.mjs",
+        "passed": true,
+        "durationMs": 261,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-ui-logic.mjs",
+        "passed": true,
+        "durationMs": 212,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-print.mjs",
+        "passed": true,
+        "durationMs": 6707,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-management-unit.mjs",
+        "passed": true,
+        "durationMs": 1931,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-document-fidelity.mjs",
+        "passed": true,
+        "durationMs": 1602,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-panggil.mjs",
+        "passed": true,
+        "durationMs": 182,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-audit.mjs",
+        "passed": true,
+        "durationMs": 451,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-revision-foundation.mjs",
+        "passed": true,
+        "durationMs": 447,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-corrections.mjs",
+        "passed": true,
+        "durationMs": 531,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-lifecycle.mjs",
+        "passed": true,
+        "durationMs": 487,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-schedule-batches.mjs",
+        "passed": true,
+        "durationMs": 630,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-meeting-commands.mjs",
+        "passed": true,
+        "durationMs": 390,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-class-controls.mjs",
+        "passed": true,
+        "durationMs": 575,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-help.mjs",
+        "passed": true,
+        "durationMs": 229,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-documents-v2.mjs",
+        "passed": true,
+        "durationMs": 22594,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/ui/audit.cjs",
+        "passed": true,
+        "durationMs": 63945,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/ui/panggil.cjs",
+        "passed": true,
+        "durationMs": 183745,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/ui/sidebar.cjs",
+        "passed": true,
+        "sourceFingerprint": "c4a03f5a6c8763b8926e001789f6d75e46e549689d835c739a4bdfe195d89d4b",
+        "durationMs": 73955,
+        "phase": "final-source targeted verification"
+      },
+      {
+        "script": "scripts/ui/faults.cjs",
+        "passed": true,
+        "durationMs": 16448,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/ui/class-layout.cjs",
+        "passed": true,
+        "sourceFingerprint": "c4a03f5a6c8763b8926e001789f6d75e46e549689d835c739a4bdfe195d89d4b",
+        "durationMs": 27904,
+        "phase": "final-source targeted verification"
+      },
+      {
+        "script": "scripts/ui/pdf.cjs",
+        "passed": true,
+        "durationMs": 19023,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/ui/offline.cjs",
+        "passed": true,
+        "durationMs": 41117,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/ui/corrections.cjs",
+        "passed": true,
+        "durationMs": 35611,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/ui/lifecycle.cjs",
+        "passed": true,
+        "durationMs": 46256,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
       },
       {
         "script": "scripts/ui/help.cjs",
         "passed": true,
-        "durationMs": 78157
+        "sourceFingerprint": "c4a03f5a6c8763b8926e001789f6d75e46e549689d835c739a4bdfe195d89d4b",
+        "checks": 40,
+        "phase": "final-source targeted verification"
+      },
+      {
+        "script": "scripts/ui/class-controls.cjs",
+        "passed": true,
+        "sourceFingerprint": "c4a03f5a6c8763b8926e001789f6d75e46e549689d835c739a4bdfe195d89d4b",
+        "durationMs": 62089,
+        "phase": "final-source targeted verification"
       }
     ],
-    "passed": true,
-    "sourceUnchanged": true,
-    "finishedAt": "2026-10-22T23:58:58.727Z"
+    "finishedAt": "2026-10-23T13:22:53.908Z"
   },
   "ui": {
     "passed": true,
     "checks": [
+      {
+        "engine": "chromium",
+        "name": "one compact header help icon and clear session action fit desktop and phone",
+        "passed": true
+      },
       {
         "engine": "chromium",
         "name": "hover/focus tooltip, pointer into text, Escape and detail keep academic state intact",
@@ -246,6 +487,11 @@
       {
         "engine": "chromium",
         "name": "no runtime errors in help, tours and all exercised parent flows",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "name": "one compact header help icon and clear session action fit desktop and phone",
         "passed": true
       },
       {

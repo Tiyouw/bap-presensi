@@ -145,6 +145,16 @@ const withinViewport = async (selector) => {
         assert(await page.locator(".mg-local-toolbar").evaluate(e => e.scrollWidth <= e.clientWidth));
         assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       }
+      await resizeText(page);
+      for (const width of [320, 390, 1280]) {
+        await page.setViewportSize({ width, height: 900 });
+        await withinViewport(".help-page-button");
+        assert(await page.locator(".mg-topbar").evaluate(e => e.scrollWidth <= e.clientWidth), "200% header overflow");
+        assert(await page.locator(".mg-local-toolbar").evaluate(e => e.scrollWidth <= e.clientWidth), "200% attendance toolbar overflow");
+        assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "200% page overflow");
+      }
+      await page.reload();
+      await page.locator(".student-row").last().waitFor();
       await page.setViewportSize({ width: 390, height: 844 });
       await edit.click();
       await page.locator('[aria-label="Tanggal pelaksanaan"]:enabled').waitFor();

@@ -47,8 +47,8 @@ jangan menyatakan tes manusia selesai berdasarkan otomasi.
 
 ## Hasil verifikasi 23 Oktober 2026
 
-- **28 suite aktif lulus**, mencakup unit/backend handler, dokumen, presensi, Mode Panggil, sidebar, fault handling, layout, PDF, offline, koreksi, lifecycle, kontrol kelas dan bantuan. Fingerprint sumber tidak berubah selama rangkaian tes.
-- **38 pemeriksaan bantuan lulus**, masing-masing 19 di Chromium dan WebKit. Ini bagian dari 28 suite, bukan angka tambahan yang dijumlahkan. Mencakup hover/fokus/keyboard/tap, sidebar, modal bertingkat, pencarian/izin, tiga tur, missing target, quota, reload, timer 700 ms dan countdown 3 detik, tema, teks 200%, viewport 320/390/1280 serta axe.
+- **Cakupan28 suite unik**:26 suite baseline lulus sebelum perbaikan CSS terakhir;4 suite UI terdampak diperiksa ulang pada sumber akhir (bantuan, kontrol kelas, sidebar, layout kelas). Backend dan JavaScript aplikasi tidak berubah. Bukti baseline dan pemeriksaan ulang dipisahkan pada validation.json; bukan klaim satu run penuh28 suite pada CSS akhir.
+- **40 pemeriksaan bantuan lulus**, masing-masing 20 di Chromium dan WebKit. Ini bagian dari 28 suite, bukan angka tambahan yang dijumlahkan. Mencakup hover/fokus/keyboard/tap, sidebar, modal bertingkat, pencarian/izin, tiga tur, missing target, quota, reload, timer 700 ms dan countdown 3 detik, tema, teks 200%, viewport 320/390/1280 serta axe.
 - **6 pemeriksaan build produksi +backend demo terisolasi lulus**: login aktual, tidak ada request Action/Mutation ketika memakai bantuan, snapshot akademik/riwayat tetap identik, draf tetap ada setelah reload, dan tur lazy pertama tersedia saat origin tidak tersedia.
 - **18 screenshot actual-base** dalam contextual-help/captures.json: koreksi, presensi, pengaturan dan pusat bantuan pada desktop/HP sebelum–sesudah, ditambah tur baru di dua viewport. Semua data sintetis.
 - Driver.js dipin 1.10.2, dimuat lazy, notice MIT disediakan lokal dan diprecache. npm audit: 0 kerentanan saat verifikasi.
@@ -88,3 +88,11 @@ Pengujian manusia ini tidak dinyatakan lulus dari axe, semantic tree atau otomat
 - node scripts/test-help-native.cjs --credentials out/credentials/explicit-synthetic-preview.json
 
 Tes native menolak kredensial non-demo dan selector di luar preview. Kredensial, token serta diagnostik privat tetap berada dalam out/ yang diabaikan Git. Ringkasan bukti publik: contextual-help/validation.json.
+
+## Revisi berdasarkan review pengguna
+
+- Bantuan halaman menjadi satu ikon (?) di header atas, dengan nama aksesibel, fokus keyboard dan target minimal44×44px. Baris Bantuan halaman ini/Tunjukkan caranya di badan konten dihapus pada semua halaman. Tur dibuka dari panel bantuan. Layar wajib ganti password menggunakan ikon di baris judul karena tidak memiliki header ruang kerja.
+- Koreksi sesi ini diganti Tanggal & data sesi di toolbar presensi. Editor menjelaskan tanggal, ruang, nomor dan data sesi, serta pemeriksaan dampak sebelum menyimpan revisi. Membuka editor bukan langkah wajib presensi dan tidak langsung mengubah data.
+- Akses schedule/history, pengamanan navigasi saat draf belum tersimpan, dan penguncian saat proses berjalan tetap berlaku. Operator tanpa izin tidak mendapat tombol ini.
+- Regresi memeriksa satu ikon dalam header, tidak ada baris bantuan tambahan, navigasi ke editor yang benar, target sentuh serta overflow header/toolbar pada320/390/1280px di Chromium dan WebKit. Tes sidebar mengikuti urutan fokus header yang baru.
+- Hasil verifikasi ulang dan fingerprint sumber ada di contextual-help/validation.json. Uji manusia tetap pending.
