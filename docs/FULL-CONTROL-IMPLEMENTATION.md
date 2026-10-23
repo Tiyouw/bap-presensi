@@ -60,10 +60,35 @@ responsivitas dan runtime error. `scripts/ui/audit.cjs` tetap lulus. Capture ber
 dari base PR sebenarnya `db39e48`, memakai 93 peserta sintetis dan sesi p3 yang
 terkunci pada revisi 1. Bukti di `docs/full-control/corrections/`.
 
-## Tahap berikutnya (belum selesai)
+## Tahap 3 — jadwal massal, lifecycle dan versi cetak
 
-3. Jadwal massal, job resumable, batal/pulih, perubahan jenis dan rekap/paket.
-4. Data kelas selektif, roster reaktivasi, portabilitas dan delegasi Operator.
+Jadwal memakai pilihan sesi dan preview terikat versi. Batch kecil atomik; batch
+besar memakai job satu sesi per transaksi, dapat dilanjutkan setelah reload.
+Perubahan eksternal menghentikan sisa job untuk review; pengguna memilih melewati
+sesi yang dibatalkan. Undo menerbitkan revisi kompensasi hanya untuk sesi yang
+belum diedit lagi, dengan retry idempoten.
+
+Pembatalan mempertahankan data/file dan mengecualikan sesi dari rekap aktif.
+Perubahan jenis kembali ke praktikum meminta pilihan pulihkan presensi atau mulai
+baru. Snapshot persiapan tidak dianggap bukti presensi; perubahan tanggal tidak
+mengarang status hadir. Sesi kosong boleh ditambah/dihapus dengan CAS/idempotensi.
+
+Riwayat dan pemilih versi paket memakai pagination. Generasi revisi historis dipin
+ke revisionId, termasuk versi sebelum pembatalan/perubahan jenis. Paket memvalidasi
+kelas, kelengkapan presensi dan anggaran payload; pesan meminta pilihan lebih kecil
+bila melampaui batas. Summary memakai proyeksi jumlah, tidak membaca semua presensi.
+Migrasi menjalankan read models, ledger dan counts secara resumable sebelum enable.
+Setelah protokol pernah aktif, jalur legacy replace-schedule tetap ditolak.
+
+Validasi tahap ini: npm test; build; corrections UI 14 dan lifecycle UI 16 pemeriksaan
+Chromium/WebKit. Screenshot 12 gambar dari base sebenarnya 17a050e, data sintetis
+yang sama, desktop 1280×900 dan HP 390×844: docs/full-control/lifecycle/captures.json.
+Adapter browser menjalankan handler asli dengan transport file sintetis; hasil ini
+belum membuktikan bytes DOCX/PDF atau rollback transaksi Convex native.
+
+## Tahap 4 (belum selesai)
+
+Data kelas selektif, roster reaktivasi, portabilitas dan delegasi Operator.
 
 Kriteria T01–T14 pada plan penuh harus dipetakan ke hasil tes akhir dan native
 preview, bukan hanya dinyatakan selesai berdasarkan fondasi ini.

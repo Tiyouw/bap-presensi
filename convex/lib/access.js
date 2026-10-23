@@ -51,6 +51,7 @@ export async function requireMeeting(ctx, token, id, write = false) {
   const meeting = await ctx.db.get(id);
   if (!meeting) throw new ConvexError("PERTEMUAN_TIDAK_ADA");
   const access = await requireClass(ctx, token, meeting.kelasId, false, write);
+  if(write&&meeting.cancelled)throw new ConvexError("PERTEMUAN_DIBATALKAN");
   if (write && access.kelas.draft) throw new ConvexError("KELAS_BELUM_AKTIF");
   return { ...access, meeting };
 }

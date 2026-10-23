@@ -75,6 +75,7 @@ window.__qa = {
   calls,
   async enableControls(options={}){controlEngine=await createControlEngine({kelas,participants,server,...options});syncControls();publish();},
   async controlAdvance(id='p3'){await controlEngine.advance(id);syncControls();publish();},
+  controlState(){return{meetings:[...controlEngine.ctx.tabel.get('pertemuan')].map(([id,p])=>({...p,id})),jobs:controlEngine.cache.get('scheduleBatches:jobs')||[],revisions:[...controlEngine.ctx.tabel.get('meetingRevision')?.values()||[]]};},
   seedHistory(count) {
     kelas.readModelReady = true;
     server.history = Array.from({ length: count }, (_, i) => ({ id: `archive-${i}`, nomor: 3, tanggal: "2026-10-21", revision: count - i, format: "docx", templateVersion: "kelas-k1-v1", url: "https://example.test/bap.docx", pada: count - i }));
@@ -219,7 +220,11 @@ export function useQuery(reference, args) {
         },
         presensi: server.presensi[args.pertemuanId] || [],
       };
+    if(name==='revisions:classAvailability')return controlEngine?{enabled:true}:null;
+    if(name==='revisions:historyPage'||name==='revisions:printVersionsPage'){if(!controlEngine)return undefined;const rows=controlEngine.cache.get(name==='revisions:historyPage'?'revisions:historyRows:'+args.pertemuanId:'revisions:printRows')||[],start=Number(args.paginationOpts.cursor||0),count=args.paginationOpts.numItems;return{page:rows.slice(start,start+count),isDone:start+count>=rows.length,continueCursor:String(start+count)};}
     if(name.startsWith('revisions:'))return controlEngine?.cache.get(name+':'+args.pertemuanId);
+    if(name==='scheduleBatches:jobsPage'){if(!controlEngine)return undefined;const rows=controlEngine.cache.get('scheduleBatches:jobs')||[],start=Number(args.paginationOpts.cursor||0),count=args.paginationOpts.numItems;return{page:rows.slice(start,start+count),isDone:start+count>=rows.length,continueCursor:String(start+count)};}
+    if(name==='scheduleBatches:jobDetail')return controlEngine?.cache.get(name+':'+args.jobId);
     if (name === "bap:forSesi") return server.docs[args.pertemuanId] || null;
     if (name === "bap:historyPage") {
       const start = Number(args.paginationOpts.cursor || 0), count = args.paginationOpts.numItems;
@@ -243,7 +248,7 @@ export function useQuery(reference, args) {
           };
         });
     return null;
-  }, [tick, name, args === "skip", args?.pertemuanId, args?.token, args?.id, args?.kelasId, args?.paginationOpts?.numItems, args?.paginationOpts?.cursor]);
+  }, [tick, name, args === "skip", args?.pertemuanId, args?.token, args?.id, args?.kelasId,args?.jobId, args?.paginationOpts?.numItems, args?.paginationOpts?.cursor]);
 }
 export function usePaginatedQuery(reference, args, { initialNumItems }) {
   const [count, setCount] = useState(initialNumItems);
@@ -258,7 +263,7 @@ export function useMutation(reference) {
       calls.push({ name, args });
       await wait();
       if (!connected) throw new Error("offline");
-      if(name.startsWith('revisions:')&&controlEngine){const result=await controlEngine.mutate(name,args);syncControls();publish();return result;}
+      if(/^(revisions|scheduleBatches|meetingCommands):/.test(name)&&controlEngine){const result=await controlEngine.mutate(name,args);syncControls();publish();return result;}
       if (name === "seed:jalan") return { dilewati: true };
       const meeting = server.pertemuan.find((p) => p.id === args.pertemuanId);
       if (name === "sesi:simpanDanKunci") {
@@ -327,6 +332,7 @@ export function useAction(reference) {
       }
       if (name === "bapNode:paketCetak") {
         if (generationFails) throw { data: "PAKET_GAGAL" };
+        if(controlEngine){const source=await controlEngine.packet(args);return{base64:btoa('Synthetic packet transport fixture'),fileName:'BAP_QA_packet.docx',revisions:source.map(d=>({nomor:d.pertemuan.nomor,revision:d.pertemuan.revision}))};}
         if (
           args.items.some((item) => {
             const p = server.pertemuan.find((p) => p.id === item.pertemuanId);

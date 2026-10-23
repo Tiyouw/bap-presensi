@@ -49,6 +49,7 @@ export const generate = action({
     pertemuanId: v.id("pertemuan"),
     format: v.optional(v.string()),
     expectedRevision: v.optional(v.number()),
+    revisionId:v.optional(v.id("meetingRevision")),
   },
   handler: async (ctx, a) => {
     const format = a.format || "docx";
@@ -56,6 +57,7 @@ export const generate = action({
     const data = await ctx.runQuery(internal.bap.bahanGenerate, {
         token: a.token,
         pertemuanId: a.pertemuanId,
+        ...(a.revisionId?{revisionId:a.revisionId}:{}),
       }),
       revision = data.pertemuan.revision;
     if(a.expectedRevision!==undefined&&a.expectedRevision!==revision)throw new ConvexError("KONFLIK_REVISI");
@@ -64,6 +66,7 @@ export const generate = action({
       pertemuanId: a.pertemuanId,
       revision,
       format,
+      ...(a.revisionId?{revisionId:a.revisionId}:{}),
     });
     if (claim.status === "BUSY") return { status: "BUSY" };
     if (claim.status === "READY")
@@ -119,7 +122,7 @@ export const paketCetak = action({
     kelasId: v.id("kelas"),
     format: v.optional(v.string()),
     items: v.array(
-      v.object({ pertemuanId: v.id("pertemuan"), revision: v.number() }),
+      v.object({ pertemuanId: v.id("pertemuan"), revision: v.number(),revisionId:v.optional(v.id("meetingRevision")) }),
     ),
   },
   handler: async (ctx, a) => {

@@ -29,13 +29,13 @@ export const bahanPaket = internalQuery({
     token: v.string(),
     kelasId: v.id("kelas"),
     items: v.array(
-      v.object({ pertemuanId: v.id("pertemuan"), revision: v.number() }),
+      v.object({ pertemuanId: v.id("pertemuan"), revision: v.number(),revisionId:v.optional(v.id("meetingRevision")) }),
     ),
   },
   handler: bahanPaketLogic,
 });
 export const bahanGenerate = internalQuery({
-  args: { token: v.string(), pertemuanId: v.id("pertemuan") },
+  args: { token: v.string(), pertemuanId: v.id("pertemuan"),revisionId:v.optional(v.id("meetingRevision")) },
   handler: bahanGenerateLogic,
 });
 export const klaimInternal = internalMutation({
@@ -44,6 +44,7 @@ export const klaimInternal = internalMutation({
     pertemuanId: v.id("pertemuan"),
     revision: v.number(),
     format: v.string(),
+    revisionId:v.optional(v.id("meetingRevision")),
   },
   handler: async (ctx, a) => {
     await requireMeeting(ctx, a.token, a.pertemuanId);
@@ -74,7 +75,7 @@ export const forSesi = query({
   args: { token: v.string(), pertemuanId: v.id("pertemuan") },
   handler: async (ctx, a) => {
     const { meeting: p, kelas } = await requireMeeting(ctx, a.token, a.pertemuanId);
-    if (p.tipe !== "REGULER") return null;
+    if (p.cancelled || p.tipe !== "REGULER") return null;
     if (kelas.readModelReady) {
       const [view] = await ctx.db.query("documentView")
         .withIndex("by_pertemuan_format_revision", q => q.eq("pertemuanId", p._id).eq("format", "docx"))

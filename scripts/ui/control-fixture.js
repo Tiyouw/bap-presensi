@@ -7,6 +7,9 @@ import {DEFAULT_TEMPLATE} from "../../bap-shared/management.js";
 import {CAPABILITIES} from "../../bap-shared/control.js";
 import {CONTROL_FLAG,appendRevision} from "../../convex/lib/revisionLedger.js";
 import * as revisions from "../../convex/revisions.js";
+import * as scheduleBatches from "../../convex/scheduleBatches.js";
+import * as meetingCommands from "../../convex/meetingCommands.js";
+import {bahanPaketLogic} from "../../convex/lib/printLogic.js";
 const storageKey='ui-qa.control-engine';
 export async function createControlEngine({kelas,participants,server,restore,lock=true}){
  const ctx=buatCtx(restore?Math.max(0,...restore.flatMap(([,rows])=>rows.map(([id])=>Number(/:(\d+)$/.exec(id)?.[1]||0)))):0);
@@ -30,10 +33,17 @@ export async function createControlEngine({kelas,participants,server,restore,loc
  async function refresh(){for(const p of await ctx.db.query('pertemuan').collect()){
    cache.set('revisions:editor:'+p._id,await revisions.editor._handler(ctx,{token:'ui-test-token',pertemuanId:p._id}));
    cache.set('revisions:history:'+p._id,await revisions.history._handler(ctx,{token:'ui-test-token',pertemuanId:p._id}));
-  }persist();}
+   cache.set('revisions:historyRows:'+p._id,[...ctx.tabel.get('meetingRevision')?.entries()||[]].map(([id,r])=>({_id:id,...r})).filter(r=>r.pertemuanId===p._id).sort((a,b)=>b.revision-a.revision));
+  }
+  cache.set('scheduleBatches:jobs',[...ctx.tabel.get('scheduleJob')?.entries()||[]].map(([id,row])=>({_id:id,...row})).sort((a,b)=>b.createdAt-a.createdAt));
+  cache.set('revisions:printRows',[...ctx.tabel.get('meetingRevision')?.entries()||[]].map(([id,r])=>({_id:id,...r})).filter(r=>r.status==='KUNCI'&&r.tipe==='REGULER'&&!r.cancelled&&!r.legacyPartial&&r.metadataVerified).sort((a,b)=>b.createdAt-a.createdAt));
+  for(const job of cache.get('scheduleBatches:jobs'))cache.set('scheduleBatches:jobDetail:'+job._id,await scheduleBatches.jobDetail._handler(ctx,{token:'ui-test-token',jobId:job._id}));
+  persist();}
+ const modules={revisions,scheduleBatches,meetingCommands};
  const engine={ctx,cache,refresh,user:()=>ctx.tabel.get('pengguna').get('qa-user'),
-  query:async(name,args)=>{if(!name.startsWith('revisions:')||!revisions[name.split(':')[1]]?._handler)throw Error('Unexpected test query '+name);return revisions[name.split(':')[1]]._handler(ctx,args)},
-  mutate:async(name,args)=>{const result=await transaction(ctx,()=>revisions[name.split(':')[1]]._handler(ctx,args));await refresh();return result;},
+  packet:args=>bahanPaketLogic(ctx,args),
+  query:async(name,args)=>{const[module,method]=name.split(':');if(!modules[module]?.[method]?._handler)throw Error('Unexpected test query '+name);return modules[module][method]._handler(ctx,args)},
+  mutate:async(name,args)=>{const[module,method]=name.split(':');const result=await transaction(ctx,()=>modules[module][method]._handler(ctx,args));await refresh();return result;},
   advance:async(id)=>{const p=await ctx.db.get(id),c=await ctx.db.get('k1'),args={token:'ui-test-token',pertemuanId:id,expectedMeetingRevision:p.revision,expectedClassRevision:c.revision,patch:{tanggal:new Date(Date.parse(p.tanggal+'T00:00:00Z')+86400000).toISOString().slice(0,10)},reason:'Koreksi pengguna lain dalam tes'};
    const preview=await revisions.previewCorrection._handler(ctx,args);await engine.mutate('revisions:commitCorrection',{...args,previewHash:preview.previewHash,operationKey:crypto.randomUUID()});},
   controls:()=>({enabled:true,capabilities:engine.user().peran==='OPERATOR'?ctx.tabel.get('classCapability')?.values().next().value?.capabilities||[]:[...CAPABILITIES]})

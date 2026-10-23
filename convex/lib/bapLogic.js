@@ -2,10 +2,23 @@ import { ConvexError } from "convex/values";
 import { requireMeeting } from "./access.js";
 import { classSnapshot } from "./classLogic.js";
 import { syncDocument } from "./readModels.js";
-import { appendRevision } from "./revisionLedger.js";
+import { appendRevision,readRevision } from "./revisionLedger.js";
 export const KLAIM_HIDUP_MS = 120000;
+async function generationSource(ctx,args,currentRecord){
+  const current=currentRecord||await ctx.db.get(args.pertemuanId);
+  if(!current)throw new ConvexError("PERTEMUAN_TIDAK_ADA");
+  if(!args.revisionId)return current;
+  const header=await ctx.db.get(args.revisionId);
+  if(!header||header.pertemuanId!==current._id||header.kelasId!==current.kelasId)throw new ConvexError("AKSES_DITOLAK");
+  if(header.legacyPartial||!header.metadataVerified)throw new ConvexError("REVISI_LAMA_PARSIAL");
+  const revision=await readRevision(ctx,header);
+  return{...current,nomor:revision.nomor,tanggal:revision.tanggal,tempat:revision.tempat,tipe:revision.tipe,
+    status:revision.status,cancelled:revision.cancelled,revision:revision.revision,snapshot:revision.snapshot,
+    historicalStatuses:revision.statuses,sourceRevisionId:revision._id};
+}
 export async function klaimLogic(ctx, args, now = Date.now()) {
-  const p = await ctx.db.get(args.pertemuanId);
+  const p = await generationSource(ctx,args);
+  if(p?.cancelled)throw new ConvexError("PERTEMUAN_DIBATALKAN");
   if (!p || p.tipe !== "REGULER") throw new ConvexError("TANPA_PRAKTIKUM");
   if (p.status !== "KUNCI" || p.revision !== args.revision)
     throw new ConvexError("KONFLIK_REVISI");
@@ -58,16 +71,24 @@ export async function finalisasiLogic(ctx, args) {
   }
   return { accepted: true };
 }
-export async function bahanGenerateLogic(ctx, { token, pertemuanId }) {
-  const { meeting: p } = await requireMeeting(ctx, token, pertemuanId);
+export async function bahanGenerateLogic(ctx, args) {
+  const {token,pertemuanId}=args;
+  const{meeting}=await requireMeeting(ctx, token, pertemuanId);
+  return generationData(ctx,await generationSource(ctx,args,meeting));
+}
+export async function packetGenerationData(ctx,current,item){return generationData(ctx,await generationSource(ctx,{pertemuanId:current._id,revisionId:item.revisionId},current));}
+async function generationData(ctx,p){
+  if(p.cancelled)throw new ConvexError("PERTEMUAN_DIBATALKAN");
   if (p.tipe !== "REGULER") throw new ConvexError("TANPA_PRAKTIKUM");
   if (p.status !== "KUNCI") throw new ConvexError("BELUM_DIKUNCI");
   const snapshot = p.snapshot || (await classSnapshot(ctx, p.kelasId, p)),
     byId = new Map(snapshot.peserta.map((p) => [p.id, p]));
-  const rows = await ctx.db
+  const rows = p.historicalStatuses || await ctx.db
     .query("presensi")
     .withIndex("by_pertemuan", (q) => q.eq("pertemuanId", p._id))
     .collect();
+  const registered=new Set(snapshot.peserta.map(p=>p.id));
+  if(!registered.size||rows.length!==registered.size||new Set(rows.map(r=>r.pesertaId)).size!==registered.size||rows.some(r=>!registered.has(r.pesertaId)||!["HADIR","ALPHA","SAKIT","IZIN"].includes(r.status)))throw new ConvexError("PRESENSI_KOREKSI_TIDAK_LENGKAP");
   const absen = rows
     .filter((r) => r.status !== "HADIR")
     .map((r) => {

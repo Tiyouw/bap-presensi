@@ -1,0 +1,138 @@
+{
+  "base": "17a050e",
+  "source": "git archive actual PR base; matching synthetic state, viewport, light/reduced motion; no generated fake product screenshot",
+  "shots": [
+    {
+      "file": "before-schedule-desktop.png",
+      "version": "before",
+      "viewport": {
+        "name": "desktop",
+        "width": 1280,
+        "height": 900
+      },
+      "screen": "schedule",
+      "input": "93 synthetic; p3 locked r1, 14 Sept; first Alpha"
+    },
+    {
+      "file": "before-editor-desktop.png",
+      "version": "before",
+      "viewport": {
+        "name": "desktop",
+        "width": 1280,
+        "height": 900
+      },
+      "screen": "correction-preview",
+      "input": "same class; date draft 16 Sept, uncommitted"
+    },
+    {
+      "file": "before-packet-desktop.png",
+      "version": "before",
+      "viewport": {
+        "name": "desktop",
+        "width": 1280,
+        "height": 900
+      },
+      "screen": "packet-selection",
+      "input": "same active p3 r1 selected; after exposes explicit version selection"
+    },
+    {
+      "file": "before-schedule-mobile.png",
+      "version": "before",
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      },
+      "screen": "schedule",
+      "input": "93 synthetic; p3 locked r1, 14 Sept; first Alpha"
+    },
+    {
+      "file": "before-editor-mobile.png",
+      "version": "before",
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      },
+      "screen": "correction-preview",
+      "input": "same class; date draft 16 Sept, uncommitted"
+    },
+    {
+      "file": "before-packet-mobile.png",
+      "version": "before",
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      },
+      "screen": "packet-selection",
+      "input": "same active p3 r1 selected; after exposes explicit version selection"
+    },
+    {
+      "file": "after-schedule-desktop.png",
+      "version": "after",
+      "viewport": {
+        "name": "desktop",
+        "width": 1280,
+        "height": 900
+      },
+      "screen": "schedule",
+      "input": "93 synthetic; p3 locked r1, 14 Sept; first Alpha"
+    },
+    {
+      "file": "after-editor-desktop.png",
+      "version": "after",
+      "viewport": {
+        "name": "desktop",
+        "width": 1280,
+        "height": 900
+      },
+      "screen": "correction-preview",
+      "input": "same class; date draft 16 Sept, uncommitted"
+    },
+    {
+      "file": "after-packet-desktop.png",
+      "version": "after",
+      "viewport": {
+        "name": "desktop",
+        "width": 1280,
+        "height": 900
+      },
+      "screen": "packet-selection",
+      "input": "same active p3 r1 selected; after exposes explicit version selection"
+    },
+    {
+      "file": "after-schedule-mobile.png",
+      "version": "after",
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      },
+      "screen": "schedule",
+      "input": "93 synthetic; p3 locked r1, 14 Sept; first Alpha"
+    },
+    {
+      "file": "after-editor-mobile.png",
+      "version": "after",
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      },
+      "screen": "correction-preview",
+      "input": "same class; date draft 16 Sept, uncommitted"
+    },
+    {
+      "file": "after-packet-mobile.png",
+      "version": "after",
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      },
+      "screen": "packet-selection",
+      "input": "same active p3 r1 selected; after exposes explicit version selection"
+    }
+  ]
+}

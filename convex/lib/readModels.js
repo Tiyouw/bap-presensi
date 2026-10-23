@@ -31,16 +31,17 @@ export async function syncMeeting(ctx, id) {
   }
   if (!p.kelasId) return;
   const { snapshot, ...data } = p;
+  const recorded=await ctx.db.query("presensi").withIndex("by_pertemuan",q=>q.eq("pertemuanId",id)).collect();
   await put(ctx, "meetingView", "by_source", "sourceId", id, {
     sourceId: id, kelasId: p.kelasId,
-    data: { ...data, ...(snapshot?.tanggal ? { snapshotTanggal: snapshot.tanggal } : {}) },
+    data: { ...data, hasSnapshot:Boolean(snapshot),jumlahAbsen:recorded.filter(r=>r.status!=="HADIR").length,jumlahTercatat:recorded.length, ...(snapshot?.tanggal ? { snapshotTanggal: snapshot.tanggal } : {}) },
   });
   await put(ctx, "searchEntry", "by_source", "sourceId", `pertemuan:${id}`, {
     sourceId: `pertemuan:${id}`, kelasId: p.kelasId,
     text: `minggu ${p.nomor} pertemuan ${p.nomor} ${p.tanggal}`,
-    data: { kind: p.status === "KUNCI" ? "Dokumen / pertemuan" : "Pertemuan", id,
+    data: { kind: p.cancelled ? "Pertemuan dibatalkan" : p.status === "KUNCI" ? "Dokumen / pertemuan" : "Pertemuan", id, cancelled:Boolean(p.cancelled),
       title: `Pertemuan ${p.nomor} · ${p.tanggal}`,
-      path: p.tipe === "REGULER" ? `/kelas/${p.kelasId}/pertemuan/${id}` : `/kelas/${p.kelasId}?tab=jadwal` },
+      path: !p.cancelled && p.tipe === "REGULER" ? `/kelas/${p.kelasId}/pertemuan/${id}` : `/kelas/${p.kelasId}?tab=jadwal` },
   });
 }
 export async function syncTemplate(ctx, id) {
@@ -69,9 +70,9 @@ export async function syncClass(ctx, kelasId) {
     kelasId, matkulId: c.matkulId,
     data: { ...data, matkulNama: m.nama, matkulKode: m.kode,
       jumlahPeserta: participants.filter(p => p.aktif !== false).length,
-      jumlahPraktikum: meetings.filter(p => p.tipe === "REGULER").length,
-      jumlahTerkunci: meetings.filter(p => p.tipe === "REGULER" && p.status === "KUNCI").length,
-      berikutnya: meetings.filter(p => p.tipe === "REGULER" && p.status !== "KUNCI")
+      jumlahPraktikum: meetings.filter(p => !p.cancelled && p.tipe === "REGULER").length,
+      jumlahTerkunci: meetings.filter(p => !p.cancelled && p.tipe === "REGULER" && p.status === "KUNCI").length,
+      berikutnya: meetings.filter(p => !p.cancelled && p.tipe === "REGULER" && p.status !== "KUNCI")
         .sort((a,b) => a.tanggal.localeCompare(b.tanggal))[0]?.tanggal || null,
     },
   });

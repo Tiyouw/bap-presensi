@@ -236,7 +236,7 @@ export function ClassWorkspace({
   const checks = [
     Boolean(c.dosen && c.dosen !== "Belum diatur"),
     data.peserta.some((p) => p.aktif !== false),
-    data.pertemuan.some((p) => p.tipe === "REGULER"),
+    data.pertemuan.some((p) => !p.cancelled && p.tipe === "REGULER"),
     c.templateVersion > 0,
   ];
   return (
@@ -326,7 +326,7 @@ export function ClassWorkspace({
             openImport={params.has("import")}
           />
         ) : tab === "jadwal" && manage ? (
-          <Schedule key={c.id} token={token} data={data} manage={!c.arsip} />
+          <Schedule key={c.id} token={token} data={data} manage={!c.arsip} network={network}/>
         ) : tab === "template" && manage ? (
           <TemplateEditor token={token} data={data} manage={!c.arsip} />
         ) : tab === "pengaturan" && manage ? (
@@ -405,7 +405,7 @@ export function ClassWorkspace({
         >
           <p>
             {confirm === "activate"
-              ? `${c.matkulNama} · ${c.nama}. ${data.peserta.filter((p) => p.aktif !== false).length} mahasiswa aktif dan ${data.pertemuan.filter((p) => p.tipe === "REGULER").length} sesi praktikum. Periksa identitas, tanggal, dan preview BAP sebelum melanjutkan.`
+              ? `${c.matkulNama} · ${c.nama}. ${data.peserta.filter((p) => p.aktif !== false).length} mahasiswa aktif dan ${data.pertemuan.filter((p) => !p.cancelled && p.tipe === "REGULER").length} sesi praktikum. Periksa identitas, tanggal, dan preview BAP sebelum melanjutkan.`
               : confirm === "archive"
                 ? "Presensi, mahasiswa, dan template tidak dapat diubah selama diarsipkan. Dokumen tetap tersedia."
                 : "Kelas dapat digunakan dan diubah kembali."}

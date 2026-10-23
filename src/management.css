@@ -343,6 +343,15 @@ textarea {
 .correction-review { overflow-wrap: anywhere; }
 .correction-review ul { padding-left: 20px; }
 .correction-review li { margin-bottom: 8px; }
+.control-schedule-row { display: grid; grid-template-columns: minmax(0,1fr) minmax(180px,1fr) minmax(180px,1fr); gap: 16px; align-items: center; padding: 18px 0; border-bottom: 1px solid var(--bap-border); }
+.control-schedule-row .mg-field { margin: 0; }
+.control-schedule-row small { display: block; color: var(--bap-muted); }
+.control-table { overflow-x: auto; margin: 16px 0; }
+.control-table table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.control-table th,.control-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--bap-border); }
+.control-job { padding: 18px 0; border-top: 1px solid var(--bap-border); }
+.control-job-review { border-left: 3px solid var(--bap-accent); padding: 8px 16px; margin-top: 16px; }
+@media(max-width:760px) { .control-schedule-row { grid-template-columns: minmax(0,1fr); gap: 8px; } .control-table table { min-width: 480px; } }
 .mg-filter-line {
   display: flex;
   align-items: center;

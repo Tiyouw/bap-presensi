@@ -22,12 +22,15 @@ export async function prepareCorrection(ctx,a){
   const patch=a.patch||{},categories=a.refreshCategories||[];
   if(!patch||Array.isArray(patch)||typeof patch!=="object"||Object.keys(patch).some(k=>!MEETING_FIELDS.includes(k)))throw new ConvexError("KOREKSI_TIDAK_VALID");
   if(categories.some(k=>!SNAPSHOT_CATEGORIES.includes(k))||new Set(categories).size!==categories.length)throw new ConvexError("KOREKSI_TIDAK_VALID");
-  const historical=p.revision>0&&(p.status==="KUNCI"||Boolean(p.snapshot)||Boolean(await ctx.db.query("presensi").withIndex("by_pertemuan",q=>q.eq("pertemuanId",p._id)).take(1).then(r=>r.length)));
+  const previousStatuses=await activeStatuses(ctx,p._id);
+  const wasPublished=p.hasAttendanceHistory!==undefined?Boolean(p.hasAttendanceHistory)||p.status==="KUNCI":Boolean(p.status==="KUNCI"||p.dikunciPada||p.revision>0&&previousStatuses.length);
+  const historical=wasPublished||previousStatuses.length>0;
   const caps=[...(Object.keys(patch).length?["schedule"]:[]),...categories.map(k=>k==="roster"?"roster":k),...(historical||a.restoreRevision!==undefined||a.statuses?["history"]:[])];
   if(a.templateVersion!==undefined)caps.push("template");
+  if(a.lifecycleAction)caps.push("lifecycle");
   await requireCapability(ctx,a.token,p.kelasId,[...new Set(caps)]);
-  if(p.cancelled&&!a.allowCancelled)throw new ConvexError("PERTEMUAN_DIBATALKAN");
-  const previousSnapshot=p.snapshot||{...await classSnapshot(ctx,p.kelasId,p),capturedAt:p._creationTime||0},previousStatuses=await activeStatuses(ctx,p._id);
+  if(p.cancelled&&a.lifecycleAction!=="restore"&&a.restoreRevision===undefined)throw new ConvexError("PERTEMUAN_DIBATALKAN");
+  const previousSnapshot=p.snapshot||{...await classSnapshot(ctx,p.kelasId,p),capturedAt:p._creationTime||0};
   let snapshot=structuredClone(previousSnapshot),statuses=previousStatuses.map(s=>({...s})),next={...p};
   if(a.restoreRevision!==undefined){
     if(categories.length||Object.keys(patch).length||a.statuses||a.templateVersion!==undefined)throw new ConvexError("KOREKSI_TIDAK_VALID");
@@ -45,24 +48,30 @@ export async function prepareCorrection(ctx,a){
       if(!t)throw new ConvexError("TEMPLATE_TIDAK_ADA");snapshot.template=t.config;snapshot.templateVersion=`kelas-${p.kelasId}-v${t.version}`;}
     Object.assign(next,patch);
   }
+  if(a.lifecycleAction){if(a.restoreRevision!==undefined)throw new ConvexError("KOREKSI_TIDAK_VALID");next.cancelled=a.lifecycleAction==="cancel";}
   if(!Number.isInteger(next.nomor)||next.nomor<1||next.nomor>1000||!TYPES.includes(next.tipe))throw new ConvexError("JADWAL_TIDAK_VALID");
   validDate(next.tanggal);next.tempat=text(next.tempat,"Ruang",80);
   snapshot.tanggal=next.tanggal;snapshot.tempat=next.tempat;
-  const peers=(await classRows(ctx,"pertemuan",p.kelasId)).filter(x=>x._id!==p._id&&!x.cancelled);
+  const peers=(await classRows(ctx,"pertemuan",p.kelasId)).map(x=>a.peerOverrides?.[x._id]?{...x,...a.peerOverrides[x._id]}:x).filter(x=>x._id!==p._id&&!x.cancelled);
   if(!next.cancelled&&peers.some(x=>x.nomor===next.nomor))throw new ConvexError("NOMOR_PERTEMUAN_DUPLIKAT");
   const rosterChanged=!same(previousSnapshot.peserta,snapshot.peserta),oldStatuses=new Map(statuses.map(s=>[s.pesertaId,s.status]));
-  const shouldHaveStatuses=a.restoreRevision!==undefined?statuses.length>0:historical||Boolean(a.statuses);
+  const returning=a.restoreRevision===undefined&&p.tipe!=="REGULER"&&next.tipe==="REGULER"&&historical;
+  if(returning&&!a.attendanceMode)throw new ConvexError("PILIH_PRESENSI_KEMBALI");
+  if(returning&&a.attendanceMode==="reset"&&a.statuses)throw new ConvexError("KOREKSI_TIDAK_VALID");
+  const resetAttendance=returning&&a.attendanceMode==="reset";
+  const shouldHaveStatuses=resetAttendance?false:a.restoreRevision!==undefined?statuses.length>0:previousStatuses.length>0||Boolean(a.statuses);
+  if(resetAttendance)statuses=[];
   if(a.statuses){
     const ids=new Set(snapshot.peserta.map(p=>p.id));if(a.statuses.length!==ids.size||new Set(a.statuses.map(s=>s.pesertaId)).size!==ids.size||a.statuses.some(s=>!ids.has(s.pesertaId)||!codes.has(s.status)))throw new ConvexError("PRESENSI_KOREKSI_TIDAK_LENGKAP");
     statuses=a.statuses;
-  }else if(shouldHaveStatuses)statuses=snapshot.peserta.map(person=>({pesertaId:person.id,status:oldStatuses.get(person.id)||"HADIR"}));
-  const missingHistorical=historical&&previousSnapshot.peserta.some(person=>!previousStatuses.some(s=>s.pesertaId===person.id));
+  }else if(shouldHaveStatuses){const oldIds=new Set(previousSnapshot.peserta.map(p=>p.id));statuses=snapshot.peserta.flatMap(person=>oldStatuses.has(person.id)?[{pesertaId:person.id,status:oldStatuses.get(person.id)}]:rosterChanged&&!oldIds.has(person.id)?[{pesertaId:person.id,status:"HADIR"}]:[]);}
+  const missingHistorical=historical&&(p.status==="KUNCI"||previousStatuses.length>0)&&previousSnapshot.peserta.some(person=>!previousStatuses.some(s=>s.pesertaId===person.id));
   const needsRosterReview=rosterChanged||missingHistorical;
-  if(next.tipe==="REGULER"&&shouldHaveStatuses&&(!snapshot.peserta.length||statuses.length!==snapshot.peserta.length))throw new ConvexError("PRESENSI_KOREKSI_TIDAK_LENGKAP");
   if(kelas.draft&&shouldHaveStatuses)throw new ConvexError("KELAS_BELUM_AKTIF");
-  if(a.restoreRevision===undefined)next.status=historical&&next.tipe==="REGULER"?"KUNCI":next.tipe!=="REGULER"?"TERBUKA":p.status;
+  if(a.restoreRevision===undefined)next.status=shouldHaveStatuses&&next.tipe==="REGULER"&&snapshot.peserta.length>0&&statuses.length===snapshot.peserta.length&&(wasPublished||a.statuses)?"KUNCI":"TERBUKA";
+  if(resetAttendance)next.status="TERBUKA";
   const reason=text(a.reason||"","Catatan",240,false);
-  if((historical||a.restoreRevision!==undefined)&&!reason)throw new ConvexError("CATATAN_KOREKSI_WAJIB");
+  if((historical||a.restoreRevision!==undefined||a.lifecycleAction)&&!reason)throw new ConvexError("CATATAN_KOREKSI_WAJIB");
   const fields=MEETING_FIELDS.filter(k=>next[k]!==p[k]).map(k=>({field:k,before:p[k],after:next[k]}));
   if(next.status!==p.status)fields.push({field:"status",before:p.status,after:next.status});
   if(Boolean(next.cancelled)!==Boolean(p.cancelled))fields.push({field:"cancelled",before:Boolean(p.cancelled),after:Boolean(next.cancelled)});
@@ -72,8 +81,8 @@ export async function prepareCorrection(ctx,a){
   assertSnapshotSize(snapshot);
   const warnings=[];if(peers.some(x=>x.tanggal===next.tanggal))warnings.push("Tanggal sama dengan pertemuan lain; pastikan pelaksanaannya benar.");
   if(peers.some(x=>x.nomor<next.nomor&&x.tanggal>next.tanggal||x.nomor>next.nomor&&x.tanggal<next.tanggal))warnings.push("Urutan tanggal berbeda dengan nomor minggu; periksa sebelum menyimpan.");
-  const previewHash=await hashToken(JSON.stringify({actor:user._id,meeting:p._id,base:p.revision,classRevision:kelas.revision,fields,refresh,snapshot,statuses,reason,restore:a.restoreRevision??null}));
-  return{...access,next,snapshot,statuses,reason,previewHash,historical,needsRosterReview,fields,refresh,statusChanged,warnings,requiredCapabilities:[...new Set(a.restoreRevision!==undefined?[...caps,"schedule","identity","roster","template","lifecycle"]:caps)],
+  const previewHash=await hashToken(JSON.stringify({actor:user._id,meeting:p._id,base:p.revision,classRevision:kelas.revision,fields,refresh,snapshot,statuses,reason,restore:a.restoreRevision??null,lifecycle:a.lifecycleAction||null,attendanceMode:a.attendanceMode||null}));
+  return{...access,next,snapshot,statuses,reason,previewHash,historical,wasPublished,needsRosterReview,fields,refresh,statusChanged,warnings,requiredCapabilities:[...new Set(a.restoreRevision!==undefined?[...caps,"schedule","identity","roster","template","lifecycle"]:caps)],
     keepLiveSnapshot:shouldHaveStatuses||Boolean(p.snapshot)||categories.length>0||a.templateVersion!==undefined};
 }
 export function publicCorrectionPreview(p){return{previewHash:p.previewHash,fields:p.fields,refresh:p.refresh,statusChanged:p.statusChanged,
@@ -94,13 +103,16 @@ export async function commitCorrectionLogic(ctx,a){
 export async function applyCorrection(ctx,p,a){
   await appendRevision(ctx,p.meeting);
   const next={nomor:p.next.nomor,tanggal:p.next.tanggal,tempat:p.next.tempat,tipe:p.next.tipe,status:p.next.status,
+    hasAttendanceHistory:Boolean(p.wasPublished||p.next.status==="KUNCI"),
     cancelled:Boolean(p.next.cancelled),revision:p.meeting.revision+1,...(p.keepLiveSnapshot?{snapshot:p.snapshot}:{})};
   if(p.next.status==="KUNCI")next.dikunciPada=Date.now();
   await ctx.db.patch(p.meeting._id,next);
-  for(const row of await ctx.db.query("presensi").withIndex("by_pertemuan",q=>q.eq("pertemuanId",p.meeting._id)).collect())await ctx.db.delete(row._id);
-  for(const row of p.statuses)await ctx.db.insert("presensi",{pertemuanId:p.meeting._id,pesertaId:row.pesertaId,status:row.status});
+  if(p.statusChanged){
+    for(const row of await ctx.db.query("presensi").withIndex("by_pertemuan",q=>q.eq("pertemuanId",p.meeting._id)).collect())await ctx.db.delete(row._id);
+    for(const row of p.statuses)await ctx.db.insert("presensi",{pertemuanId:p.meeting._id,pesertaId:row.pesertaId,status:row.status});
+  }
   const saved=await appendRevision(ctx,await ctx.db.get(p.meeting._id),{snapshot:p.snapshot,statuses:p.statuses,reason:p.reason||"Penyesuaian jadwal",
-    action:a.restoreRevision!==undefined?"PULIHKAN_REVISI":"KOREKSI",actorId:p.user._id,parentRevision:p.meeting.revision,
+    action:a.restoreRevision!==undefined?"PULIHKAN_REVISI":a.lifecycleAction==="cancel"?"BATALKAN_SESI":a.lifecycleAction==="restore"?"PULIHKAN_SESI":"KOREKSI",actorId:p.user._id,parentRevision:p.meeting.revision,
     operationKey:a.operationKey,operationHash:p.previewHash,requiredCapabilities:p.requiredCapabilities});
   await ctx.db.patch(p.kelas._id,{revision:p.kelas.revision+1});await syncMeeting(ctx,p.meeting._id);await syncClass(ctx,p.kelas._id);
   await audit(ctx,p.user,a.restoreRevision!==undefined?"PULIHKAN_REVISI":"KOREKSI_SESI",`Revisi ${saved.revision}: ${p.reason||"penyesuaian jadwal"}`,p.kelas._id,p.meeting._id);
