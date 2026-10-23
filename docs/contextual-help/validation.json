@@ -1,0 +1,641 @@
+{
+  "date": "2026-10-23",
+  "revision": "compact-header-help-and-session-label",
+  "frozen": {
+    "passed": true,
+    "sourceFingerprint": "c4a03f5a6c8763b8926e001789f6d75e46e549689d835c739a4bdfe195d89d4b",
+    "sourceUnchanged": false,
+    "evidenceModel": "26-passed-baseline-plus-4-final-css-targeted-rechecks",
+    "explanation": "The full run passed26 suites and exposed a 200% mobile-header overflow in class-controls. Only3 CSS files and the help UI test changed afterward. All4 affected UI suites were verified on final sources; application JavaScript/backend stayed identical. This is not a claim that a single final-source full28-suite run completed.",
+    "baseline": {
+      "base": "c95555683f088fafbb32ed9102fbbd4a08724eeb",
+      "startedAt": "2026-10-23T13:05:16.158Z",
+      "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+      "checks": [
+        {
+          "script": "scripts/test-logic.mjs",
+          "passed": true,
+          "durationMs": 648
+        },
+        {
+          "script": "scripts/test-handlers.mjs",
+          "passed": true,
+          "durationMs": 431
+        },
+        {
+          "script": "scripts/check-convex.mjs",
+          "passed": true,
+          "durationMs": 261
+        },
+        {
+          "script": "scripts/test-ui-logic.mjs",
+          "passed": true,
+          "durationMs": 212
+        },
+        {
+          "script": "scripts/test-print.mjs",
+          "passed": true,
+          "durationMs": 6707
+        },
+        {
+          "script": "scripts/test-management-unit.mjs",
+          "passed": true,
+          "durationMs": 1931
+        },
+        {
+          "script": "scripts/test-document-fidelity.mjs",
+          "passed": true,
+          "durationMs": 1602
+        },
+        {
+          "script": "scripts/test-panggil.mjs",
+          "passed": true,
+          "durationMs": 182
+        },
+        {
+          "script": "scripts/test-audit.mjs",
+          "passed": true,
+          "durationMs": 451
+        },
+        {
+          "script": "scripts/test-revision-foundation.mjs",
+          "passed": true,
+          "durationMs": 447
+        },
+        {
+          "script": "scripts/test-corrections.mjs",
+          "passed": true,
+          "durationMs": 531
+        },
+        {
+          "script": "scripts/test-lifecycle.mjs",
+          "passed": true,
+          "durationMs": 487
+        },
+        {
+          "script": "scripts/test-schedule-batches.mjs",
+          "passed": true,
+          "durationMs": 630
+        },
+        {
+          "script": "scripts/test-meeting-commands.mjs",
+          "passed": true,
+          "durationMs": 390
+        },
+        {
+          "script": "scripts/test-class-controls.mjs",
+          "passed": true,
+          "durationMs": 575
+        },
+        {
+          "script": "scripts/test-help.mjs",
+          "passed": true,
+          "durationMs": 229
+        },
+        {
+          "script": "scripts/test-documents-v2.mjs",
+          "passed": true,
+          "durationMs": 22594
+        },
+        {
+          "script": "scripts/ui/audit.cjs",
+          "passed": true,
+          "durationMs": 63945
+        },
+        {
+          "script": "scripts/ui/panggil.cjs",
+          "passed": true,
+          "durationMs": 183745
+        },
+        {
+          "script": "scripts/ui/sidebar.cjs",
+          "passed": true,
+          "durationMs": 74879
+        },
+        {
+          "script": "scripts/ui/faults.cjs",
+          "passed": true,
+          "durationMs": 16448
+        },
+        {
+          "script": "scripts/ui/class-layout.cjs",
+          "passed": true,
+          "durationMs": 29371
+        },
+        {
+          "script": "scripts/ui/pdf.cjs",
+          "passed": true,
+          "durationMs": 19023
+        },
+        {
+          "script": "scripts/ui/offline.cjs",
+          "passed": true,
+          "durationMs": 41117
+        },
+        {
+          "script": "scripts/ui/corrections.cjs",
+          "passed": true,
+          "durationMs": 35611
+        },
+        {
+          "script": "scripts/ui/lifecycle.cjs",
+          "passed": true,
+          "durationMs": 46256
+        },
+        {
+          "script": "scripts/ui/class-controls.cjs",
+          "passed": false,
+          "error": "See out/audit/verification/failure.log",
+          "durationMs": 21507
+        }
+      ],
+      "passed": false,
+      "sourceUnchanged": true,
+      "finishedAt": "2026-10-23T13:14:46.647Z"
+    },
+    "rechecks": [
+      {
+        "script": "scripts/ui/help.cjs",
+        "passed": true,
+        "sourceFingerprint": "c4a03f5a6c8763b8926e001789f6d75e46e549689d835c739a4bdfe195d89d4b",
+        "checks": 40
+      },
+      {
+        "script": "scripts/ui/class-controls.cjs",
+        "passed": true,
+        "sourceFingerprint": "c4a03f5a6c8763b8926e001789f6d75e46e549689d835c739a4bdfe195d89d4b",
+        "durationMs": 62089
+      },
+      {
+        "script": "scripts/ui/sidebar.cjs",
+        "passed": true,
+        "sourceFingerprint": "c4a03f5a6c8763b8926e001789f6d75e46e549689d835c739a4bdfe195d89d4b",
+        "durationMs": 73955
+      },
+      {
+        "script": "scripts/ui/class-layout.cjs",
+        "passed": true,
+        "sourceFingerprint": "c4a03f5a6c8763b8926e001789f6d75e46e549689d835c739a4bdfe195d89d4b",
+        "durationMs": 27904
+      }
+    ],
+    "sourceUnchangedDuringRechecks": true,
+    "changedFiles": [
+      "scripts/ui/help.cjs",
+      "src/components/Help.css",
+      "src/components/Sidebar.css",
+      "src/management.css"
+    ],
+    "checks": [
+      {
+        "script": "scripts/test-logic.mjs",
+        "passed": true,
+        "durationMs": 648,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-handlers.mjs",
+        "passed": true,
+        "durationMs": 431,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/check-convex.mjs",
+        "passed": true,
+        "durationMs": 261,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-ui-logic.mjs",
+        "passed": true,
+        "durationMs": 212,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-print.mjs",
+        "passed": true,
+        "durationMs": 6707,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-management-unit.mjs",
+        "passed": true,
+        "durationMs": 1931,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-document-fidelity.mjs",
+        "passed": true,
+        "durationMs": 1602,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-panggil.mjs",
+        "passed": true,
+        "durationMs": 182,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-audit.mjs",
+        "passed": true,
+        "durationMs": 451,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-revision-foundation.mjs",
+        "passed": true,
+        "durationMs": 447,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-corrections.mjs",
+        "passed": true,
+        "durationMs": 531,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-lifecycle.mjs",
+        "passed": true,
+        "durationMs": 487,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-schedule-batches.mjs",
+        "passed": true,
+        "durationMs": 630,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-meeting-commands.mjs",
+        "passed": true,
+        "durationMs": 390,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-class-controls.mjs",
+        "passed": true,
+        "durationMs": 575,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-help.mjs",
+        "passed": true,
+        "durationMs": 229,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/test-documents-v2.mjs",
+        "passed": true,
+        "durationMs": 22594,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/ui/audit.cjs",
+        "passed": true,
+        "durationMs": 63945,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/ui/panggil.cjs",
+        "passed": true,
+        "durationMs": 183745,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/ui/sidebar.cjs",
+        "passed": true,
+        "sourceFingerprint": "c4a03f5a6c8763b8926e001789f6d75e46e549689d835c739a4bdfe195d89d4b",
+        "durationMs": 73955,
+        "phase": "final-source targeted verification"
+      },
+      {
+        "script": "scripts/ui/faults.cjs",
+        "passed": true,
+        "durationMs": 16448,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/ui/class-layout.cjs",
+        "passed": true,
+        "sourceFingerprint": "c4a03f5a6c8763b8926e001789f6d75e46e549689d835c739a4bdfe195d89d4b",
+        "durationMs": 27904,
+        "phase": "final-source targeted verification"
+      },
+      {
+        "script": "scripts/ui/pdf.cjs",
+        "passed": true,
+        "durationMs": 19023,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/ui/offline.cjs",
+        "passed": true,
+        "durationMs": 41117,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/ui/corrections.cjs",
+        "passed": true,
+        "durationMs": 35611,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/ui/lifecycle.cjs",
+        "passed": true,
+        "durationMs": 46256,
+        "sourceFingerprint": "ebb1c154f4abeec45ed7cd1b759c38db94ab4fdd32c919e58c2b5840f4b7d6ec",
+        "phase": "full baseline before CSS refinement"
+      },
+      {
+        "script": "scripts/ui/help.cjs",
+        "passed": true,
+        "sourceFingerprint": "c4a03f5a6c8763b8926e001789f6d75e46e549689d835c739a4bdfe195d89d4b",
+        "checks": 40,
+        "phase": "final-source targeted verification"
+      },
+      {
+        "script": "scripts/ui/class-controls.cjs",
+        "passed": true,
+        "sourceFingerprint": "c4a03f5a6c8763b8926e001789f6d75e46e549689d835c739a4bdfe195d89d4b",
+        "durationMs": 62089,
+        "phase": "final-source targeted verification"
+      }
+    ],
+    "finishedAt": "2026-10-23T13:22:53.908Z"
+  },
+  "ui": {
+    "passed": true,
+    "checks": [
+      {
+        "engine": "chromium",
+        "name": "one compact header help icon and clear session action fit desktop and phone",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "hover/focus tooltip, pointer into text, Escape and detail keep academic state intact",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "Enter/Space and touch/outside dismissal operate only the help control",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "mobile sidebar help remains visible outside the closed drawer and restores scrolling/focus",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "linked guide and multiword search use matching content without server requests",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "correction tour is read-only, traps keyboard and completes with separately recorded progress",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "missing required elements cannot claim completion; pending waits cancel when help is opened",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "tour storage quota leaves content usable and reports unsaved progress",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "tour reload/replay preserves draft; disappearing targets and role changes clean every overlay",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "detail inside import dialog keeps parent modal, selected file preview and focus intact",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "class tour only points to existing permitted tabs and never navigates",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "attendance tour preserves statuses, filters and server state",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "nested Mode Panggil help blocks status shortcuts and Escape closes only top help",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "help pauses an active group-exit countdown and never restarts it implicitly",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "all management/help areas, permissions and backup explanations are reachable",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "online/offline help and access-sensitive search explain actual availability",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "disabled reasons reflect selection/permissions and never expose a forbidden correction link",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "help panels and tours fit mobile/desktop, dark/light, true 200% text and accessible semantics",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "login/profile/accounts/documents and template guides are reachable with accurate legacy guidance",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "no runtime errors in help, tours and all exercised parent flows",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "name": "one compact header help icon and clear session action fit desktop and phone",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "name": "hover/focus tooltip, pointer into text, Escape and detail keep academic state intact",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "name": "Enter/Space and touch/outside dismissal operate only the help control",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "name": "mobile sidebar help remains visible outside the closed drawer and restores scrolling/focus",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "name": "linked guide and multiword search use matching content without server requests",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "name": "correction tour is read-only, traps keyboard and completes with separately recorded progress",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "name": "missing required elements cannot claim completion; pending waits cancel when help is opened",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "name": "tour storage quota leaves content usable and reports unsaved progress",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "name": "tour reload/replay preserves draft; disappearing targets and role changes clean every overlay",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "name": "detail inside import dialog keeps parent modal, selected file preview and focus intact",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "name": "class tour only points to existing permitted tabs and never navigates",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "name": "attendance tour preserves statuses, filters and server state",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "name": "nested Mode Panggil help blocks status shortcuts and Escape closes only top help",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "name": "help pauses an active group-exit countdown and never restarts it implicitly",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "name": "all management/help areas, permissions and backup explanations are reachable",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "name": "online/offline help and access-sensitive search explain actual availability",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "name": "disabled reasons reflect selection/permissions and never expose a forbidden correction link",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "name": "help panels and tours fit mobile/desktop, dark/light, true 200% text and accessible semantics",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "name": "login/profile/accounts/documents and template guides are reachable with accurate legacy guidance",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "name": "no runtime errors in help, tours and all exercised parent flows",
+        "passed": true
+      }
+    ]
+  },
+  "native": {
+    "passed": true,
+    "backend": "https://admired-puma-858.convex.cloud",
+    "synthetic": true,
+    "checks": [
+      {
+        "engine": "chromium",
+        "name": "actual production build signs in to explicit preview; help/search preserve complete academic snapshot and make no Action/Mutation",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "first lazy tour opens and completes from the precached production app-shell while its origin is unavailable; no academic writes or downloads",
+        "outageMethod": "browser-context-offline",
+        "precachedHelpAssets": 2,
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "name": "real backend draft survives reload; accessible help tree, keyboard cleanup and immutable current/history data verified",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "name": "actual production build signs in to explicit preview; help/search preserve complete academic snapshot and make no Action/Mutation",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "name": "first lazy tour opens and completes from the precached production app-shell while its origin is unavailable; no academic writes or downloads",
+        "outageMethod": "origin-server-stopped",
+        "precachedHelpAssets": 2,
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "name": "real backend draft survives reload; accessible help tree, keyboard cleanup and immutable current/history data verified",
+        "passed": true
+      }
+    ],
+    "productionOfflinePrecache": true,
+    "webkitOfflineMethod": "real origin shutdown with uncached-resource negative control; Playwright setOffline limitation: https://github.com/microsoft/playwright/issues/42775",
+    "noAcademicWrites": true
+  },
+  "base": "1b2cc52b52d220af975ece6234fc679563b2a52b",
+  "screenshotCount": 18,
+  "humanScreenReaderAndComprehension": "pending human acceptance; not represented by automated checks"
+}

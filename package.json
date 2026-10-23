@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "codegen": "convex codegen",
-    "test": "node scripts/test-logic.mjs && node scripts/test-handlers.mjs && node scripts/check-convex.mjs && node scripts/test-ui-logic.mjs && node scripts/test-print.mjs && node scripts/test-management-unit.mjs && node scripts/test-document-fidelity.mjs && node scripts/test-panggil.mjs && node scripts/test-audit.mjs && node scripts/test-revision-foundation.mjs && node scripts/test-corrections.mjs && node scripts/test-lifecycle.mjs && node scripts/test-schedule-batches.mjs && node scripts/test-meeting-commands.mjs && node scripts/test-class-controls.mjs",
+    "test": "node scripts/test-logic.mjs && node scripts/test-handlers.mjs && node scripts/check-convex.mjs && node scripts/test-ui-logic.mjs && node scripts/test-print.mjs && node scripts/test-management-unit.mjs && node scripts/test-document-fidelity.mjs && node scripts/test-panggil.mjs && node scripts/test-audit.mjs && node scripts/test-revision-foundation.mjs && node scripts/test-corrections.mjs && node scripts/test-lifecycle.mjs && node scripts/test-schedule-batches.mjs && node scripts/test-meeting-commands.mjs && node scripts/test-class-controls.mjs && node scripts/test-help.mjs",
     "test:corrections-ui": "node scripts/ui/corrections.cjs",
     "test:lifecycle-ui": "node scripts/ui/lifecycle.cjs",
     "test:audit-ui": "node scripts/ui/audit.cjs",
@@ -25,13 +25,15 @@
     "test:class-layout": "node scripts/ui/class-layout.cjs",
     "test:panggil": "node scripts/test-panggil.mjs && node scripts/ui/panggil.cjs",
     "test:sidebar": "node scripts/ui/sidebar.cjs",
-    "test:class-controls-ui": "node scripts/ui/class-controls.cjs"
+    "test:class-controls-ui": "node scripts/ui/class-controls.cjs",
+    "test:help-ui": "node scripts/ui/help.cjs"
   },
   "dependencies": {
     "@pdf-lib/fontkit": "^1.1.1",
     "@xmldom/xmldom": "^0.9.12",
     "convex": "^1.47.0",
     "docx-templates": "4.15.0",
+    "driver.js": "1.10.2",
     "exceljs": "^4.4.0",
     "jszip": "^3.10.2",
     "pdf-lib": "^1.17.1",
@@ -41,6 +43,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
+    "axe-core": "4.14.0",
     "playwright": "1.62.1",
     "vite": "^6.4.4"
   },

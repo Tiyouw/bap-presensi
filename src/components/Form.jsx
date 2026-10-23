@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useId, useState } from "react";
+import { HelpButton } from "./Help.jsx";
+import { FIELD_HELP } from "../lib/helpContent.js";
 import { Notice } from "./Layout.jsx";
 import { pesanGalat } from "../lib/presensi.js";
 export function Field({
@@ -8,15 +10,18 @@ export function Field({
   type = "text",
   options,
   help,
+  helpTopic,
+  tourAnchor,
   required = false,
   ...props
 }) {
+  const generatedId=useId(),id=props.id||generatedId,helpId=`${id}-help`,description=[props["aria-describedby"],help?helpId:null].filter(Boolean).join(" ")||undefined;
   return (
-    <label className="mg-field">
-      <span>
+    <div className="mg-field" data-tour={tourAnchor}>
+      <div className="help-field-label"><label htmlFor={id}>
         {label}
         {required && " *"}
-      </span>
+      </label><HelpButton topic={helpTopic||FIELD_HELP[label]}/></div>
       {options ? (
         <select
           aria-label={label}
@@ -24,6 +29,8 @@ export function Field({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           {...props}
+          id={id}
+          aria-describedby={description}
         >
           {options.map((o) => (
             <option
@@ -43,10 +50,12 @@ export function Field({
           onChange={(e) => onChange(e.target.value)}
           required={required}
           {...props}
+          id={id}
+          aria-describedby={description}
         />
       )}
-      {help && <small>{help}</small>}
-    </label>
+      {help && <small id={helpId}>{help}</small>}
+    </div>
   );
 }
 export function useTask() {

@@ -1,3 +1,4 @@
+import { HelpButton } from "./Help.jsx";
 import {
   useEffect,
   useId,
@@ -7,6 +8,7 @@ import {
   useState,
 } from "react";
 import Modal from "./Modal.jsx";
+import { helpIsActive, useHelpActivity } from "../lib/helpActivity.js";
 import { LABEL } from "../lib/presensi.js";
 import { STATUS_PANGGIL, golonganPanggil } from "../lib/panggil.js";
 import {
@@ -54,6 +56,7 @@ export default function ModePanggil({
   onReview,
   returnFocusRef,
 }) {
+  const externalHelp = useHelpActivity();
   const groups = useMemo(() => golonganPanggil(peserta), [peserta]);
   const [selected, setSelected] = useState(() => {
     const saved = groups.find((g) => g.key === progress.groupKey);
@@ -120,6 +123,13 @@ export default function ModePanggil({
     pending.current = null;
     travelling.current = false;
   }
+  useEffect(() => {
+    if (externalHelp) {
+      cancel();
+      setMotion("");
+      setCountdown(null);
+    }
+  }, [externalHelp]);
   useEffect(() => () => cancel(), []);
   useLayoutEffect(() => {
     if (!help) return;
@@ -148,7 +158,14 @@ export default function ModePanggil({
     return () => document.removeEventListener("visibilitychange", pause);
   }, []);
   useEffect(() => {
-    if (countdown === null || help || phase !== "finish" || !canEdit || unsafe)
+    if (
+      countdown === null ||
+      help ||
+      externalHelp ||
+      phase !== "finish" ||
+      !canEdit ||
+      unsafe
+    )
       return;
     const timer = setTimeout(() => {
       if (countdown <= 1)
@@ -158,7 +175,7 @@ export default function ModePanggil({
       else setCountdown(countdown - 1);
     }, 1000);
     return () => clearTimeout(timer);
-  }, [countdown, help, phase, canEdit, unsafe]);
+  }, [countdown, help, externalHelp, phase, canEdit, unsafe]);
 
   function focusPanel(selector) {
     requestAnimationFrame(() =>
@@ -297,6 +314,7 @@ export default function ModePanggil({
   }
 
   function keys(event) {
+    if (helpIsActive() || event.target.closest(".help-trigger")) return;
     if (event.key === "Escape" && help) {
       event.preventDefault();
       event.stopPropagation();
@@ -364,6 +382,7 @@ export default function ModePanggil({
       <div ref={root}>
         <p className="call-context">
           <PanggilIcon /> {kode} · Pertemuan {nomor}
+          <HelpButton topic="calling" />
         </p>
         {!help && phase !== "choose" && (
           <>

@@ -106,7 +106,7 @@ async function captureBeforeAfter(page) {
       await page.screenshot({ path: `${shots}/after-hover-dark.png` }); await leave(page);
     }
     // Keyboard focus opens labels; Escape releases focus without changing the saved preference.
-    await page.locator(".mg-search-trigger").focus(); await page.keyboard.press("Tab"); await page.keyboard.press("Tab");
+    await page.locator(".mg-profile-button").focus(); await page.keyboard.press("Tab");
     await until(async () => await side.getAttribute("data-expanded") === "true", "Keyboard focus did not reveal labels");
     await page.keyboard.press("Escape"); await leave(page);
     const mod = engine === "webkit" ? "Meta" : "Control";
@@ -120,7 +120,7 @@ async function captureBeforeAfter(page) {
     await page.keyboard.press("Escape"); await side.hover({ position: { x: 35, y: 85 } });
     await until(async () => await side.getAttribute("data-expanded") === "true", "Reveal after dialog");
     await side.getByRole("button", { name: "Bantuan & panduan", exact: true }).click();
-    await page.getByRole("dialog", { name: "Bantuan presensi" }).waitFor(); assert.equal(await side.getAttribute("data-expanded"), "false");
+    await page.getByRole("dialog", { name: "Bantuan & panduan" }).waitFor(); assert.equal(await side.getAttribute("data-expanded"), "false");
     await page.keyboard.press("Escape"); await leave(page);
     results.push({ engine, check: "keyboard, Mac modifier, modal priority, input shortcut guard and persistence", passed: true });
     // All desktop/tablet widths retain the sidebar; only mobile widths use a drawer.

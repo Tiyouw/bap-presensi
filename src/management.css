@@ -797,6 +797,7 @@ textarea {
 }
 .mg-local-toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
@@ -806,6 +807,10 @@ textarea {
 }
 .mg-local-toolbar > div {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 0;
+  gap: 4px;
 }
 .mg-shell--attendance .attendance-layout {
   height: calc(100dvh - 64px);

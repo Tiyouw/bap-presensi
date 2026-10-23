@@ -225,7 +225,7 @@ async function noOverflow(p) {
       name,
       "custom practical week 1, template actual PDF preview/publish, draft activation",
     );
-    await page.getByRole("button", { name: /Mode Panggil/ }).click();
+    await page.getByRole("button", { name: /^Mode Panggil/ }).click();
     await page
       .getByLabel("Keluar otomatis 3 detik setelah golongan selesai")
       .uncheck();

@@ -1,3 +1,4 @@
+import { HelpGroup } from "./Help.jsx";
 import PdfPreview from "./PdfPreview.jsx";
 import { useEffect, useMemo, useState } from "react";
 import { useAction, useQuery } from "convex/react";
@@ -94,6 +95,7 @@ export default function PrintPack({
   }
   return (
     <Modal title="Siapkan cetak" onClose={onClose} busy={busy} wide>
+      <HelpGroup topic="packet"><span>Pertemuan dan versi dalam paket</span></HelpGroup>
       <p className="modal-description">
         Pilih pertemuan terkunci. Dua form BAP disusun per folio, dari atas ke
         bawah, dengan ukuran tulisan mengikuti template.
@@ -230,7 +232,7 @@ export default function PrintPack({
         </Notice>
       )}
       <details className="guide-print-help">
-        <summary>Pengaturan cetak di Word</summary>
+        <summary>Pengaturan cetak di Word</summary><HelpGroup topic="folio"><span>Ukuran kertas dan skala cetak</span></HelpGroup>
         <p>
           Pilih kertas folio sesuai ukuran dokumen: 215 × 330 mm. Gunakan skala
           100% dan 1 halaman per lembar. Susunan dua form sudah dibuat oleh

@@ -1,3 +1,4 @@
+import { useHelpScope } from "../components/Help.jsx";
 import { useEffect, useRef, useState } from "react";
 import { useAction } from "convex/react";
 import { api } from "../../convex/_generated/api.js";
@@ -6,6 +7,7 @@ import { Header, Notice } from "../components/Layout.jsx";
 import { LoginSplash } from "../components/Loading.jsx";
 
 export default function Login({ onMasuk }) {
+  useHelpScope({area:"login",userId:"",role:"",classId:"",enabled:false,capabilities:[]},5);
   const login = useAction(api.authNode.login);
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");

@@ -33,9 +33,9 @@ import { useLocation, navigate, canLeave } from "./lib/navigation.js";
 import { LoginSplash, SkeletonRows } from "./components/Loading.jsx";
 import { Notice } from "./components/Layout.jsx";
 import Modal from "./components/Modal.jsx";
-import Guide from "./components/Guide.jsx";
+import { HelpWelcome, useHelp, useHelpScope } from "./components/Help.jsx";
+import { pageHelpArea } from "./lib/helpContent.js";
 import PrintPack from "./components/PrintPack.jsx";
-import { panduanSudahDilihat, tutupPanduan } from "./lib/guide.js";
 const cachedIdentity = (token) => {
   try {
     return JSON.parse(
@@ -134,6 +134,8 @@ function Session({ token, onLogout }) {
   );
 }
 function Authenticated({ token, user, path, network, onLogout }) {
+  const help = useHelp();
+  useHelpScope({userId:user.id,role:user.peran,path,area:pageHelpArea(path),online:network.online},10);
   const catalog = useQuery(api.kelola.catalog, { token }),
     [cache, setCache] = useState(() => {
       try {
@@ -143,7 +145,6 @@ function Authenticated({ token, user, path, network, onLogout }) {
       }
     }),
     [logout, setLogout] = useState(false),
-    [guide, setGuide] = useState(false),
     [print, setPrint] = useState(null),
     [choices, setChoices] = useState({});
   useEffect(() => {
@@ -154,12 +155,6 @@ function Authenticated({ token, user, path, network, onLogout }) {
       } catch {}
     }
   }, [catalog, user.id]);
-  useEffect(() => {
-    if (!panduanSudahDilihat()) {
-      const timer = setTimeout(() => setGuide(true), 400);
-      return () => clearTimeout(timer);
-    }
-  }, []);
   const data = catalog || cache;
   if (!data) return <LoginSplash />;
   const pathname = path.split("?")[0],
@@ -191,7 +186,7 @@ function Authenticated({ token, user, path, network, onLogout }) {
           path={path}
           pertemuanId={parts[2] === "pertemuan" ? parts[3] : null}
           onPrint={openPrint}
-          onHelp={() => setGuide(true)}
+          onHelp={source => help.openCenter({anchor:source instanceof HTMLElement?source:source?.currentTarget instanceof HTMLElement?source.currentTarget:undefined})}
         />
       </StorageScope.Provider>
     );
@@ -223,7 +218,7 @@ function Authenticated({ token, user, path, network, onLogout }) {
         path={path}
         kelasId={kelasId}
         onLogout={() => {if(canLeave())setLogout(true);}}
-        onHelp={() => setGuide(true)}
+        onHelp={source => help.openCenter({anchor:source instanceof HTMLElement?source:source?.currentTarget instanceof HTMLElement?source.currentTarget:undefined})}
       >
         {!network.online && (
           <div className="mg-offline">
@@ -233,6 +228,7 @@ function Authenticated({ token, user, path, network, onLogout }) {
             </Notice>
           </div>
         )}
+        <HelpWelcome/>
         {content}
       </Workspace>
       {print && (
@@ -274,15 +270,6 @@ function Authenticated({ token, user, path, network, onLogout }) {
           </div>
         </Modal>
       )}
-      {guide && (
-        <Guide
-          firstTime={!panduanSudahDilihat()}
-          onClose={() => {
-            tutupPanduan();
-            setGuide(false);
-          }}
-        />
-      )}
     </WorkspaceContext.Provider>
   );
 }
@@ -307,6 +294,7 @@ function ClassRoute({
     }
   }, [fresh, scope]);
   const data = fresh || cache;
+  useHelpScope({classId:kelasId,enabled:Boolean(data?.controls?.enabled),capabilities:data?.controls?.capabilities||[],archived:Boolean(data?.kelas.arsip),area:pageHelpArea(path),meetingId:pertemuanId||new URLSearchParams(path.split("?")[1]).get("correct")||"",meetingStatus:data?.pertemuan.find(p=>p.id===pertemuanId)?.status||""},20);
   if (!data)
     return (
       <main className="mg-page">
@@ -402,7 +390,6 @@ function AttendanceRoute({
           </Notice>
         </div>
       )}
-      {data.controls?.enabled && (data.controls.capabilities.includes("schedule") || data.controls.capabilities.includes("history")) && <div className="mg-attendance-notice"><button className="button button--outline" onClick={()=>navigate(`/kelas/${kelasId}?tab=jadwal&correct=${meeting.id}`)}>Koreksi sesi ini</button></div>}
       {meeting.revision > 0 &&
         meeting.status === "TERBUKA" &&
         !data.controls?.enabled &&
@@ -432,6 +419,8 @@ function AttendanceRoute({
         onResumeCleared={() => setResumeDraft(null)}
         network={network}
         onKembali={() => navigate(`/kelas/${kelasId}`)}
+        onEditMeeting={data.controls?.enabled && (data.controls.capabilities.includes("schedule") || data.controls.capabilities.includes("history"))
+          ? () => navigate(`/kelas/${kelasId}?tab=jadwal&correct=${meeting.id}`) : undefined}
         onHelp={onHelp}
         onPrint={onPrint}
       />

@@ -95,7 +95,7 @@ async function session(type, port = 5194, options = {}) {
   return { context, page, errors };
 }
 async function open(page, start = true) {
-  await page.getByRole("button", { name: /Mode Panggil/ }).click();
+  await page.getByRole("button", { name: /^Mode Panggil/ }).click();
   await page.getByRole("dialog", { name: "Mode Panggil" }).waitFor();
   if (start) {
     await page.locator(".call-start").click();
@@ -330,7 +330,7 @@ async function noOverflow(page) {
     await close(page);
     assert.equal(
       await page
-        .getByRole("button", { name: /Mode Panggil/ })
+        .getByRole("button", { name: /^Mode Panggil/ })
         .evaluate((e) => e === document.activeElement),
       true,
     );
@@ -661,7 +661,7 @@ async function noOverflow(page) {
       0,
     );
     await close(page);
-    await page.getByRole("button", { name: /Mode Panggil/ }).click();
+    await page.getByRole("button", { name: /^Mode Panggil/ }).click();
     await page.getByRole("dialog", { name: "Periksa presensi" }).waitFor();
     await page.getByRole("button", { name: /Kunci sekarang/ }).click();
     await page
@@ -677,7 +677,7 @@ async function noOverflow(page) {
       1,
     );
     assert.equal(
-      await page.getByRole("button", { name: /Mode Panggil/ }).count(),
+      await page.getByRole("button", { name: /^Mode Panggil/ }).count(),
       0,
     );
     ok(

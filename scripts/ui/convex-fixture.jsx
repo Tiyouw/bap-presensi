@@ -75,10 +75,10 @@ const restoredControls=restoreControlEngine();const controlsReady=restoredContro
 window.__qa = {
   calls,
   controlsReady(){return Boolean(controlEngine)},
-  async controlOtherGrant(){const g=await controlEngine.ctx.db.query('classCapability').withIndex('by_class_user',q=>q.eq('kelasId','k1').eq('penggunaId','qa-operator')).unique();await controlEngine.ctx.db.patch(g._id,{capabilities:['schedule'],revision:g.revision+1});await controlEngine.refresh();publish();},
+  async controlOtherGrant(){await controlsReady;const g=await controlEngine.ctx.db.query('classCapability').withIndex('by_class_user',q=>q.eq('kelasId','k1').eq('penggunaId','qa-operator')).unique();await controlEngine.ctx.db.patch(g._id,{capabilities:['schedule'],revision:g.revision+1});await controlEngine.refresh();publish();},
   async enableControls(options={}){controlEngine=await createControlEngine({kelas,participants,server,...options});syncControls();publish();},
-  async controlRole(peran,caps){await controlEngine.ctx.db.patch('qa-user',{peran});if(caps){const old=await controlEngine.ctx.db.query('classCapability').withIndex('by_class_user',q=>q.eq('kelasId','k1').eq('penggunaId','qa-user')).unique();if(old)await controlEngine.ctx.db.patch(old._id,{capabilities:caps,revision:(old.revision||0)+1});else await controlEngine.ctx.db.insert('classCapability',{kelasId:'k1',penggunaId:'qa-user',capabilities:caps,revision:1});}await controlEngine.refresh();publish();},
-  async controlAdvance(id='p3'){await controlEngine.advance(id);syncControls();publish();},
+  async controlRole(peran,caps){await controlsReady;await controlEngine.ctx.db.patch('qa-user',{peran});if(caps){const old=await controlEngine.ctx.db.query('classCapability').withIndex('by_class_user',q=>q.eq('kelasId','k1').eq('penggunaId','qa-user')).unique();if(old)await controlEngine.ctx.db.patch(old._id,{capabilities:caps,revision:(old.revision||0)+1});else await controlEngine.ctx.db.insert('classCapability',{kelasId:'k1',penggunaId:'qa-user',capabilities:caps,revision:1});}await controlEngine.refresh();publish();},
+  async controlAdvance(id='p3'){await controlsReady;await controlEngine.advance(id);syncControls();publish();},
   controlState(){return{grants:[...controlEngine.ctx.tabel.get('classCapability')?.values()||[]],meetings:[...controlEngine.ctx.tabel.get('pertemuan')].map(([id,p])=>({...p,id})),jobs:controlEngine.cache.get('scheduleBatches:jobs')||[],revisions:[...controlEngine.ctx.tabel.get('meetingRevision')?.values()||[]]};},
   seedHistory(count) {
     kelas.readModelReady = true;
@@ -178,7 +178,7 @@ export function useQuery(reference, args) {
             peran: "ADMIN",
             kelasIds: ["k1"],
             aktif: true,
-            wajibGanti: false,
+            wajibGanti: localStorage.getItem("ui-qa.require-password-change") === "1",
             ...(controlEngine?controlEngine.user():{}),
           };
     if (authExpired || args?.token !== "ui-test-token") {
@@ -212,6 +212,12 @@ export function useQuery(reference, args) {
         impor: [],
         audit: [],
       };
+    if(name === "accounts:list") {
+      const currentUser=controlEngine?.user()||{id:"qa-user",nama:"Admin Demo",username:"demo",peran:"ADMIN"};
+      if(currentUser.peran!=="ADMIN")throw Error("AKSES_DITOLAK");
+      return [{...currentUser,aktif:true,kelasIds:["k1"]},{id:"qa-operator",nama:"Operator Demo",username:"operator.demo",peran:"OPERATOR",aktif:true,kelasIds:["k1"]}];
+    }
+    if(name === "auth:sessions") return [];
     if (name === "bootstrap:get")
       return {
         diambilPada: Date.now(),

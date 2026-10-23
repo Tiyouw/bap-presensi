@@ -3,13 +3,14 @@ import { ThemeSelect } from "./Theme.jsx";
 import { SkeletonRows } from "./Loading.jsx";
 import { useContext } from "react";
 import { WorkspaceContext } from "../lib/ScopedStorage.jsx";
+import { PageHelp } from "./Help.jsx";
 
 export function Header({
   onKeluar,
   onKembali,
   onBap,
   onUndo,
-  onHelp,
+  onEditMeeting,
   undoDisabled,
   busy,
 }) {
@@ -27,6 +28,16 @@ export function Header({
           </button>
         )}
         <div>
+          {onEditMeeting && (
+            <button
+              className="button button--quiet"
+              disabled={busy}
+              title="Lihat atau ubah tanggal, ruang, nomor, dan data sesi sesuai akses kelas"
+              onClick={onEditMeeting}
+            >
+              Tanggal & data sesi
+            </button>
+          )}
           {onUndo && (
             <button
               className="button button--quiet"
@@ -39,15 +50,6 @@ export function Header({
           {onBap && (
             <button className="button button--quiet" onClick={onBap}>
               BAP
-            </button>
-          )}
-          {onHelp && (
-            <button
-              className="button button--quiet"
-              onClick={onHelp}
-              aria-label="Bantuan"
-            >
-              ?
             </button>
           )}
         </div>
@@ -75,16 +77,7 @@ export function Header({
           <Brand />
         )}
         <div className="header-actions">
-          {onHelp && (
-            <button
-              className="button button--quiet help-button"
-              onClick={onHelp}
-              aria-label="Bantuan"
-              title="Bantuan"
-            >
-              <span aria-hidden="true">?</span>
-            </button>
-          )}
+          <PageHelp />
           {onUndo && (
             <button
               className="button button--quiet"

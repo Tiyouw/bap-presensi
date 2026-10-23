@@ -1,0 +1,186 @@
+{
+  "base": "1b2cc52b52d220af975ece6234fc679563b2a52b",
+  "source": "git archive actual PR base; matching fixture identity, synthetic93, session state and viewport",
+  "shots": [
+    {
+      "file": "before-correction-desktop.png",
+      "version": "before",
+      "screen": "correction",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "state": "Admin Demo, synthetic93, p3 locked r1/p4 open; unchanged class data, light/reduced motion"
+    },
+    {
+      "file": "before-attendance-desktop.png",
+      "version": "before",
+      "screen": "attendance",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "state": "Admin Demo, synthetic93, p3 locked r1/p4 open; unchanged class data, light/reduced motion"
+    },
+    {
+      "file": "before-settings-desktop.png",
+      "version": "before",
+      "screen": "settings",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "state": "Admin Demo, synthetic93, p3 locked r1/p4 open; unchanged class data, light/reduced motion"
+    },
+    {
+      "file": "before-help-center-desktop.png",
+      "version": "before",
+      "screen": "help-center",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "state": "Admin Demo, synthetic93, p3 locked r1/p4 open; unchanged class data, light/reduced motion"
+    },
+    {
+      "file": "before-correction-mobile.png",
+      "version": "before",
+      "screen": "correction",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "Admin Demo, synthetic93, p3 locked r1/p4 open; unchanged class data, light/reduced motion"
+    },
+    {
+      "file": "before-attendance-mobile.png",
+      "version": "before",
+      "screen": "attendance",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "Admin Demo, synthetic93, p3 locked r1/p4 open; unchanged class data, light/reduced motion"
+    },
+    {
+      "file": "before-settings-mobile.png",
+      "version": "before",
+      "screen": "settings",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "Admin Demo, synthetic93, p3 locked r1/p4 open; unchanged class data, light/reduced motion"
+    },
+    {
+      "file": "before-help-center-mobile.png",
+      "version": "before",
+      "screen": "help-center",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "Admin Demo, synthetic93, p3 locked r1/p4 open; unchanged class data, light/reduced motion"
+    },
+    {
+      "file": "after-correction-desktop.png",
+      "version": "after",
+      "screen": "correction",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "state": "Admin Demo, synthetic93, p3 locked r1/p4 open; unchanged class data, light/reduced motion"
+    },
+    {
+      "file": "after-attendance-desktop.png",
+      "version": "after",
+      "screen": "attendance",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "state": "Admin Demo, synthetic93, p3 locked r1/p4 open; unchanged class data, light/reduced motion"
+    },
+    {
+      "file": "after-settings-desktop.png",
+      "version": "after",
+      "screen": "settings",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "state": "Admin Demo, synthetic93, p3 locked r1/p4 open; unchanged class data, light/reduced motion"
+    },
+    {
+      "file": "after-help-center-desktop.png",
+      "version": "after",
+      "screen": "help-center",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "state": "Admin Demo, synthetic93, p3 locked r1/p4 open; unchanged class data, light/reduced motion"
+    },
+    {
+      "file": "after-tour-desktop.png",
+      "version": "after",
+      "screen": "read-only date correction tour",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "beforeReference": "before-correction-desktop.png"
+    },
+    {
+      "file": "after-correction-mobile.png",
+      "version": "after",
+      "screen": "correction",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "Admin Demo, synthetic93, p3 locked r1/p4 open; unchanged class data, light/reduced motion"
+    },
+    {
+      "file": "after-attendance-mobile.png",
+      "version": "after",
+      "screen": "attendance",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "Admin Demo, synthetic93, p3 locked r1/p4 open; unchanged class data, light/reduced motion"
+    },
+    {
+      "file": "after-settings-mobile.png",
+      "version": "after",
+      "screen": "settings",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "Admin Demo, synthetic93, p3 locked r1/p4 open; unchanged class data, light/reduced motion"
+    },
+    {
+      "file": "after-help-center-mobile.png",
+      "version": "after",
+      "screen": "help-center",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "Admin Demo, synthetic93, p3 locked r1/p4 open; unchanged class data, light/reduced motion"
+    },
+    {
+      "file": "after-tour-mobile.png",
+      "version": "after",
+      "screen": "read-only date correction tour",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "beforeReference": "before-correction-mobile.png"
+    }
+  ]
+}

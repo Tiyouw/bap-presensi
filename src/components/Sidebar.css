@@ -88,6 +88,9 @@ body > .modal-backdrop { z-index: 100; }
   .ws-pin-button { display: none !important; }
   .ws-sidebar-footer { margin-top: 8px; }
   .mg-shell--nav .mg-profile-button { max-width: 108px; }
+  .mg-shell--nav .mg-topbar { gap: 4px; padding-inline: 12px; }
+  .mg-shell--nav .mg-profile-wrap { min-width: 0; }
+  .mg-shell--nav .mg-profile-button { width: 100%; min-width: 44px; text-overflow: ellipsis; }
 }
 @media (prefers-reduced-motion: reduce) {
   .ws-sidebar-panel, .ws-nav-label { transition: none; }

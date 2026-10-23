@@ -14,7 +14,7 @@ export function appShellPlugin() {
       const hash = createHash("sha256");
       for (const name of names) hash.update(name).update(bundle[name].code || bundle[name].source || "");
       const version = hash.digest("hex").slice(0, 20);
-      const paths = [...new Set([base + "index.html", base + "favicon.svg", ...names.map(name => base + name)])];
+      const paths = [...new Set([base + "index.html", base + "favicon.svg", base + "third-party-notices.txt", ...names.map(name => base + name)])];
       const source = `const CACHE='bap-shell-${version}';
 const PREFIX='bap-shell-';
 const SHELL=${JSON.stringify(base + "index.html")};

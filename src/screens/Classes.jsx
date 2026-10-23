@@ -21,6 +21,7 @@ import Pertemuan from "./Pertemuan.jsx";
 import { authenticatedDocument, unduhDokumen } from "../lib/presensi.js";
 import { SkeletonRows } from "../components/Loading.jsx";
 import CorrectionEditor from "./CorrectionEditor.jsx";
+import { HelpGroup, DisabledReason } from "../components/Help.jsx";
 export function ClassCard({ item, onCopy, manage }) {
   return (
     <article className="mg-class-card">
@@ -256,11 +257,12 @@ export function ClassWorkspace({
             {c.arsip ? "Arsip" : c.draft ? "Draf kelas" : "Kelas aktif"}
           </span>
         </div>
-        <nav className="mg-class-tabs" aria-label="Bagian kelas">
+        <nav className="mg-class-tabs" aria-label="Bagian kelas" data-tour="class-tabs">
           {tabs.map(([id, label]) => (
             <a
               href={`/kelas/${c.id}?tab=${id}`}
               key={id}
+              data-tour={`tab-${id}`}
               aria-current={tab === id ? "page" : undefined}
               className={tab === id ? "is-active" : ""}
               onClick={(e) => linkClick(e, `/kelas/${c.id}?tab=${id}`)}
@@ -301,6 +303,7 @@ export function ClassWorkspace({
             >
               Periksa & aktifkan
             </button>
+            <DisabledReason>{!can("identity")?"Akunmu belum memiliki izin identitas untuk mengaktifkan kelas ini.":!checks.every(Boolean)?"Lengkapi dosen, mahasiswa aktif, jadwal praktikum dan template terbit sebelum aktivasi.":null}</DisabledReason>
           </section>
         )}
         <Feedback task={task} />
@@ -345,10 +348,11 @@ export function ClassWorkspace({
               />
               {!data.controls?.enabled&&<CourseSettings token={token} data={data} />}
             </fieldset>
+            <DisabledReason>{c.arsip?"Pulihkan kelas arsip untuk mengubah identitas.":!can("identity")?"Akunmu belum memiliki izin identitas pada kelas ini. Hubungi Pengelola.":null}</DisabledReason>
             {data.controls?.enabled&&can("export")&&<ClassBackup token={token} data={data}/>}
             {data.controls?.enabled&&can("delegate")&&<ClassPermissions token={token} data={data}/>}
             <div className="mg-panel">
-              <h3>Arsip kelas</h3>
+              <HelpGroup topic="archive"><h3>Arsip kelas</h3></HelpGroup>
               <p>
                 Arsip menjaga semua presensi dan dokumen. Kelas tetap dapat
                 dicari dengan opsi Sertakan arsip.
@@ -360,6 +364,7 @@ export function ClassWorkspace({
               >
                 {c.arsip ? "Pulihkan kelas" : "Arsipkan kelas"}
               </button>
+              <DisabledReason>{!can("lifecycle")?"Akunmu belum memiliki izin pembatalan/pemulihan pada kelas ini. Hubungi Pengelola.":null}</DisabledReason>
             </div>
           </>
         ) : tab === "riwayat" ? (
@@ -526,7 +531,7 @@ export function Documents({ token, catalog, onPrint, kelasId: initial }) {
       <div className="mg-page-heading">
         <div>
           <p className="eyebrow">Dokumen & revisi tersimpan</p>
-          <h1>Arsip BAP.</h1>
+          <h1>Arsip BAP.</h1><HelpGroup topic="documents"><span>Periksa versi dokumen sebelum mengunduh.</span></HelpGroup>
           <p>Word untuk penyuntingan, PDF untuk pratinjau dan cetak.</p>
         </div>
         {kelasId && (

@@ -1,3 +1,4 @@
+import { HelpGroup } from "./Help.jsx";
 import {useState} from "react";
 import {useQuery,useMutation} from "convex/react";
 import {api} from "../../convex/_generated/api.js";
@@ -5,7 +6,7 @@ import {CAPABILITY_LABELS} from "../../bap-shared/control.js";
 import {Feedback,useTask} from "./Form.jsx";
 export default function ClassPermissions({token,data}){
  const users=useQuery(api.classAccess.list,{token,kelasId:data.kelas.id});
- return <section className="mg-panel"><h3>Izin Operator kelas ini</h3><p>Hanya Operator yang telah ditugaskan ke kelas ini. Presensi awal tetap tersedia; izin koreksi historis dapat dicabut secara eksplisit.</p>{users?.map(u=><PermissionRow key={u.id} token={token} kelasId={data.kelas.id} user={u} allowed={data.controls.capabilities} archived={data.kelas.arsip}/>)}{users?.length===0&&<p>Belum ada Operator yang ditugaskan.</p>}</section>;
+ return <section className="mg-panel"><HelpGroup topic="permissions"><h3>Izin Operator kelas ini</h3></HelpGroup><p>Hanya Operator yang telah ditugaskan ke kelas ini. Presensi awal tetap tersedia; izin koreksi historis dapat dicabut secara eksplisit.</p>{users?.map(u=><PermissionRow key={u.id} token={token} kelasId={data.kelas.id} user={u} allowed={data.controls.capabilities} archived={data.kelas.arsip}/>)}{users?.length===0&&<p>Belum ada Operator yang ditugaskan.</p>}</section>;
 }
 function PermissionRow({token,kelasId,user,allowed,archived}){
  const [caps,setCaps]=useState(user.capabilities),[baseRevision,setBaseRevision]=useState(user.revision),save=useMutation(api.classAccess.setClassCapabilities),task=useTask();
