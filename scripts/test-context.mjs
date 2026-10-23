@@ -17,6 +17,11 @@ const INDEX = {
   searchEntry: { by_kelas: ["kelasId"], by_source: ["sourceId"] },
   documentView: { by_source: ["sourceId"], by_kelas_pada: ["kelasId", "pada"], by_pertemuan_format_revision: ["pertemuanId", "format", "revision", "pada"] },
   migrasi: { by_versi: ["versi"] },
+  meetingRevision: { by_meeting_revision:["pertemuanId","revision"], by_class:["kelasId"], by_operation:["pertemuanId","operationKey"] },
+  revisionRows: { by_revision:["revisionId","part"] },
+  revisionPayload: { by_revision:["revisionId"] },
+  featureFlag: { by_key:["key"] },
+  classCapability: { by_class_user:["kelasId","penggunaId"] },
   impor: { by_kelas: ["kelasId"], by_kelas_pada: ["kelasId", "pada"] },
 };
 

@@ -3,6 +3,7 @@ import { requireMeeting, audit } from "./access.js";
 import { classSnapshot, readableDetail } from "./classLogic.js";
 import { assertSnapshotSize } from "./snapshotSize.js";
 import { syncClass, syncMeeting } from "./readModels.js";
+import { appendRevision } from "./revisionLedger.js";
 export const detailLogic = readableDetail;
 export async function simpanDanKunciLogic(ctx, args) {
   const { meeting: p, user } = await requireMeeting(
@@ -27,6 +28,7 @@ export async function simpanDanKunciLogic(ctx, args) {
   }
   if (sent.size !== registered.size) throw new ConvexError("PESERTA_KURANG");
   assertSnapshotSize(snapshot);
+  await appendRevision(ctx, p);
   const old = await ctx.db
     .query("presensi")
     .withIndex("by_pertemuan", (q) => q.eq("pertemuanId", p._id))
@@ -41,6 +43,8 @@ export async function simpanDanKunciLogic(ctx, args) {
     dikunciPada: Date.now(),
     snapshot,
   });
+  await appendRevision(ctx, await ctx.db.get(p._id), { snapshot, statuses:args.statuses,
+    actorId:user._id,action:"SIMPAN_KUNCI",reason:"Simpan dan kunci presensi",parentRevision:p.revision });
   await syncMeeting(ctx, p._id);
   await syncClass(ctx, p.kelasId);
   await audit(
@@ -64,6 +68,7 @@ export async function bukaKunciLogic(ctx, args) {
   if (p.revision !== args.expectedRevision)
     throw new ConvexError("KONFLIK_REVISI");
   if (p.status !== "KUNCI") return { ok: true, revision: p.revision };
+  await appendRevision(ctx, p);
   await ctx.db.patch(p._id, { status: "TERBUKA" });
   await syncMeeting(ctx, p._id);
   await syncClass(ctx, p.kelasId);

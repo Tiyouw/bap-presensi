@@ -6,6 +6,7 @@ import { classRows, classSnapshot } from "./lib/classLogic.js";
 import { bahanGenerateLogic, klaimLogic, finalisasiLogic } from "./lib/bapLogic.js";
 import { bahanPaketLogic, ringkasanCetakLogic } from "./lib/printLogic.js";
 import { documentUrl } from "./lib/documentUrl.js";
+import { archiveMetadata } from "./lib/revisionLedger.js";
 export const fileAccess = internalQuery({
   args: { token: v.string(), id: v.id("bapDoc") },
   handler: async (ctx, a) => {
@@ -122,8 +123,7 @@ export const history = query({
           result.push({
             id: d._id,
             pertemuanId: p._id,
-            nomor: p.nomor,
-            tanggal: p.tanggal,
+            ...(await archiveMetadata(ctx,d)),
             revision: d.revision,
             format: d.format || "docx",
             templateVersion: d.templateVersion,
