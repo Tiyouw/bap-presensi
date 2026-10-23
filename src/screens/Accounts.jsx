@@ -105,14 +105,14 @@ export function Profile({ token, user, onLogout, forced = false }) {
     return (
       <main className="mg-page mg-narrow">
         <p className="eyebrow">Akun {user.username}</p>
-        <h1>Amankan akunmu.</h1><PageHelp area="profil" tour={false}/>
+        <div className="mg-section-heading"><h1>Amankan akunmu.</h1><PageHelp area="profil" /></div>
         <PasswordForm token={token} user={user} forced onLogout={onLogout} />
       </main>
     );
   return (
     <main className="mg-page">
       <p className="eyebrow">Akun & preferensi</p>
-      <h1>Pengaturan.</h1><PageHelp area="profil" tour={false}/>
+      <h1>Pengaturan.</h1>
       <div className="mg-settings-grid">
         <section className="mg-panel">
           <h2>Profil</h2>
@@ -245,7 +245,7 @@ export default function Accounts({ token, user, catalog }) {
       <div className="mg-page-heading">
         <div>
           <p className="eyebrow">Kendali administrator</p>
-          <h1>Akun & akses.</h1><PageHelp area="akun" tour={false}/><HelpGroup topic="accounts"><span>Peran dan penugasan kelas</span></HelpGroup>
+          <h1>Akun & akses.</h1><HelpGroup topic="accounts"><span>Peran dan penugasan kelas</span></HelpGroup>
           <p>Atur peran dan kelas yang dapat dibuka setiap pengguna.</p>
         </div>
         <button

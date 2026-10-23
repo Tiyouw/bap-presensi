@@ -178,7 +178,7 @@ export function useQuery(reference, args) {
             peran: "ADMIN",
             kelasIds: ["k1"],
             aktif: true,
-            wajibGanti: false,
+            wajibGanti: localStorage.getItem("ui-qa.require-password-change") === "1",
             ...(controlEngine?controlEngine.user():{}),
           };
     if (authExpired || args?.token !== "ui-test-token") {

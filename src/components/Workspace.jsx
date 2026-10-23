@@ -6,6 +6,7 @@ import Modal from "./Modal.jsx";
 import { ThemeSelect } from "./Theme.jsx";
 import Sidebar from "./Sidebar.jsx";
 import WorkspaceIcon from "./WorkspaceIcon.jsx";
+import { PageHelp } from "./Help.jsx";
 import useSidebar from "../lib/useSidebar.js";
 import "./Sidebar.css";
 import {
@@ -59,7 +60,14 @@ export function Search({ token, user, catalog, kelasId, onClose }) {
       : "skip",
   );
   const eligible = (x) =>
-    (!x.path.startsWith("/kelas/")||!x.capability||catalog.kelas.some(c=>c.id===x.path.split("/")[2]&&(!c.controlsEnabled||classFeatures(c.id,c.capabilities).some(f=>f.path===x.path))))&&
+    (!x.path.startsWith("/kelas/") ||
+      !x.capability ||
+      catalog.kelas.some(
+        (c) =>
+          c.id === x.path.split("/")[2] &&
+          (!c.controlsEnabled ||
+            classFeatures(c.id, c.capabilities).some((f) => f.path === x.path)),
+      )) &&
     (!x.admin || user.peran === "ADMIN") &&
     (!x.manage || user.peran !== "OPERATOR");
   const key = `bap.recent.${user.id}`,
@@ -69,11 +77,13 @@ export function Search({ token, user, catalog, kelasId, onClose }) {
     features = [
       ...FEATURES,
       ...featureClasses.flatMap((c) =>
-        classFeatures(c.id,c.controlsEnabled?c.capabilities:undefined).map((feature) => ({
-          ...feature,
-          context: `${c.matkulKode} · ${c.nama} · ${c.semester} ${c.tahunAkademik}`,
-          aliases: `${feature.aliases} ${c.matkulNama} ${c.matkulKode} ${c.nama}`,
-        })),
+        classFeatures(c.id, c.controlsEnabled ? c.capabilities : undefined).map(
+          (feature) => ({
+            ...feature,
+            context: `${c.matkulKode} · ${c.nama} · ${c.semester} ${c.tahunAkademik}`,
+            aliases: `${feature.aliases} ${c.matkulNama} ${c.matkulKode} ${c.nama}`,
+          }),
+        ),
       ),
     ].filter(eligible);
   const recent = read(key, [])
@@ -229,7 +239,11 @@ export default function Workspace({
 }) {
   const [search, setSearch] = useState(false),
     [profile, setProfile] = useState(false);
-  const navigation = useSidebar({ userId: user.id, path, suspended: search || profile });
+  const navigation = useSidebar({
+    userId: user.id,
+    path,
+    suspended: search || profile,
+  });
   useEffect(() => {
     if (!profile) return;
     const close = (e) => {
@@ -290,7 +304,15 @@ export default function Workspace({
         Lewati navigasi
       </a>
       <header className="mg-topbar" ref={navigation.topbarRef}>
-        <button type="button" className="ws-icon-button mg-mobile-menu" ref={navigation.triggerRef} onClick={navigation.toggleMobile} aria-label="Buka menu utama" aria-controls="workspace-sidebar" aria-expanded={navigation.mobileOpen}>
+        <button
+          type="button"
+          className="ws-icon-button mg-mobile-menu"
+          ref={navigation.triggerRef}
+          onClick={navigation.toggleMobile}
+          aria-label="Buka menu utama"
+          aria-controls="workspace-sidebar"
+          aria-expanded={navigation.mobileOpen}
+        >
           <WorkspaceIcon name="menu" />
         </button>
         <a
@@ -322,6 +344,7 @@ export default function Workspace({
           <span>Cari di ruang kerja…</span>
           <kbd>{apple ? "⌘" : "Ctrl"} K</kbd>
         </button>
+        <PageHelp />
         <div className="mg-profile-wrap">
           <button
             className="button button--quiet mg-profile-button"
@@ -362,8 +385,19 @@ export default function Workspace({
           )}
         </div>
       </header>
-      <Sidebar navigation={navigation} nav={nav} path={path} onHelp={onHelp} apple={apple} />
-      <div id="workspace-main" className="mg-workspace" tabIndex="-1" ref={navigation.workspaceRef}>
+      <Sidebar
+        navigation={navigation}
+        nav={nav}
+        path={path}
+        onHelp={onHelp}
+        apple={apple}
+      />
+      <div
+        id="workspace-main"
+        className="mg-workspace"
+        tabIndex="-1"
+        ref={navigation.workspaceRef}
+      >
         {children}
       </div>
       {search && (

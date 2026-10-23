@@ -554,32 +554,24 @@ export function HelpGroup({ topic, children, className = "" }) {
     </div>
   );
 }
-export function PageHelp({ area, tour = true }) {
+export function PageHelp({ area }) {
   const help = useHelp();
   if (!help) return null;
   const current = area || help.context.area || pageHelpArea(help.context.path);
   return (
-    <div className="help-page-tools" data-tour="page-help">
-      <button
-        type="button"
-        className="button button--quiet"
-        aria-label={`Bantuan halaman ini: ${HELP_AREAS[current] || "Panduan"}`}
-        onClick={(e) =>
-          help.openCenter({ anchor: e.currentTarget, area: current })
-        }
-      >
-        Bantuan halaman ini
-      </button>
-      {tour && help.tourId && (
-        <button
-          type="button"
-          className="button button--outline"
-          onClick={(e) => help.startTour(e.currentTarget)}
-        >
-          Tunjukkan caranya
-        </button>
-      )}
-    </div>
+    <button
+      type="button"
+      className="help-trigger help-page-button"
+      data-tour="page-help"
+      title="Bantuan halaman ini"
+      aria-label={`Bantuan halaman ini: ${HELP_AREAS[current] || "Panduan"}`}
+      aria-haspopup="dialog"
+      onClick={(e) =>
+        help.openCenter({ anchor: e.currentTarget, area: current })
+      }
+    >
+      <span aria-hidden="true">?</span>
+    </button>
   );
 }
 export function DisabledReason({ children, id }) {
@@ -607,7 +599,7 @@ export function HelpWelcome() {
       <div>
         <strong>Kenali ruang kerja BAP</strong>
         <p>
-          Baca bantuan halaman atau pilih Tunjukkan caranya saat diperlukan.
+          Buka ikon (?) di header untuk bantuan halaman dan Tunjukkan caranya.
           Draf dan presensi tetap ada ketika panduan ditutup.
         </p>
       </div>

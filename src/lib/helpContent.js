@@ -92,7 +92,7 @@ export const HELP_TOPICS = {
     "Koreksi sesi bersejarah",
     "Periksa dampak, lalu simpan perubahan sebagai revisi baru dengan riwayat tetap tersedia.",
     [
-      "Gunakan Koreksi sesi ini atau Koreksi sesi pada Jadwal. Editor memisahkan draf dari sesi yang sedang berlaku; membuka editor tidak membuka kunci untuk semua pengguna.",
+      "Gunakan Tanggal & data sesi atau Koreksi sesi pada Jadwal. Editor memisahkan draf dari sesi yang sedang berlaku; membuka editor tidak membuka kunci untuk semua pengguna.",
       "Tanggal, ruang, nomor, jenis dan status yang boleh diubah mengikuti izin kelas. Catatan perubahan menjelaskan alasan koreksi. Dokumen versi lama tetap tersedia; buat Word/PDF baru setelah revisi tersimpan.",
     ],
     ["koreksi", "presensi", "jadwal", "riwayat"],
@@ -417,7 +417,7 @@ export function helpTopic(id, context = {}) {
       body: [
         ...original.body,
         context.enabled
-          ? "Untuk koreksi pada fitur revisi, buka Koreksi sesi ini/Jadwal sesuai izin; tidak perlu rangkaian buka kunci manual."
+          ? "Untuk koreksi pada fitur revisi, buka Tanggal & data sesi/Jadwal sesuai izin; tidak perlu rangkaian buka kunci manual."
           : "Pada alur lama, koreksi presensi dilakukan melalui Buka kunci lalu periksa dan simpan kembali. Jadwal sesi yang sudah bersejarah tidak dapat disunting melalui editor jadwal lama.",
       ],
     };

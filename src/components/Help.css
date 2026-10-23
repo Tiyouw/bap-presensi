@@ -54,16 +54,6 @@
   align-items: flex-start;
   padding-top: 3px;
 }
-.help-page-tools {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin: 12px 0 20px;
-}
-.help-page-tools .button {
-  min-height: 44px;
-}
 .help-disabled-reason {
   font-size: 13px;
   line-height: 1.6;

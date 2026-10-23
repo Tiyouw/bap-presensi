@@ -263,8 +263,12 @@ async function startOrigin() {
         .waitFor();
     }
     // The first tour import happens offline: only the precached app-shell can satisfy it.
+    await page.getByRole("button", { name: /^Bantuan halaman ini/ }).click();
     await page
-      .getByRole("button", { name: "Tunjukkan caranya", exact: true })
+      .getByRole("button", {
+        name: "Tunjukkan caranya di halaman ini",
+        exact: true,
+      })
       .click();
     await page.locator(".bap-help-tour").waitFor();
     for (

@@ -106,7 +106,7 @@ async function captureBeforeAfter(page) {
       await page.screenshot({ path: `${shots}/after-hover-dark.png` }); await leave(page);
     }
     // Keyboard focus opens labels; Escape releases focus without changing the saved preference.
-    await page.locator(".mg-search-trigger").focus(); await page.keyboard.press("Tab"); await page.keyboard.press("Tab");
+    await page.locator(".mg-profile-button").focus(); await page.keyboard.press("Tab");
     await until(async () => await side.getAttribute("data-expanded") === "true", "Keyboard focus did not reveal labels");
     await page.keyboard.press("Escape"); await leave(page);
     const mod = engine === "webkit" ? "Meta" : "Control";

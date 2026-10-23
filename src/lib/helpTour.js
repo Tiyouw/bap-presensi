@@ -54,7 +54,7 @@ function descriptions(id, context) {
         "page-help",
         "navigation",
         "Bantuan kapan saja",
-        "Tutup atau selesaikan tur; pekerjaanmu tetap ada. Jalankan ulang dari Tunjukkan caranya.",
+        "Ikon (?) di header membuka panduan halaman. Pilih Tunjukkan caranya di panel bantuan untuk menjalankan ulang tur.",
       ],
     ];
   if (id === "attendance")

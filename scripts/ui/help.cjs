@@ -39,8 +39,12 @@ const academic = async () =>
     calls: window.__qa.calls.length,
   }));
 const startTour = async () => {
+  await page.getByRole("button", { name: /^Bantuan halaman ini/ }).click();
   await page
-    .getByRole("button", { name: "Tunjukkan caranya", exact: true })
+    .getByRole("button", {
+      name: "Tunjukkan caranya di halaman ini",
+      exact: true,
+    })
     .click();
   await page.locator(".bap-help-tour").waitFor();
 };
@@ -121,6 +125,32 @@ const withinViewport = async (selector) => {
       .getByRole("heading", { name: "Jadwal pertemuan", exact: true })
       .waitFor();
     await page.evaluate(() => window.__qa.enableControls());
+    await check("one compact header help icon and clear session action fit desktop and phone", async () => {
+      await page.goto(base + "/kelas/k1/pertemuan/p4");
+      await page.locator(".student-row").last().waitFor();
+      const help = page.getByRole("button", { name: /^Bantuan halaman ini/ });
+      const edit = page.getByRole("button", { name: "Tanggal & data sesi", exact: true });
+      assert.equal(await help.count(), 1);
+      assert.equal(await help.textContent(), "?");
+      assert.equal(await page.locator(".help-page-tools").count(), 0);
+      assert.equal(await page.getByRole("button", { name: "Koreksi sesi ini", exact: true }).count(), 0);
+      assert(await help.evaluate(e => Boolean(e.closest(".mg-topbar"))));
+      assert(await edit.evaluate(e => Boolean(e.closest(".mg-local-toolbar"))));
+      for (const width of [320, 390, 1280]) {
+        await page.setViewportSize({ width, height: 900 });
+        await withinViewport(".help-page-button");
+        const box = await help.boundingBox();
+        assert(box.width >= 44 && box.height >= 44);
+        assert(await page.locator(".mg-topbar").evaluate(e => e.scrollWidth <= e.clientWidth));
+        assert(await page.locator(".mg-local-toolbar").evaluate(e => e.scrollWidth <= e.clientWidth));
+        assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+      }
+      await page.setViewportSize({ width: 390, height: 844 });
+      await edit.click();
+      await page.locator('[aria-label="Tanggal pelaksanaan"]:enabled').waitFor();
+      assert(page.url().includes("correct=p4"));
+      await page.goto(base + "/kelas/k1?tab=jadwal");
+    });
     await page
       .getByRole("link", { name: "Koreksi sesi 3", exact: true })
       .click();
@@ -331,7 +361,13 @@ const withinViewport = async (selector) => {
             .setAttribute("data-tour", "not-ready"),
         );
         await page
-          .getByRole("button", { name: "Tunjukkan caranya", exact: true })
+          .getByRole("button", { name: /^Bantuan halaman ini/ })
+          .click();
+        await page
+          .getByRole("button", {
+            name: "Tunjukkan caranya di halaman ini",
+            exact: true,
+          })
           .click();
         await page
           .getByRole("button", { name: /^Bantuan halaman ini/ })
@@ -343,7 +379,13 @@ const withinViewport = async (selector) => {
         assert.equal(await page.locator(".bap-help-tour").count(), 0);
         await page.keyboard.press("Escape");
         await page
-          .getByRole("button", { name: "Tunjukkan caranya", exact: true })
+          .getByRole("button", { name: /^Bantuan halaman ini/ })
+          .click();
+        await page
+          .getByRole("button", {
+            name: "Tunjukkan caranya di halaman ini",
+            exact: true,
+          })
           .click();
         await page
           .getByText("Elemen tur belum tersedia pada tampilan ini.", {
@@ -717,6 +759,9 @@ const withinViewport = async (selector) => {
           await page.getByRole("link", { name: /^Koreksi sesi / }).count(),
           0,
         );
+        await page.goto(base + "/kelas/k1/pertemuan/p4");
+        await page.locator(".student-row").last().waitFor();
+        assert.equal(await page.getByRole("button", { name: "Tanggal & data sesi", exact: true }).count(), 0);
         await page.evaluate(() => window.__qa.controlRole("ADMIN"));
         await page.goto(base + "/kelas/k1?tab=jadwal&correct=p3");
         await page
@@ -841,6 +886,18 @@ const withinViewport = async (selector) => {
         assert.equal(await other.locator(".help-topic-item").count(), 2);
         await other.keyboard.press("Escape");
         await other.evaluate(() => {
+          localStorage.setItem("bap.token", "ui-test-token");
+          localStorage.setItem("ui-qa.require-password-change", "1");
+        });
+        await other.reload();
+        await other.getByRole("heading", { name: "Amankan akunmu.", exact: true }).waitFor();
+        const forcedHelp = other.getByRole("button", { name: "Bantuan halaman ini: Akun saya", exact: true });
+        assert(await forcedHelp.evaluate(e => Boolean(e.closest(".mg-section-heading"))));
+        await forcedHelp.click();
+        await other.getByRole("dialog", { name: "Bantuan & panduan", exact: true }).waitFor();
+        await other.keyboard.press("Escape");
+        await other.evaluate(() => {
+          localStorage.removeItem("ui-qa.require-password-change");
           localStorage.setItem("bap.token", "ui-test-token");
           localStorage.removeItem("bap.help.welcome.v1.qa-user");
           localStorage.removeItem("ui-qa.control-engine");

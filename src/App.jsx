@@ -390,7 +390,6 @@ function AttendanceRoute({
           </Notice>
         </div>
       )}
-      {data.controls?.enabled && (data.controls.capabilities.includes("schedule") || data.controls.capabilities.includes("history")) && <div className="mg-attendance-notice"><button className="button button--outline" onClick={()=>navigate(`/kelas/${kelasId}?tab=jadwal&correct=${meeting.id}`)}>Koreksi sesi ini</button></div>}
       {meeting.revision > 0 &&
         meeting.status === "TERBUKA" &&
         !data.controls?.enabled &&
@@ -420,6 +419,8 @@ function AttendanceRoute({
         onResumeCleared={() => setResumeDraft(null)}
         network={network}
         onKembali={() => navigate(`/kelas/${kelasId}`)}
+        onEditMeeting={data.controls?.enabled && (data.controls.capabilities.includes("schedule") || data.controls.capabilities.includes("history"))
+          ? () => navigate(`/kelas/${kelasId}?tab=jadwal&correct=${meeting.id}`) : undefined}
         onHelp={onHelp}
         onPrint={onPrint}
       />

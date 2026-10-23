@@ -1,4 +1,4 @@
-import { PageHelp, useHelpScope } from "../components/Help.jsx";
+import { useHelpScope } from "../components/Help.jsx";
 import { useEffect, useRef, useState } from "react";
 import { useAction } from "convex/react";
 import { api } from "../../convex/_generated/api.js";
@@ -67,7 +67,7 @@ export default function Login({ onMasuk }) {
       <Header />
       <main className="login-main">
         <section className="login-intro">
-          <Brand large /><PageHelp area="login" tour={false}/>
+          <Brand large />
           <p className="eyebrow">Presensi & dokumen praktikum</p>
           <h1>
             Catat kehadiran.

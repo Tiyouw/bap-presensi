@@ -21,7 +21,7 @@ import Pertemuan from "./Pertemuan.jsx";
 import { authenticatedDocument, unduhDokumen } from "../lib/presensi.js";
 import { SkeletonRows } from "../components/Loading.jsx";
 import CorrectionEditor from "./CorrectionEditor.jsx";
-import { PageHelp, HelpGroup, DisabledReason } from "../components/Help.jsx";
+import { HelpGroup, DisabledReason } from "../components/Help.jsx";
 export function ClassCard({ item, onCopy, manage }) {
   return (
     <article className="mg-class-card">
@@ -114,7 +114,6 @@ export function ClassList({ catalog, user, home = false }) {
           </button>
         )}
       </div>
-      <PageHelp area="home" tour={false}/>
       {home && upcoming.length > 0 && (
         <section className="mg-upcoming">
           <h2>Praktikum yang belum selesai</h2>
@@ -194,7 +193,6 @@ export function NewClass({ token, user, catalog, path }) {
     <main className="mg-page mg-form-page">
       <p className="eyebrow">Persiapan kelas · langkah 1 dari 5</p>
       <h1>{copy ? "Salin untuk semester baru." : "Kelas baru."}</h1>
-      <PageHelp area="home" tour={false}/>
       <p className="lede">
         Atur identitas terlebih dahulu. Kamu bisa melanjutkan persiapan kapan
         saja.
@@ -275,7 +273,6 @@ export function ClassWorkspace({
         </nav>
       </div>
       <div className="mg-class-body">
-        <PageHelp/>
         {c.arsip && (
           <Notice kind="warning">
             Kelas diarsipkan. Data dan dokumen dapat dibaca; pengubahan
@@ -534,7 +531,7 @@ export function Documents({ token, catalog, onPrint, kelasId: initial }) {
       <div className="mg-page-heading">
         <div>
           <p className="eyebrow">Dokumen & revisi tersimpan</p>
-          <h1>Arsip BAP.</h1><PageHelp area="dokumen" tour={false}/><HelpGroup topic="documents"><span>Periksa versi dokumen sebelum mengunduh.</span></HelpGroup>
+          <h1>Arsip BAP.</h1><HelpGroup topic="documents"><span>Periksa versi dokumen sebelum mengunduh.</span></HelpGroup>
           <p>Word untuk penyuntingan, PDF untuk pratinjau dan cetak.</p>
         </div>
         {kelasId && (

@@ -75,6 +75,7 @@ export default function Presensi({
   peserta,
   network,
   onKembali,
+  onEditMeeting,
   onHelp,
   onPrint,
   kelas,
@@ -643,6 +644,7 @@ export default function Presensi({
     <div className="attendance-layout" ref={layoutRef}>
       <Header
         onHelp={onHelp}
+        onEditMeeting={onEditMeeting}
         onKembali={() => {
           if (dirty && !drafAman) setModal({ kind: "unsaved" });
           else onKembali();
@@ -654,7 +656,6 @@ export default function Presensi({
       />
       <main className="page attendance-page page-enter">
         <RefreshHint value={detail} pending={!detail && network.online} />
-        <PageHelp area="presensi"/>
         <div className="attendance-heading" data-tour="attendance-heading">
           <div>
             <p className="eyebrow">{classInfo.nama}</p>
@@ -1389,4 +1390,4 @@ export default function Presensi({
     </div>
   );
 }
-import { PageHelp, HelpButton, DisabledReason } from "../components/Help.jsx";
+import { HelpButton, DisabledReason } from "../components/Help.jsx";
