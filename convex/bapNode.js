@@ -48,6 +48,7 @@ export const generate = action({
     token: v.string(),
     pertemuanId: v.id("pertemuan"),
     format: v.optional(v.string()),
+    expectedRevision: v.optional(v.number()),
   },
   handler: async (ctx, a) => {
     const format = a.format || "docx";
@@ -57,6 +58,7 @@ export const generate = action({
         pertemuanId: a.pertemuanId,
       }),
       revision = data.pertemuan.revision;
+    if(a.expectedRevision!==undefined&&a.expectedRevision!==revision)throw new ConvexError("KONFLIK_REVISI");
     const claim = await ctx.runMutation(internal.bap.klaimInternal, {
       token: a.token,
       pertemuanId: a.pertemuanId,

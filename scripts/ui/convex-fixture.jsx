@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import { getFunctionName } from "convex/server";
 import { PESERTA } from "./data-fixture.js";
 import { adaPraktikum } from "../../bap-shared/jadwal.js";
+import {createControlEngine,restoreControlEngine} from "./control-fixture.js";
 
 let version = 0;
 const listeners = new Set();
@@ -63,9 +64,17 @@ const subscribe = (fn) => {
 };
 const current = () => version;
 const wait = () => new Promise((resolve) => setTimeout(resolve, requestDelay));
+let controlEngine;
+function syncControls(){if(!controlEngine)return;Object.assign(kelas,controlEngine.ctx.tabel.get('kelas').get('k1'));
+ server.pertemuan=[...controlEngine.ctx.tabel.get('pertemuan')].map(([id,p])=>({...p,id}));
+ server.presensi={};for(const s of controlEngine.ctx.tabel.get('presensi')?.values()||[]) (server.presensi[s.pertemuanId]||=[]).push({pesertaId:s.pesertaId,status:s.status});
+}
+const restoredControls=restoreControlEngine();if(restoredControls)createControlEngine({kelas,participants,server,restore:restoredControls}).then(e=>{controlEngine=e;syncControls();publish()});
 
 window.__qa = {
   calls,
+  async enableControls(options={}){controlEngine=await createControlEngine({kelas,participants,server,...options});syncControls();publish();},
+  async controlAdvance(id='p3'){await controlEngine.advance(id);syncControls();publish();},
   seedHistory(count) {
     kelas.readModelReady = true;
     server.history = Array.from({ length: count }, (_, i) => ({ id: `archive-${i}`, nomor: 3, tanggal: "2026-10-21", revision: count - i, format: "docx", templateVersion: "kelas-k1-v1", url: "https://example.test/bap.docx", pada: count - i }));
@@ -140,6 +149,7 @@ window.__qa = {
 };
 
 export class ConvexReactClient {}
+export function useConvex(){return{query:async(reference,args)=>{if(!controlEngine||!connected)throw Error('offline');calls.push({name:getFunctionName(reference),args});return controlEngine.query(getFunctionName(reference),args)}};}
 export function ConvexProvider({ children }) {
   return children;
 }
@@ -186,6 +196,7 @@ export function useQuery(reference, args) {
       };
     if (name === "kelola:detail")
       return {
+        ...(controlEngine?{controls:controlEngine.controls()}:{}),
         kelas,
         peserta: participants,
         pertemuan: server.pertemuan.map((p) => ({ ...p })),
@@ -208,6 +219,7 @@ export function useQuery(reference, args) {
         },
         presensi: server.presensi[args.pertemuanId] || [],
       };
+    if(name.startsWith('revisions:'))return controlEngine?.cache.get(name+':'+args.pertemuanId);
     if (name === "bap:forSesi") return server.docs[args.pertemuanId] || null;
     if (name === "bap:historyPage") {
       const start = Number(args.paginationOpts.cursor || 0), count = args.paginationOpts.numItems;
@@ -246,6 +258,7 @@ export function useMutation(reference) {
       calls.push({ name, args });
       await wait();
       if (!connected) throw new Error("offline");
+      if(name.startsWith('revisions:')&&controlEngine){const result=await controlEngine.mutate(name,args);syncControls();publish();return result;}
       if (name === "seed:jalan") return { dilewati: true };
       const meeting = server.pertemuan.find((p) => p.id === args.pertemuanId);
       if (name === "sesi:simpanDanKunci") {

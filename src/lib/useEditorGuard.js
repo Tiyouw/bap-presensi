@@ -2,19 +2,19 @@ import { useEffect, useRef } from "react";
 import { registerNavigationGuard } from "./navigation.js";
 
 // A synchronous baseline also covers navigation in the same tick as a save.
-export function useEditorGuard(value, enabled = true, busy = false) {
+export function useEditorGuard(value, enabled = true, busy = false, discardMessage = "Perubahan editor belum disimpan. Tinggalkan halaman dan buang perubahan?") {
   const serialized = JSON.stringify(value);
   const baseline = useRef(serialized);
   const latest = useRef(serialized);
   const state = useRef(null);
   latest.current = serialized;
-  state.current = { enabled, busy };
+  state.current = { enabled, busy, discardMessage };
   const warning = () => {
     if (!state.current.enabled) return null;
     if (state.current.busy)
       return { block: true, message: "Tunggu proses penyimpanan selesai sebelum berpindah halaman." };
     return baseline.current !== latest.current
-      ? { message: "Perubahan editor belum disimpan. Tinggalkan halaman dan buang perubahan?" }
+      ? { message: state.current.discardMessage }
       : null;
   };
   useEffect(() => {

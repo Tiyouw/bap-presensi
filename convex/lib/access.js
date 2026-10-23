@@ -1,5 +1,17 @@
 import { ConvexError } from "convex/values";
 import { requireSesi } from "./auth.js";
+import {CAPABILITIES} from "../../bap-shared/control.js";
+export async function classCapabilities(ctx,user,kelas){
+  if(user.peran==="ADMIN"||user.peran==="PENGELOLA")return [...CAPABILITIES];
+  if(user.peran!=="OPERATOR")return [];
+  const grant=await ctx.db.query("classCapability").withIndex("by_class_user",q=>q.eq("kelasId",kelas._id).eq("penggunaId",user._id)).unique();
+  return (grant?.capabilities||[]).filter(c=>CAPABILITIES.includes(c));
+}
+export async function requireCapability(ctx,token,kelasId,capabilities,write=true){
+  const access=await requireClass(ctx,token,kelasId,false,write),allowed=await classCapabilities(ctx,access.user,access.kelas);
+  if(capabilities.some(c=>!allowed.includes(c)))throw new ConvexError("IZIN_KELAS_KURANG");
+  return {...access,capabilities:allowed};
+}
 export function safeUser(u) {
   return {
     id: u._id,

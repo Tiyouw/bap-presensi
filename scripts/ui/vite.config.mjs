@@ -6,6 +6,7 @@ export default defineConfig({
   root: process.cwd(),
   plugins: [react()],
   define: {
+    "process.env": JSON.stringify({ CONVEX_SITE_URL:"https://ui-fixture.convex.site" }),
     "import.meta.env.VITE_CONVEX_URL": JSON.stringify(
       "https://ui-fixture.convex.cloud",
     ),

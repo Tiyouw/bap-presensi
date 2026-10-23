@@ -29,6 +29,7 @@ export function Field({
             <option
               key={typeof o === "string" ? o : o.value}
               value={typeof o === "string" ? o : o.value}
+              disabled={typeof o === "object" && Boolean(o.disabled)}
             >
               {typeof o === "string" ? o : o.label}
             </option>

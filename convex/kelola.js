@@ -1,9 +1,9 @@
 import { v, ConvexError } from "convex/values";
 import { mutation, query } from "./_generated/server.js";
-import { requireUser, requireClass, audit } from "./lib/access.js";
+import { requireUser, requireClass, audit, classCapabilities } from "./lib/access.js";
 import { classRows, classSnapshot, meetingSummary } from "./lib/classLogic.js";
 import { assertSnapshotSize } from "./lib/snapshotSize.js";
-import { appendRevision } from "./lib/revisionLedger.js";
+import { appendRevision,controlEnabled } from "./lib/revisionLedger.js";
 import { syncClass, syncParticipant, syncMeeting, syncTemplate, visibleClasses } from "./lib/readModels.js";
 import {
   DEFAULT_TEMPLATE,
@@ -88,6 +88,7 @@ export const detail = query({
     ]);
     return {
       kelas: { ...publicRecord(kelas), matkulNama: m.nama, matkulKode: m.kode, matkulRevision: m.revision || 0 },
+      controls:{enabled:Boolean(kelas.revisionReady)&&await controlEnabled(ctx),capabilities:await classCapabilities(ctx,user,kelas)},
       peserta: peserta.map(publicRecord),
       pertemuan: pertemuan
         .sort((a, b) => a.nomor - b.nomor)

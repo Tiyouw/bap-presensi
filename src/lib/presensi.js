@@ -72,6 +72,17 @@ export function pesanGalat(err) {
   if (/PESERTA_KURANG|PESERTA_ASING|PESERTA_DOBEL/.test(text))
     return "Daftar peserta tidak cocok dengan server. Muat ulang data kelas; draf tetap disimpan.";
   const messages = {
+    KOREKSI_BELUM_AKTIF:"Editor koreksi belum diaktifkan untuk kelas ini.",
+    IZIN_KELAS_KURANG:"Izin untuk tindakan ini belum diberikan pada kelas ini. Draf tetap disimpan.",
+    PREVIEW_KOREKSI_BERUBAH:"Isi atau sumber data berubah. Periksa preview terbaru sebelum menyimpan.",
+    CATATAN_KOREKSI_WAJIB:"Tambahkan catatan singkat untuk koreksi sesi bersejarah.",
+    KOREKSI_TANPA_PERUBAHAN:"Belum ada perubahan untuk disimpan.",
+    NOMOR_PERTEMUAN_DUPLIKAT:"Nomor pertemuan sudah digunakan sesi aktif lain. Pilih nomor berbeda.",
+    PERIKSA_ROSTER_KOREKSI:"Periksa dan konfirmasikan daftar serta status peserta yang berubah.",
+    REVISI_LAMA_PARSIAL:"Riwayat versi lama tidak lengkap; pemulihan otomatis belum dapat dilakukan. File arsip tetap tersedia.",
+    PRESENSI_KOREKSI_TIDAK_LENGKAP:"Daftar status koreksi belum lengkap atau tidak sesuai peserta. Periksa kembali semua peserta.",
+    PERTEMUAN_DIBATALKAN:"Sesi dibatalkan. Pulihkan terlebih dahulu untuk mengubah data atau membuat BAP aktif.",
+    KUNCI_OPERASI_DIPAKAI:"Identitas penyimpanan telah digunakan. Muat versi terbaru dan periksa ulang draf.",
     AKSES_DITOLAK: "Akunmu tidak memiliki izin untuk tindakan ini.",
     ADMIN_TERAKHIR: "Harus tetap ada setidaknya satu admin aktif.",
     KELAS_DIARSIPKAN: "Kelas diarsipkan. Pulihkan kelas sebelum mengubah data.",
