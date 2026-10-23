@@ -42,6 +42,7 @@ export async function createControlEngine({kelas,participants,server,restore,loc
   cache.set('revisions:printRows',[...ctx.tabel.get('meetingRevision')?.entries()||[]].map(([id,r])=>({_id:id,...r})).filter(r=>r.status==='KUNCI'&&r.tipe==='REGULER'&&!r.cancelled&&!r.legacyPartial&&r.metadataVerified).sort((a,b)=>b.createdAt-a.createdAt));
   for(const job of cache.get('scheduleBatches:jobs'))cache.set('scheduleBatches:jobDetail:'+job._id,await scheduleBatches.jobDetail._handler(ctx,{token:'ui-test-token',jobId:job._id}));
   cache.set('kelola:detail',await kelola.detail._handler(ctx,{token:'ui-test-token',kelasId:'k1'}));
+  for (const c of await ctx.db.query('kelas').collect()) cache.set('kelola:detail:'+c._id,await kelola.detail._handler(ctx,{token:'ui-test-token',kelasId:c._id}));
   cache.set('kelola:catalog',await kelola.catalog._handler(ctx,{token:'ui-test-token'}));
   if((await ctx.db.get('qa-user')).peran!=='OPERATOR'||(await ctx.db.query('classCapability').collect()).some(g=>g.penggunaId==='qa-user'&&g.capabilities.includes('delegate')))cache.set('classAccess:list',await classAccess.list._handler(ctx,{token:'ui-test-token',kelasId:'k1'}));else cache.delete('classAccess:list');
   persist();}

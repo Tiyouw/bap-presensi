@@ -66,8 +66,8 @@ const current = () => version;
 const wait = () => new Promise((resolve) => setTimeout(resolve, requestDelay));
 let controlEngine;
 function syncControls(){if(!controlEngine)return;Object.assign(kelas,controlEngine.ctx.tabel.get('kelas').get('k1'));
- participants.splice(0,participants.length,...[...controlEngine.ctx.tabel.get('peserta')].map(([id,p])=>({...p,id})));
- server.pertemuan=[...controlEngine.ctx.tabel.get('pertemuan')].map(([id,p])=>({...p,id}));
+ participants.splice(0,participants.length,...[...controlEngine.ctx.tabel.get('peserta')].filter(([,p])=>p.kelasId==='k1').map(([id,p])=>({...p,id})));
+ server.pertemuan=[...controlEngine.ctx.tabel.get('pertemuan')].filter(([,p])=>p.kelasId==='k1').map(([id,p])=>({...p,id}));
  server.presensi={};for(const s of controlEngine.ctx.tabel.get('presensi')?.values()||[]) (server.presensi[s.pertemuanId]||=[]).push({pesertaId:s.pesertaId,status:s.status});
 }
 const restoredControls=restoreControlEngine();const controlsReady=restoredControls?createControlEngine({kelas,participants,server,restore:restoredControls}).then(e=>{controlEngine=e;syncControls();publish()}):Promise.resolve();
@@ -186,7 +186,7 @@ export function useQuery(reference, args) {
       error.data = "TOKEN_KEDALUWARSA";
       throw error;
     }
-    if(controlEngine&&["kelola:catalog","kelola:detail","classAccess:list"].includes(name))return controlEngine.cache.get(name);
+    if(controlEngine&&["kelola:catalog","kelola:detail","classAccess:list"].includes(name))return controlEngine.cache.get(name==='kelola:detail'?name+':'+args.kelasId:name);
     if(restoredControls&&!controlEngine&&name.startsWith("kelola:"))return undefined;
     if (name === "kelola:catalog")
       return {

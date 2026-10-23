@@ -113,8 +113,9 @@ export function Search({ token, user, catalog, kelasId, onClose }) {
       .getElementById(`search-result-${index}`)
       ?.scrollIntoView({ block: "nearest" });
   }, [index]);
-  const open = (item) => {
+  const open = async (item) => {
     if (!item) return;
+    if (!await navigate(item.path)) return;
     write(
       key,
       [
@@ -123,7 +124,6 @@ export function Search({ token, user, catalog, kelasId, onClose }) {
       ].slice(0, 8),
     );
     onClose();
-    navigate(item.path);
   };
   return (
     <Modal

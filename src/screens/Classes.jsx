@@ -292,9 +292,9 @@ export function ClassWorkspace({
             <div>
               <p className="eyebrow">Lanjutkan persiapan kelas</p>
               <h2>{checks.filter(Boolean).length} dari 4 bagian siap</h2>
-              <p>
-                Identitas → Mahasiswa → Jadwal → Template → Periksa & aktifkan
-              </p>
+              <ol className="mg-setup-steps" aria-label="Langkah persiapan kelas">
+                {[["pengaturan", "Identitas"], ["mahasiswa", "Mahasiswa"], ["jadwal", "Jadwal"], ["template", "Template"], ["aktifkan", "Periksa & aktifkan"]].map(([id, title], index) => <li key={id} aria-current={tab === id ? "step" : undefined} data-ready={index < 4 && checks[index]}>{index + 1} · {title}{index < 4 && checks[index] && <span className="sr-only">, siap</span>}</li>)}
+              </ol>
             </div>
             <button
               className="button button--primary"

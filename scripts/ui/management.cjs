@@ -1,3 +1,4 @@
+const {acceptAppDialog}=require('./app-dialog.cjs');
 /** Full UI against the isolated, synthetic Convex QA deployment (never production). */
 const { chromium, webkit } = require("playwright");
 const { spawn } = require("node:child_process");
@@ -112,7 +113,7 @@ async function noOverflow(p) {
       "Dosen pengampu": "Dr. Éléonore Demo",
     }))
       await page.getByLabel(label, { exact: true }).fill(value);
-    await page.getByRole("button", { name: "Simpan & lanjutkan" }).click();
+    await page.getByRole("button", { name: "Simpan & lanjut ke Mahasiswa →" }).click();
     await page
       .getByRole("heading", { name: "Mahasiswa", exact: true })
       .waitFor();
@@ -430,10 +431,10 @@ async function noOverflow(p) {
         .kelas.dosen,
       "Dosen Perangkat Lain",
     );
-    page.once("dialog", (d) => d.accept());
+    const appDecision1=acceptAppDialog(page);
     await page
       .getByRole("button", { name: "Muat data terbaru", exact: true })
-      .click();
+      .click();await appDecision1;
     assert.equal(
       await page.getByLabel("Dosen pengampu", { exact: true }).inputValue(),
       "Dosen Perangkat Lain",

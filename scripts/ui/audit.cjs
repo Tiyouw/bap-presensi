@@ -67,25 +67,25 @@ const waitSaved=p=>p.waitForFunction(k=>Boolean(localStorage.getItem(k)),draftKe
   await c.close();ok(engine,'F04 unlock confirmation remains bound to the revision originally reviewed');
 
   c=await context({viewport:{width:1280,height:900}});p=await c.newPage();await p.goto(url+'/kelas/k1?tab=jadwal');
-  let accept=false,confirms=0;p.on('dialog',d=>{confirms++;return accept?d.accept():d.dismiss()});
+  let confirms=0;const decide=async accepted=>{const dialog=p.locator('.app-dialog');await dialog.waitFor();confirms++;await dialog.locator('.app-dialog-actions button').nth(accepted?1:0).click();await dialog.waitFor({state:'detached'});};
   await p.getByLabel('Ruang',{exact:true}).nth(2).fill('DRAF RUANG');
-  await p.getByRole('link',{name:'Mahasiswa',exact:true}).click();assert.ok(p.url().includes('tab=jadwal'));
+  await p.getByRole('link',{name:'Mahasiswa',exact:true}).click();await decide(false);assert.ok(p.url().includes('tab=jadwal'));
   assert.equal(await p.getByLabel('Ruang',{exact:true}).nth(2).inputValue(),'DRAF RUANG');
-  accept=true;await p.getByRole('link',{name:'Template BAP',exact:true}).click();accept=false;
+  await p.getByRole('link',{name:'Template BAP',exact:true}).click();await decide(true);
   await p.getByLabel('Nama institusi',{exact:true}).fill('DRAF INSTITUSI');
-  await p.getByRole('link',{name:'Mahasiswa',exact:true}).click();assert.ok(p.url().includes('tab=template'));
+  await p.getByRole('link',{name:'Mahasiswa',exact:true}).click();await decide(false);assert.ok(p.url().includes('tab=template'));
   assert.equal(await p.getByLabel('Nama institusi',{exact:true}).inputValue(),'DRAF INSTITUSI');
-  accept=true;await p.getByRole('navigation',{name:'Bagian kelas'}).getByRole('link',{name:'Pengaturan',exact:true}).click();accept=false;
+  await p.getByRole('navigation',{name:'Bagian kelas'}).getByRole('link',{name:'Pengaturan',exact:true}).click();await decide(true);
   await p.getByLabel('Dosen pengampu',{exact:true}).fill('DRAF DOSEN');
-  await p.getByRole('link',{name:'Mahasiswa',exact:true}).click();assert.ok(p.url().includes('tab=pengaturan'));
+  await p.getByRole('link',{name:'Mahasiswa',exact:true}).click();await decide(false);assert.ok(p.url().includes('tab=pengaturan'));
   assert.ok(confirms>=5);await c.close();ok(engine,'F03 navigation cancellation preserves schedule, template and class edits');
   c=await context({viewport:{width:1280,height:900}});p=await c.newPage();await p.goto(url+'/kelas/k1?tab=mahasiswa');
-  let discard=false;p.on('dialog',d=>discard?d.accept():d.dismiss());
+
   await p.getByRole('button',{name:'Ubah',exact:true}).first().click();
   await p.getByLabel('Nama mahasiswa',{exact:true}).fill('Nama Draf Demo');
-  await p.getByRole('button',{name:'Tutup',exact:true}).click();
+  await p.getByRole('button',{name:'Tutup',exact:true}).click();await decide(false);
   assert.equal(await p.getByLabel('Nama mahasiswa',{exact:true}).inputValue(),'Nama Draf Demo');
-  discard=true;await p.getByRole('button',{name:'Tutup',exact:true}).click();
+  await p.getByRole('button',{name:'Tutup',exact:true}).click();await decide(true);
   assert.equal(await p.getByRole('dialog').count(),0);await c.close();ok(engine,'F03 closing the roster editor requires explicit discard of unsaved input');
 
   c=await context();p=await open(c);await p.locator('.student-main').first().click();

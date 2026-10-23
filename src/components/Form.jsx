@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import { HelpButton } from "./Help.jsx";
 import { FIELD_HELP } from "../lib/helpContent.js";
+import { confirmAction } from "../lib/appDialog.js";
 import { Notice } from "./Layout.jsx";
 import { pesanGalat } from "../lib/presensi.js";
 export function Field({
@@ -110,9 +111,9 @@ export function RevisionNotice({ base, current, onReload }) {
       <button
         type="button"
         className="button button--outline"
-        onClick={() => {
+        onClick={async () => {
           if (
-            window.confirm("Buang perubahan editor ini dan muat data terbaru?")
+            await confirmAction("Buang perubahan editor ini dan muat data terbaru?", { title: "Muat data terbaru?", confirmLabel: "Buang & muat terbaru", danger: true })
           )
             onReload();
         }}
