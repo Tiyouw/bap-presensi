@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { registerNavigationGuard } from "./navigation.js";
+import { confirmAction, noticeDialog } from "./appDialog.js";
 
 // A synchronous baseline also covers navigation in the same tick as a save.
 export function useEditorGuard(value, enabled = true, busy = false, discardMessage = "Perubahan editor belum disimpan. Tinggalkan halaman dan buang perubahan?") {
@@ -34,9 +35,12 @@ export function useEditorGuard(value, enabled = true, busy = false, discardMessa
     markSaved: (saved = undefined) => {
       baseline.current = saved === undefined ? latest.current : JSON.stringify(saved);
     },
-    canDiscard: () => {
+    canDiscard: async () => {
       const w = warning();
-      return !w || (!w.block && window.confirm(w.message));
+      if (!w) return true;
+      if (w.block) { await noticeDialog(w.message); return false; }
+      const accepted = await confirmAction(w.message, { title: "Buang perubahan?", confirmLabel: "Buang perubahan", danger: true });
+      return accepted && !warning()?.block;
     },
   };
 }

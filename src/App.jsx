@@ -35,6 +35,8 @@ import { Notice } from "./components/Layout.jsx";
 import Modal from "./components/Modal.jsx";
 import { HelpWelcome, useHelp, useHelpScope } from "./components/Help.jsx";
 import { pageHelpArea } from "./lib/helpContent.js";
+import { isRecentlyCreatedClass, clearCreatedClasses } from "./lib/createdClass.js";
+import { finishDialog } from "./lib/appDialog.js";
 import PrintPack from "./components/PrintPack.jsx";
 const cachedIdentity = (token) => {
   try {
@@ -173,7 +175,7 @@ function Authenticated({ token, user, path, network, onLogout }) {
     content = <ClassList catalog={data} user={user} home={pathname === "/"} />;
   else if (pathname === "/kelas/baru" && user.peran !== "OPERATOR")
     content = <NewClass token={token} user={user} catalog={data} path={path} />;
-  else if (kelasId && data.kelas.some((c) => c.id === kelasId))
+  else if (kelasId && (data.kelas.some((c) => c.id === kelasId) || isRecentlyCreatedClass(kelasId)))
     content = (
       <StorageScope.Provider value={`${user.id}:${kelasId}`}>
         <ClassRoute
@@ -217,7 +219,7 @@ function Authenticated({ token, user, path, network, onLogout }) {
         catalog={data}
         path={path}
         kelasId={kelasId}
-        onLogout={() => {if(canLeave())setLogout(true);}}
+        onLogout={async () => {if(await canLeave())setLogout(true);}}
         onHelp={source => help.openCenter({anchor:source instanceof HTMLElement?source:source?.currentTarget instanceof HTMLElement?source.currentTarget:undefined})}
       >
         {!network.online && (
@@ -530,6 +532,7 @@ function LegacyDrafts({ user, data }) {
 export default function App() {
   const [token, setToken] = useState(bacaToken),
     logout = useMutation(api.auth.logout);
+  useEffect(() => { finishDialog(false); clearCreatedClasses(); }, [token]);
   const exit = () => {
     if (token) logout({ token }).catch(() => {});
     hapusToken();

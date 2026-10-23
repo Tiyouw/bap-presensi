@@ -1,7 +1,7 @@
 import { HelpButton } from "../components/Help.jsx";
 import PdfPreview from "../components/PdfPreview.jsx";
 import ClassTabHeading from "../components/ClassTabHeading.jsx";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useAction, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api.js";
 import {
@@ -20,7 +20,9 @@ import {
 } from "../components/Form.jsx";
 import Modal from "../components/Modal.jsx";
 import { Notice } from "../components/Layout.jsx";
-import { navigate } from "../lib/navigation.js";
+import { navigate, waitForNavigationIdle } from "../lib/navigation.js";
+import { rememberCreatedClass } from "../lib/createdClass.js";
+import { showAppToast } from "../lib/appDialog.js";
 import { useEditorGuard } from "../lib/useEditorGuard.js";
 import { readRosterFile, suggestMapping } from "../lib/importRoster.js";
 import ScheduleManager from "./ScheduleManager.jsx";
@@ -63,13 +65,29 @@ export function ClassForm({ token, catalog, existing, copy, onClose,scopeCourse=
   const save = useMutation(api.kelola.saveClass),
     task = useTask();
   const guard = useEditorGuard({ form, matkulId, copyRoster }, true, task.busy);
+  const [createdId, setCreatedId] = useState(null), [redirectFailed, setRedirectFailed] = useState(false);
+  const creating = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const openCreated = async id => {
+    await waitForNavigationIdle();
+    if (!mounted.current) return;
+    const opened = await navigate(`/kelas/${id}?tab=mahasiswa`);
+    if (opened) showAppToast("Kelas draf berhasil dibuat. Tambahkan atau periksa mahasiswa.");
+    else if (mounted.current) setRedirectFailed(true);
+  };
+  useEffect(() => {
+    if (createdId && !task.busy) void openCreated(createdId);
+  }, [createdId, task.busy]);
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   return (
     <TaskForm
       task={task}
       className="mg-class-form"
-      onSubmit={() =>
-        task.run(
+      onSubmit={() => {
+        if (creating.current || createdId) return Promise.resolve();
+        creating.current = true;
+        return task.run(
           async () => {
             const data = Object.fromEntries(
               Object.keys(defaults).map((k) => [k, form[k] ?? defaults[k]]),
@@ -81,16 +99,18 @@ export function ClassForm({ token, catalog, existing, copy, onClose,scopeCourse=
               ...(existing ? { kelasId: existing.id, baseRevision } : {}),
               ...(copy ? { copyId: copy.id, copyRoster } : {}),
             });
+            if (!mounted.current) return;
             guard.markSaved();
             if (existing) {
               setBaseRevision((r) => r + 1);
               onClose?.();
-            } else navigate(`/kelas/${id}?tab=mahasiswa`);
+            } else { rememberCreatedClass(id); setCreatedId(id); }
           },
           existing ? "Pengaturan kelas tersimpan." : "Kelas draf dibuat.",
-        )
-      }
+        ).finally(() => { creating.current = false; });
+      }}
     >
+      {redirectFailed && <Notice>Kelas sudah tersimpan. Lanjutkan menggunakan kelas yang sama.<button type="button" className="button button--primary" onClick={() => openCreated(createdId)}>Buka Mahasiswa</button></Notice>}
       {existing && (
         <RevisionNotice
           base={baseRevision}
@@ -163,8 +183,8 @@ export function ClassForm({ token, catalog, existing, copy, onClose,scopeCourse=
           ? "Identitas baru berlaku pada sesi berikutnya. Sesi yang pernah dikunci mempertahankan snapshot-nya."
           : "Kelas disimpan sebagai draf. Berikutnya masukkan mahasiswa, siapkan jadwal, periksa template, lalu aktifkan."}
       </p>
-      <button className="button button--primary">
-        {existing ? "Simpan pengaturan" : "Simpan & lanjutkan"}
+      <button className="button button--primary" disabled={Boolean(createdId)}>
+        {existing ? "Simpan pengaturan" : createdId ? "Kelas sudah tersimpan" : task.busy ? "Menyimpan…" : "Simpan & lanjut ke Mahasiswa →"}
       </button>
     </TaskForm>
   );
@@ -286,6 +306,7 @@ export function Participants({ token, user, data, openImport = false }) {
           </button>
         )}
       </div>
+      {manage && (!data.controls?.enabled || data.controls.capabilities.includes("schedule")) && data.kelas.draft && data.peserta.some(p => p.aktif !== false) && <button type="button" className="button button--outline" onClick={() => navigate(`/kelas/${data.kelas.id}?tab=jadwal`)}>Lanjut ke Jadwal →</button>}
       {edit && (
         <ParticipantEditor
           key={edit.id || "new"}
@@ -324,7 +345,7 @@ function ParticipantEditor({ edit, task, onClose, onSave }) {
   return (
     <Modal
       title={edit.id ? "Ubah mahasiswa" : "Tambah mahasiswa"}
-      onClose={() => { if (guard.canDiscard()) onClose(); }}
+      onClose={async () => { if (await guard.canDiscard()) onClose(); }}
       busy={task.busy}
     >
       <TaskForm

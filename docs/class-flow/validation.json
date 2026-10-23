@@ -1,0 +1,179 @@
+{
+  "base": "3d5453c337dd5f5fd34df4bc07fb9f8210dd33a4",
+  "verifiedAt": "2026-10-23T23:47:57.524Z",
+  "sourceFingerprint": "755eb6e82689a356445de15a3fa6d2fded9a7f5201ca3462d0967263f881b02c",
+  "regression": {
+    "sourceFingerprint": "4ca7d01956bfa5936dbf70633d95982d18d00cfd1d29def331347d8d3f998570",
+    "passedSuites": [
+      {
+        "script": "scripts/test-logic.mjs",
+        "passed": true,
+        "durationMs": 206
+      },
+      {
+        "script": "scripts/test-handlers.mjs",
+        "passed": true,
+        "durationMs": 168
+      },
+      {
+        "script": "scripts/check-convex.mjs",
+        "passed": true,
+        "durationMs": 100
+      },
+      {
+        "script": "scripts/test-ui-logic.mjs",
+        "passed": true,
+        "durationMs": 104
+      },
+      {
+        "script": "scripts/test-print.mjs",
+        "passed": true,
+        "durationMs": 2592
+      },
+      {
+        "script": "scripts/test-management-unit.mjs",
+        "passed": true,
+        "durationMs": 1092
+      },
+      {
+        "script": "scripts/test-document-fidelity.mjs",
+        "passed": true,
+        "durationMs": 885
+      },
+      {
+        "script": "scripts/test-panggil.mjs",
+        "passed": true,
+        "durationMs": 94
+      },
+      {
+        "script": "scripts/test-audit.mjs",
+        "passed": true,
+        "durationMs": 201
+      },
+      {
+        "script": "scripts/test-revision-foundation.mjs",
+        "passed": true,
+        "durationMs": 284
+      },
+      {
+        "script": "scripts/test-corrections.mjs",
+        "passed": true,
+        "durationMs": 317
+      },
+      {
+        "script": "scripts/test-lifecycle.mjs",
+        "passed": true,
+        "durationMs": 232
+      },
+      {
+        "script": "scripts/test-schedule-batches.mjs",
+        "passed": true,
+        "durationMs": 284
+      },
+      {
+        "script": "scripts/test-meeting-commands.mjs",
+        "passed": true,
+        "durationMs": 211
+      },
+      {
+        "script": "scripts/test-class-controls.mjs",
+        "passed": true,
+        "durationMs": 248
+      },
+      {
+        "script": "scripts/test-help.mjs",
+        "passed": true,
+        "durationMs": 84
+      },
+      {
+        "script": "scripts/test-documents-v2.mjs",
+        "passed": true,
+        "durationMs": 11309
+      },
+      {
+        "script": "scripts/ui/audit.cjs",
+        "passed": true,
+        "durationMs": 75048
+      },
+      {
+        "script": "scripts/ui/panggil.cjs",
+        "passed": true,
+        "durationMs": 119020
+      },
+      {
+        "script": "scripts/ui/sidebar.cjs",
+        "passed": true,
+        "durationMs": 57719
+      },
+      {
+        "script": "scripts/ui/faults.cjs",
+        "passed": true,
+        "durationMs": 7830
+      },
+      {
+        "script": "scripts/ui/class-layout.cjs",
+        "passed": true,
+        "durationMs": 14734
+      },
+      {
+        "script": "scripts/ui/pdf.cjs",
+        "passed": true,
+        "durationMs": 9387
+      },
+      {
+        "script": "scripts/ui/offline.cjs",
+        "passed": true,
+        "durationMs": 21896
+      },
+      {
+        "script": "scripts/ui/corrections.cjs",
+        "passed": true,
+        "durationMs": 25245
+      },
+      {
+        "script": "scripts/ui/lifecycle.cjs",
+        "passed": true,
+        "durationMs": 34819
+      },
+      {
+        "script": "scripts/ui/class-controls.cjs",
+        "passed": true,
+        "durationMs": 41324
+      }
+    ],
+    "initialIncompleteSuite": "scripts/ui/help.cjs",
+    "retry": "Separate complete rerun passed in Chromium and WebKit; the first process exited before completion without a test assertion diagnostic."
+  },
+  "followup": {
+    "changes": "Dialog CSS spacing, danger style and centered mobile positioning; test selector and whitespace cleanup.",
+    "help": {
+      "passed": true,
+      "checks": 40
+    },
+    "classFlow": {
+      "passed": true,
+      "checks": 12
+    },
+    "browsers": [
+      "Chromium",
+      "WebKit"
+    ],
+    "screenshots": {
+      "base": "3d5453c337dd5f5fd34df4bc07fb9f8210dd33a4",
+      "viewports": [
+        "1280x900",
+        "390x844"
+      ],
+      "data": "Synthetic Admin Demo only"
+    },
+    "humanScreenReaderTested": false
+  },
+  "productionBuild": {
+    "passed": true,
+    "url": "https://example.convex.cloud"
+  },
+  "dependencyAudit": {
+    "passed": true,
+    "vulnerabilities": 0
+  }
+}

@@ -120,15 +120,10 @@ async function open() {
   await page
     .getByText("Draf belum tersimpan di perangkat.", { exact: false })
     .waitFor();
-  let warned = false;
-  page.once("dialog", async (d) => {
-    warned = true;
-    await d.dismiss();
-  });
   await page
     .getByRole("link", { name: "BAP Praktikum — Beranda", exact: true })
     .click();
-  assert.equal(warned, true);
+  await page.locator(".app-dialog").getByRole("button", { name: "Tetap di sini", exact: true }).click();
   assert.ok(page.url().endsWith("/pertemuan/p3"));
   ok("storage quota warning and global navigation cancellation preserve edits");
   await ctx.close();

@@ -11,6 +11,8 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import Guide from "./Guide.jsx";
+import AppDialogs from "./AppDialogs.jsx";
+import { getDialog } from "../lib/appDialog.js";
 import {
   HELP_AREAS,
   HELP_VERSION,
@@ -259,6 +261,7 @@ export function HelpProvider({ children }) {
   useEffect(() => {
     if (!panel && !tooltip) return;
     const key = (e) => {
+      if (getDialog()) return;
       if (e.key === "Escape") {
         e.preventDefault();
         e.stopPropagation();
@@ -309,6 +312,7 @@ export function HelpProvider({ children }) {
   return (
     <HelpContext.Provider value={value}>
       {children}
+      <AppDialogs />
       {notice && (
         <div className="help-global-notice" role="status">
           <span>{notice}</span>

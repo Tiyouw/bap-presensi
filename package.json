@@ -26,7 +26,8 @@
     "test:panggil": "node scripts/test-panggil.mjs && node scripts/ui/panggil.cjs",
     "test:sidebar": "node scripts/ui/sidebar.cjs",
     "test:class-controls-ui": "node scripts/ui/class-controls.cjs",
-    "test:help-ui": "node scripts/ui/help.cjs"
+    "test:help-ui": "node scripts/ui/help.cjs",
+    "test:class-flow": "node scripts/ui/class-flow.cjs"
   },
   "dependencies": {
     "@pdf-lib/fontkit": "^1.1.1",

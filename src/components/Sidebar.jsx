@@ -36,10 +36,10 @@ export default function Sidebar({ navigation: n, nav, path, onHelp, apple }) {
                 const active = item.path === "/" ? path === "/" : path.startsWith(item.path);
                 return (
                   <a key={item.path} href={item.path} className={`ws-nav-item${active ? " is-active" : ""}`} aria-current={active ? "page" : undefined} aria-label={item.title}
-                    onClick={event => {
+                    onClick={async event => {
                       if (event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
                         event.preventDefault();
-                        if (navigate(item.path)) n.onNavigate();
+                        if (await navigate(item.path)) n.onNavigate();
                       }
                     }}>
                     <span className="ws-nav-symbol"><WorkspaceIcon name={icons[item.path]} /></span>

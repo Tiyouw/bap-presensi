@@ -605,6 +605,9 @@ textarea {
   font-size: 18px;
   margin: 8px 0;
 }
+.mg-setup-steps { list-style: none; display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 0; margin: 16px 0 0; font-size: 13px; }
+.mg-setup-steps li { border-bottom: 2px solid var(--bap-border); padding-bottom: 6px; color: var(--bap-muted); }
+.mg-setup-steps li[aria-current="step"] { border-color: var(--bap-accent); color: var(--bap-text); font-weight: 700; }
 .mg-setup p {
   font-size: 12px;
   margin: 0;
