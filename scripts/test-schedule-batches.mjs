@@ -44,4 +44,7 @@ await check('cancelled pending sessions can be skipped only after explicit revie
  const a={token:f.token,jobId:result.jobId},preview=await batches.previewResumeJob._handler(f.ctx,a);assert.ok(preview.remaining.some(i=>i.unavailable));await assert.rejects(()=>batches.resumeScheduleJob._handler(f.ctx,{...a,previewHash:preview.previewHash}),/BATCH_PILIH_LEWATI/);
  const reviewed=await batches.previewResumeJob._handler(f.ctx,{...a,skipIds:[f.ids[1]]});await batches.resumeScheduleJob._handler(f.ctx,{...a,skipIds:[f.ids[1]],previewHash:reviewed.previewHash});const end=await finish(f,result.jobId);assert.equal(end.status,'DONE');assert.equal(end.applied,5);assert.equal((await f.ctx.db.get(result.jobId)).skipped,1);assert.equal((await f.ctx.db.get(f.ids[1])).cancelled,true);
 });
+await check('revoking schedule capability stops an already-started job before its next item',async()=>{
+ const f=await setup();await f.ctx.db.patch(f.user,{peran:'OPERATOR',kelasIds:[f.kelasId]});const id=await f.ctx.db.insert('classCapability',{kelasId:f.kelasId,penggunaId:f.user,capabilities:['schedule']});const {result}=await start(f,await args(f));await f.ctx.db.patch(id,{capabilities:[]});await assert.rejects(()=>batches.advanceScheduleJob._handler(f.ctx,{token:f.token,jobId:result.jobId}),/IZIN_KELAS_KURANG/);assert.equal((await f.ctx.db.get(result.jobId)).applied,0);
+});
 console.log(`${groups} schedule batch groups passed.`);

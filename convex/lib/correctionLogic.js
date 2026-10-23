@@ -50,9 +50,10 @@ export async function prepareCorrection(ctx,a){
   }
   if(a.lifecycleAction){if(a.restoreRevision!==undefined)throw new ConvexError("KOREKSI_TIDAK_VALID");next.cancelled=a.lifecycleAction==="cancel";}
   if(!Number.isInteger(next.nomor)||next.nomor<1||next.nomor>1000||!TYPES.includes(next.tipe))throw new ConvexError("JADWAL_TIDAK_VALID");
-  validDate(next.tanggal);next.tempat=text(next.tempat,"Ruang",80);
+  try{validDate(next.tanggal);}catch{throw new ConvexError({code:"TANGGAL_TIDAK_VALID",message:"Tanggal tidak valid. Pilih tanggal kalender yang benar."});}next.tempat=text(next.tempat,"Ruang",80);
   snapshot.tanggal=next.tanggal;snapshot.tempat=next.tempat;
   const peers=(await classRows(ctx,"pertemuan",p.kelasId)).map(x=>a.peerOverrides?.[x._id]?{...x,...a.peerOverrides[x._id]}:x).filter(x=>x._id!==p._id&&!x.cancelled);
+  if(!next.cancelled&&p.cancelled&&peers.length>=100)throw new ConvexError("BATAS_SESI_AKTIF");
   if(!next.cancelled&&peers.some(x=>x.nomor===next.nomor))throw new ConvexError("NOMOR_PERTEMUAN_DUPLIKAT");
   const rosterChanged=!same(previousSnapshot.peserta,snapshot.peserta),oldStatuses=new Map(statuses.map(s=>[s.pesertaId,s.status]));
   const returning=a.restoreRevision===undefined&&p.tipe!=="REGULER"&&next.tipe==="REGULER"&&historical;

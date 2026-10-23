@@ -1,11 +1,12 @@
 import { ConvexError } from "convex/values";
 import { requireSesi } from "./auth.js";
+import {revisionProtocolEnabled} from "./revisionLedger.js";
 import {CAPABILITIES} from "../../bap-shared/control.js";
 export async function classCapabilities(ctx,user,kelas){
   if(user.peran==="ADMIN"||user.peran==="PENGELOLA")return [...CAPABILITIES];
   if(user.peran!=="OPERATOR")return [];
   const grant=await ctx.db.query("classCapability").withIndex("by_class_user",q=>q.eq("kelasId",kelas._id).eq("penggunaId",user._id)).unique();
-  return (grant?.capabilities||[]).filter(c=>CAPABILITIES.includes(c));
+  return (grant?grant.capabilities:["history"]).filter(c=>CAPABILITIES.includes(c));
 }
 export async function requireCapability(ctx,token,kelasId,capabilities,write=true){
   const access=await requireClass(ctx,token,kelasId,false,write),allowed=await classCapabilities(ctx,access.user,access.kelas);
@@ -42,7 +43,7 @@ export async function requireClass(
   const kelas = kelasId && (await ctx.db.get(kelasId));
   if (!kelas || (user.peran !== "ADMIN" && !user.kelasIds.includes(kelasId)))
     throw new ConvexError("AKSES_DITOLAK");
-  if (manage && user.peran === "OPERATOR")
+  if (manage && !["ADMIN","PENGELOLA"].includes(user.peran))
     throw new ConvexError("AKSES_DITOLAK");
   if (write && kelas.arsip) throw new ConvexError("KELAS_DIARSIPKAN");
   return { user, kelas };
@@ -57,11 +58,25 @@ export async function requireMeeting(ctx, token, id, write = false) {
 }
 export async function audit(ctx, user, jenis, ringkas, kelasId, pertemuanId) {
   await ctx.db.insert("audit", {
-    actorId: user._id,
+    actorId: user._id,actorName:user.nama,
     jenis,
     ringkas,
     pada: Date.now(),
     ...(kelasId ? { kelasId } : {}),
     ...(pertemuanId ? { pertemuanId } : {}),
   });
+}
+
+// Legacy endpoints retain their original role behavior until the protocol is enabled.
+export async function requireClassControl(ctx,token,kelasId,capabilities,write=true){
+ const access=await requireClass(ctx,token,kelasId,false,write);
+ if(access.kelas.revisionReady&&await revisionProtocolEnabled(ctx))return requireCapability(ctx,token,kelasId,capabilities,write);
+ if(!["ADMIN","PENGELOLA"].includes(access.user.peran))throw new ConvexError("AKSES_DITOLAK");
+ return access;
+}
+export async function requireHistoricalAttendance(ctx,token,meeting){
+ const access=await requireClass(ctx,token,meeting.kelasId);
+ if(!access.kelas.revisionReady||!await revisionProtocolEnabled(ctx))return;
+ const rows=await ctx.db.query("presensi").withIndex("by_pertemuan",q=>q.eq("pertemuanId",meeting._id)).take(1);
+ if(meeting.hasAttendanceHistory||meeting.status==="KUNCI"||meeting.dikunciPada||rows.length)await requireCapability(ctx,token,meeting.kelasId,["history"]);
 }

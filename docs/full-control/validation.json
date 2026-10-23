@@ -1,0 +1,801 @@
+{
+  "frozen": {
+    "base": "2412a5f3c3812c1321f8872c83a189627972398a",
+    "startedAt": "2026-10-22T01:08:32.313Z",
+    "sourceFingerprint": "6ca34f152db83ee5444c4424eb93f2f3db3b116cf2dd141c62ea72ccf3a0951a",
+    "checks": [
+      {
+        "script": "scripts/test-logic.mjs",
+        "passed": true,
+        "durationMs": 523
+      },
+      {
+        "script": "scripts/test-handlers.mjs",
+        "passed": true,
+        "durationMs": 360
+      },
+      {
+        "script": "scripts/check-convex.mjs",
+        "passed": true,
+        "durationMs": 230
+      },
+      {
+        "script": "scripts/test-ui-logic.mjs",
+        "passed": true,
+        "durationMs": 214
+      },
+      {
+        "script": "scripts/test-print.mjs",
+        "passed": true,
+        "durationMs": 4728
+      },
+      {
+        "script": "scripts/test-management-unit.mjs",
+        "passed": true,
+        "durationMs": 2681
+      },
+      {
+        "script": "scripts/test-document-fidelity.mjs",
+        "passed": true,
+        "durationMs": 1414
+      },
+      {
+        "script": "scripts/test-panggil.mjs",
+        "passed": true,
+        "durationMs": 183
+      },
+      {
+        "script": "scripts/test-audit.mjs",
+        "passed": true,
+        "durationMs": 392
+      },
+      {
+        "script": "scripts/test-revision-foundation.mjs",
+        "passed": true,
+        "durationMs": 369
+      },
+      {
+        "script": "scripts/test-corrections.mjs",
+        "passed": true,
+        "durationMs": 460
+      },
+      {
+        "script": "scripts/test-lifecycle.mjs",
+        "passed": true,
+        "durationMs": 528
+      },
+      {
+        "script": "scripts/test-schedule-batches.mjs",
+        "passed": true,
+        "durationMs": 590
+      },
+      {
+        "script": "scripts/test-meeting-commands.mjs",
+        "passed": true,
+        "durationMs": 472
+      },
+      {
+        "script": "scripts/test-class-controls.mjs",
+        "passed": true,
+        "durationMs": 622
+      },
+      {
+        "script": "scripts/test-documents-v2.mjs",
+        "passed": true,
+        "durationMs": 21685
+      },
+      {
+        "script": "scripts/ui/audit.cjs",
+        "passed": true,
+        "durationMs": 55565
+      },
+      {
+        "script": "scripts/ui/panggil.cjs",
+        "passed": true,
+        "durationMs": 185812
+      },
+      {
+        "script": "scripts/ui/sidebar.cjs",
+        "passed": true,
+        "durationMs": 73770
+      },
+      {
+        "script": "scripts/ui/faults.cjs",
+        "passed": true,
+        "durationMs": 15961
+      },
+      {
+        "script": "scripts/ui/class-layout.cjs",
+        "passed": true,
+        "durationMs": 27015
+      },
+      {
+        "script": "scripts/ui/pdf.cjs",
+        "passed": true,
+        "durationMs": 18166
+      },
+      {
+        "script": "scripts/ui/offline.cjs",
+        "passed": true,
+        "durationMs": 36672
+      },
+      {
+        "script": "scripts/ui/corrections.cjs",
+        "passed": true,
+        "durationMs": 33897
+      },
+      {
+        "script": "scripts/ui/lifecycle.cjs",
+        "passed": true,
+        "durationMs": 45468
+      },
+      {
+        "script": "scripts/ui/class-controls.cjs",
+        "passed": true,
+        "durationMs": 57550
+      }
+    ],
+    "passed": true,
+    "sourceUnchanged": true,
+    "finishedAt": "2026-10-22T01:18:17.977Z"
+  },
+  "ui": {
+    "corrections": {
+      "checks": [
+        {
+          "engine": "chromium",
+          "test": "explicit correction discard survives reload and never changes the server meeting",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "draft survives reload; date-only correction publishes revision and retains attendance",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "import detects a previously committed operation without reapplying it",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "reactive conflict preserves local fields and re-preview publishes next revision",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "restore creates new revision rather than deleting later versions",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "downloaded draft imports intact and rejects foreign account/class scope",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "storage quota preserves in-memory input and exports recoverable draft",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "shared attendance/correction Web Lock and draft handoff",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "offline draft is editable while publish remains disabled",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "cached completed operation keeps its contents for review, blocks reapply, and can be explicitly discarded",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "responsive viewports and no page errors",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "explicit correction discard survives reload and never changes the server meeting",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "draft survives reload; date-only correction publishes revision and retains attendance",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "import detects a previously committed operation without reapplying it",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "reactive conflict preserves local fields and re-preview publishes next revision",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "restore creates new revision rather than deleting later versions",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "downloaded draft imports intact and rejects foreign account/class scope",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "storage quota preserves in-memory input and exports recoverable draft",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "shared attendance/correction Web Lock and draft handoff",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "offline draft is editable while publish remains disabled",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "cached completed operation keeps its contents for review, blocks reapply, and can be explicitly discarded",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "responsive viewports and no page errors",
+          "passed": true
+        }
+      ]
+    },
+    "lifecycle": {
+      "checks": [
+        {
+          "engine": "chromium",
+          "test": "selected historical-safe batch preview creates resumable work",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "pause, reload and resume preserve exactly-once item revisions",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "batch undo publishes compensating revisions with the original job retained",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "historical packet explicitly pins revisionId even after cancellation",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "cancel/restore is explicit and remains versioned",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "type conversion requires a deliberate attendance restoration choice",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "new/empty-session add and deletion remain separate from historical cancellation",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "responsive schedule, dark theme, enlarged text and no runtime errors",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "selected historical-safe batch preview creates resumable work",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "pause, reload and resume preserve exactly-once item revisions",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "batch undo publishes compensating revisions with the original job retained",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "historical packet explicitly pins revisionId even after cancellation",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "cancel/restore is explicit and remains versioned",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "type conversion requires a deliberate attendance restoration choice",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "new/empty-session add and deletion remain separate from historical cancellation",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "responsive schedule, dark theme, enlarged text and no runtime errors",
+          "passed": true
+        }
+      ]
+    },
+    "classControls": {
+      "checks": [
+        {
+          "engine": "chromium",
+          "test": "delegation panel saves explicit per-class Operator capabilities through server handler",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "concurrent grant update preserves local choices and requires explicit reload before save",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "paged JSON backup includes synthetic current/history data and no credentials/file auth",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "selective class identity restore does not revise existing sessions",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "meeting backup restore creates a new version with earlier versions retained",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "cross-class namespace cannot restore until explicitly chosen and previewed",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "malformed backup is rejected without breaking the page or discarding current file",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "roster UI reactivates a selected student and imports selected identity updates only",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "explicit archive/restore uses class revision and all three Unicode CSV files download",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "explicit bulk draft discard survives reload without creating or changing server jobs",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "schedule draft file restores inputs and detects an already-created job without duplicate execution",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "history/lifecycle-only Operator can navigate readonly schedule without receiving schedule write rights",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "permission revocation rejects open editor preview without losing its draft",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "keyboard focus, true 200% text, dark mode and 320/390/1280px without page overflow",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "delegation panel saves explicit per-class Operator capabilities through server handler",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "concurrent grant update preserves local choices and requires explicit reload before save",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "paged JSON backup includes synthetic current/history data and no credentials/file auth",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "selective class identity restore does not revise existing sessions",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "meeting backup restore creates a new version with earlier versions retained",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "cross-class namespace cannot restore until explicitly chosen and previewed",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "malformed backup is rejected without breaking the page or discarding current file",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "roster UI reactivates a selected student and imports selected identity updates only",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "explicit archive/restore uses class revision and all three Unicode CSV files download",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "explicit bulk draft discard survives reload without creating or changing server jobs",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "schedule draft file restores inputs and detects an already-created job without duplicate execution",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "history/lifecycle-only Operator can navigate readonly schedule without receiving schedule write rights",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "permission revocation rejects open editor preview without losing its draft",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "keyboard focus, true 200% text, dark mode and 320/390/1280px without page overflow",
+          "passed": true
+        }
+      ]
+    }
+  },
+  "uiNewCount": 66,
+  "nativeCore": {
+    "deployment": "tiyouw-s-projects:yo-urconvex:preview/preview-codex-full-control-data",
+    "startedAt": "2026-10-21T19:05:43.835Z",
+    "checks": [
+      {
+        "name": "synthetic class, 93 participants and six meetings on isolated native backend",
+        "passed": true
+      },
+      {
+        "name": "actual authenticated Word/PDF generated from revision 1 with SHA256 and valid file structure",
+        "passed": true
+      },
+      {
+        "name": "date correction preserves attendance/identity; double commit is one revision; new docs and frozen original metadata/hash",
+        "passed": true
+      },
+      {
+        "name": "native concurrent commits reject stale preview instead of last-write-wins",
+        "passed": true
+      },
+      {
+        "name": "native cancel/restore, type choice, active summary and explicit historical packet revisionId",
+        "passed": true
+      },
+      {
+        "name": "native batch continues across independent requests and undo creates compensating revisions",
+        "passed": true
+      },
+      {
+        "name": "native paged backup and validated/idempotent restore create a new revision; old Word remains byte-identical",
+        "passed": true
+      },
+      {
+        "name": "native Operator revocation protects correction, export and legacy unlock; foreign class and unauthenticated file denied",
+        "passed": true
+      },
+      {
+        "name": "native validation failure keeps ledger projection and attendance unchanged",
+        "passed": true
+      }
+    ],
+    "passed": true,
+    "backend": "https://admired-puma-858.convex.cloud",
+    "kelasId": "k971hy95e93hygt4rnwwfjsx858gp9rg",
+    "meetingId": "m179f2k2vz7s90y2x1x74t60ds8gqfq4",
+    "finishedAt": "2026-10-21T19:07:01.790Z"
+  },
+  "nativeBrowser": {
+    "backend": "https://admired-puma-858.convex.cloud",
+    "checks": [
+      {
+        "engine": "chromium",
+        "test": "production build signs in through UI and subscribes to actual isolated Convex",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "test": "native explicit local draft discard survives reload without a server revision",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "test": "draft reload, concurrent real server change, rebase and published Word use reviewed data",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "test": "actual historical diff displays retained source values and actor/time",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "test": "native JSON backup impact is explicit; concurrent unlock rejects old preview and fresh review restores a new version",
+        "passed": true
+      },
+      {
+        "engine": "chromium",
+        "test": "native settings/schedule at 320/390/1280, true 200% computed text and dark theme",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "test": "production build signs in through UI and subscribes to actual isolated Convex",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "test": "native explicit local draft discard survives reload without a server revision",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "test": "draft reload, concurrent real server change, rebase and published Word use reviewed data",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "test": "actual historical diff displays retained source values and actor/time",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "test": "native JSON backup impact is explicit; concurrent unlock rejects old preview and fresh review restores a new version",
+        "passed": true
+      },
+      {
+        "engine": "webkit",
+        "test": "native settings/schedule at 320/390/1280, true 200% computed text and dark theme",
+        "passed": true
+      }
+    ],
+    "hashes": [
+      {
+        "format": "docx",
+        "revision": 1,
+        "sha256": "f93d147d3b1db822a9f29d82123d7f95f989fea37ca41dbd986b5a377c90cf4c",
+        "date": "2026-10-21",
+        "unchangedAfterNativeUI": true
+      },
+      {
+        "format": "pdf",
+        "revision": 1,
+        "sha256": "2e4047fbe38157112a7c6908b4692c78e67adb172aa6c26fc55e22c92af22348",
+        "date": "2026-10-21",
+        "unchangedAfterNativeUI": true
+      }
+    ],
+    "passed": true
+  },
+  "nativeExtra": {
+    "deployment": "tiyouw-s-projects:yo-urconvex:preview/preview-codex-full-control-data",
+    "checks": [
+      {
+        "test": "real correction fails after presensi delete/insert, ledger/projection/class writes; native transaction restores every physical attendance ID and version",
+        "passed": true
+      },
+      {
+        "test": "native pagination reaches more than 75 revisions; restoring revision 1 appends another version and retains newer history",
+        "count": 78,
+        "passed": true
+      },
+      {
+        "test": "native 501 new participants are rejected with cohort advice; a selected 500-person cohort commits successfully",
+        "passed": true
+      }
+    ],
+    "passed": true
+  },
+  "nativeSelective": {
+    "backend": "https://admired-puma-858.convex.cloud",
+    "checks": [
+      {
+        "test": "deactivation/NIM edit preserves stable ID and historical identity/status through date-only correction",
+        "passed": true
+      },
+      {
+        "test": "identity and published template selectively revise the session and actual Word; roster/statuses remain frozen",
+        "passed": true
+      },
+      {
+        "test": "reactivation and selective 593-person roster refresh require review and preserve matching statuses by stable participant ID",
+        "passed": true
+      },
+      {
+        "test": "native explicit class archive/restore protects writes and all original document hashes remain unchanged",
+        "passed": true
+      }
+    ],
+    "passed": true
+  },
+  "nativeBackupConcurrency": {
+    "backend": "https://admired-puma-858.convex.cloud",
+    "previewIncludes": 593,
+    "unlockSameRevisionInvalidatesPreview": true,
+    "requiresNewPreview": true,
+    "strictBooleanValidation": true,
+    "passed": true
+  },
+  "largeDocuments": {
+    "participants": 593,
+    "absences": 593,
+    "expectedForms": 50,
+    "docx": {
+      "bytes": 2981890,
+      "sha256": "6f5426125713864a056c2afa7646b70e720ff3e1a9b8772350319fb303023d03"
+    },
+    "pdf": {
+      "bytes": 2760283,
+      "sha256": "1bfffb4f1a6b98e14ccb1904f5f6c3afbc9fd08c30aacc0926832012fa8156b6",
+      "pages": 50
+    },
+    "restoredAsNewRevision": 27,
+    "passed": true
+  },
+  "legacyMigration": {
+    "oldBase": "2a53d1a",
+    "newHead": "2412a5f",
+    "deployment": "tiyouw-s-projects:yo-urconvex:preview/full-control-migration-proof",
+    "interruptedAfterPages": 2,
+    "resumedFromSavedCursor": true,
+    "idempotentRepeat": true,
+    "legacyPartialNotFabricated": true,
+    "unknownNumberLabeled": true,
+    "completeCurrentStatuses": 93,
+    "hashes": [
+      {
+        "format": "docx",
+        "sha256": "47663dc55c956e0a107742847cf1a111678f9583190f3bc2c53a6516a9b491c2",
+        "tanggal": "2026-09-14",
+        "unknownOriginalNumber": true,
+        "unchanged": true
+      },
+      {
+        "format": "pdf",
+        "sha256": "59885bd959165c200c62324f8f33ee7f5d16a109cebf5994c3782df695410512",
+        "tanggal": "2026-09-14",
+        "unknownOriginalNumber": true,
+        "unchanged": true
+      }
+    ],
+    "passed": true
+  },
+  "probeRemoval": {
+    "explicitPreview": true,
+    "functionMissing": true,
+    "passed": true
+  },
+  "reviewPreview": {
+    "url": "https://bap-presensi-git-codex-full-control-data-tiyouws-projects.vercel.app",
+    "backend": "https://astute-whale-129.convex.cloud",
+    "synthetic": true,
+    "participants": 93,
+    "revision": 2,
+    "oldAndNewWordPdf": true,
+    "roles": [
+      "ADMIN",
+      "PENGELOLA",
+      "OPERATOR"
+    ],
+    "capabilitiesPerClass": true
+  },
+  "acceptance": [
+    {
+      "id": "T01",
+      "title": "Koreksi tanggal tanpa reset data",
+      "evidence": "Handler koreksi + browser publish; API native membandingkan seluruh status/roster/template/dosen. Word/PDF asli r1 21 Oktober dan r2 23 Oktober diverifikasi isi serta hash."
+    },
+    {
+      "id": "T02",
+      "title": "Arsip immutable dan metadata asal",
+      "evidence": "Hash Word/PDF r1 tetap identik setelah koreksi, lifecycle, restore data, native browser, dan migrasi old main. Nomor asal legacy yang tidak terbukti ditandai belum terverifikasi."
+    },
+    {
+      "id": "T03",
+      "title": "Draf, buang draf dan storage gagal",
+      "evidence": "Chromium/WebKit: reload, storage quota, unduh/muat draf, scope akun/kelas/server, Buang draf tanpa revisi server, serta blokir ulang operasi yang telah diterapkan. Pembersihan terlambat tidak menghapus draf lebih baru."
+    },
+    {
+      "id": "T04",
+      "title": "Konflik antar pengguna/perangkat/tab",
+      "evidence": "CAS kelas/sesi dan hash preview; native dua commit bersamaan menghasilkan satu penulis. Rebase menjaga perubahan baru pengguna lain. Web Locks menjaga satu editor; pilihan grant tetap ada saat diubah aktor lain."
+    },
+    {
+      "id": "T05",
+      "title": "Retry aman dan rollback",
+      "evidence": "Retry/double-click memakai operationKey yang sama. Probe native gagal setelah presensi delete/insert, ledger/proyeksi/kelas ditulis: transaksi memulihkan seluruh ID dan nilai. Probe sementara sudah dihapus."
+    },
+    {
+      "id": "T06",
+      "title": "Bulk jadwal terpilih",
+      "evidence": "Unit + browser + native: subset +7/−7 hari, kabisat/pergantian tahun, preview stale, historical opt-in, job lintas request/reload, konflik, lewati yang tidak tersedia, cancel sisa dan undo kompensasi."
+    },
+    {
+      "id": "T07",
+      "title": "Batal/pulih dan rekap aktif",
+      "evidence": "Lifecycle native/handler membandingkan status, jumlah praktikum/terkunci dan ringkasan cetak. Sesi batal keluar dari paket aktif; versi sebelum batal tetap dapat dicetak dengan revisionId."
+    },
+    {
+      "id": "T08",
+      "title": "Jenis pertemuan dua arah",
+      "evidence": "Praktikum ↔ nonpraktikum mempertahankan data lama. UI/native meminta pulihkan presensi atau reset kosong secara eksplisit; reset tetap terbuka tanpa status hadir buatan."
+    },
+    {
+      "id": "T09",
+      "title": "Data kelas dan roster selektif",
+      "evidence": "Native: ubah NIM/nonaktifkan dengan ID stabil, koreksi tanggal menjaga identitas lama; terapkan dosen/template tanpa mengganti roster, lalu roster593 dengan review dan status cocok dipertahankan. Impor UI memilih pembaruan/reaktivasi."
+    },
+    {
+      "id": "T10",
+      "title": "Hak Operator sesuai akses kelas",
+      "evidence": "Unit16 dan native menolak eskalasi diri, target Admin/kelas asing, hak di luar pemberi, grant stale, serta pencabutan saat editor terbuka. Endpoint presensi lama, data kelas, template, job dan ekspor diperiksa server."
+    },
+    {
+      "id": "T11",
+      "title": "Restore append-only dan riwayat panjang",
+      "evidence": "Pagination native mencapai 78 versi; pemulihan revisi1 menambah versi baru dan mempertahankan versi yang lebih baru. Legacy parsial tidak dapat dipulihkan otomatis; UI histori/diff dan pemilih versi paged."
+    },
+    {
+      "id": "T12",
+      "title": "Dokumen, paket, Mode Panggil dan offline",
+      "evidence": "Regresi Mode Panggil/sidebar/search/PDF/offline termasuk verifier. Native Word/PDF, paket revisionId historis, draft offline, generation fencing dan snapshot terpin diuji. CSV/JSON memakai query dengan ACL."
+    },
+    {
+      "id": "T13",
+      "title": "Migrasi, kapasitas dan pemulihan parsial",
+      "evidence": "Old main2a53d → backend baru; berhenti setelah2 halaman dan lanjut pada proses lain, ulang idempoten, hash arsip utuh. Native500 cohort diterima/501 ditolak;593 absen menjadi Word + PDF50 halaman. Payload/snapshot/batch dibatasi dengan arahan pembagian."
+    },
+    {
+      "id": "T14",
+      "title": "HP, keyboard, tema dan teks 200%",
+      "evidence": "Chromium/WebKit 320/390/768/1280 pada flow baru; keyboard/fokus, terang/gelap, teks computed benar-benar2x, tanpa overflow halaman. Native build produksi memeriksa jadwal/pengaturan dan form/review. UI/UX global U01–U08 tetap scope terpisah."
+    }
+  ],
+  "scope": "Four full-control draft PRs; no merge/production changes. Initial U01–U08 UI/UX proposals separate."
+}

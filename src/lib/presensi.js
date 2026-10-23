@@ -72,6 +72,16 @@ export function pesanGalat(err) {
   if (/PESERTA_KURANG|PESERTA_ASING|PESERTA_DOBEL/.test(text))
     return "Daftar peserta tidak cocok dengan server. Muat ulang data kelas; draf tetap disimpan.";
   const messages = {
+    BACKUP_IDENTITAS_TIDAK_VALID:"Identitas dalam backup tidak lengkap atau tidak valid.",
+    BACKUP_TIDAK_VALID:"Isi backup tidak valid. Gunakan file hasil ekspor aplikasi.",
+    BACKUP_PILIH_BAGIAN:"Bagian backup terlalu besar. Pilih satu versi pertemuan; pulihkan roster maksimal 500 peserta per kelompok terlebih dahulu, lalu ulangi bagian berikutnya.",
+    BACKUP_PESERTA_DOBEL:"Pencocokan peserta menghasilkan ID atau NIM ganda. Periksa pilihan pemetaan.",
+    BACKUP_PESERTA_ASING:"Peserta atau tujuan pemetaan bukan bagian dari backup/kelas ini.",
+    BACKUP_LINTAS_KELAS_KONFIRMASI:"Sumber backup berbeda. Centang izin lintas kelas/deployment dan periksa pencocokan peserta terlebih dahulu.",
+    BACKUP_DATA_BERUBAH:"Data berubah selama ekspor. Ulangi agar backup konsisten.",
+    GUNAKAN_IDENTITAS_PER_KELAS:"Mata kuliah ini digunakan kelas di luar aksesmu. Ubah nama/kode melalui Identitas kelas.",
+    GUNAKAN_EDITOR_ROSTER:"Klien ini belum mendukung pilihan pembaruan peserta. Muat ulang aplikasi dan pilih peserta yang akan diperbarui.",
+    GUNAKAN_EDITOR_KOREKSI:"Gunakan editor koreksi dan pilih kategori yang akan diperbarui. Muat ulang aplikasi bila perlu.",
     KOREKSI_BELUM_AKTIF:"Editor koreksi belum diaktifkan untuk kelas ini.",
     IZIN_KELAS_KURANG:"Izin untuk tindakan ini belum diberikan pada kelas ini. Draf tetap disimpan.",
     PREVIEW_KOREKSI_BERUBAH:"Isi atau sumber data berubah. Periksa preview terbaru sebelum menyimpan.",

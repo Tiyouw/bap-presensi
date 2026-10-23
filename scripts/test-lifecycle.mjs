@@ -32,4 +32,7 @@ await check('explicit revision generation/packet remains pinned after cancellati
  const packet=await bahanPaketLogic(f.ctx,{token:f.token,kelasId:f.kelasId,items:[{pertemuanId:f.pertemuanId,revision:1,revisionId:source._id}]});assert.equal(packet[0].pertemuan.tanggal,'2026-10-21');assert.equal(packet[0].jumlahAbsen,1);
  const claim=await klaimLogic(f.ctx,{pertemuanId:f.pertemuanId,revision:1,revisionId:source._id,format:'docx'});assert.equal((await f.ctx.db.get(claim.id)).archiveMetadata.tanggal,'2026-10-21');
 });
+await check('restoration cannot bypass the active-session capacity limit',async()=>{
+ const f=await setup();await apply(f,{lifecycleAction:'cancel'});for(let i=0;i<100;i++)await f.ctx.db.insert('pertemuan',{kelasId:f.kelasId,nomor:100+i,tanggal:'2026-12-01',tempat:'QA',tipe:'REGULER',status:'TERBUKA',revision:0});await assert.rejects(()=>apply(f,{lifecycleAction:'restore'}),/BATAS_SESI_AKTIF/);assert.equal((await f.ctx.db.get(f.pertemuanId)).cancelled,true);
+});
 console.log(`${groups} lifecycle groups passed.`);

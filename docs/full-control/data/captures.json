@@ -1,0 +1,196 @@
+{
+  "base": "24a6305",
+  "source": "git archive actual PR base; matching synthetic class, roster, meeting and viewport; light/reduced motion",
+  "extra": [
+    {
+      "files": [
+        "after-backup-desktop.png",
+        "after-backup-mobile.png"
+      ],
+      "viewport": [
+        "1280x900",
+        "390x844"
+      ],
+      "screen": "same synthetic class Settings; proposed backup date/type/cancellation/status diff, first participant filtered; no commit",
+      "beforeReference": "before-settings-*; backup controls absent in actual base 24a6305"
+    }
+  ],
+  "shots": [
+    {
+      "file": "before-settings-desktop.png",
+      "version": "before",
+      "viewport": {
+        "name": "desktop",
+        "width": 1280,
+        "height": 900
+      },
+      "screen": "class-settings",
+      "input": "93 synthetic; same class identity and p3 locked r1; after adds portability/delegation; full page"
+    },
+    {
+      "file": "before-schedule-desktop.png",
+      "version": "before",
+      "viewport": {
+        "name": "desktop",
+        "width": 1280,
+        "height": 900
+      },
+      "screen": "schedule-draft-controls",
+      "input": "same unchanged synthetic schedule; scrolled to local draft controls; after adds explicit discard and safe completion recovery"
+    },
+    {
+      "file": "before-import-desktop.png",
+      "version": "before",
+      "viewport": {
+        "name": "desktop",
+        "width": 1280,
+        "height": 900
+      },
+      "screen": "roster-import",
+      "input": "same two proposed identity updates; before blanket approval, after first identity selected; no commit"
+    },
+    {
+      "file": "before-history-desktop.png",
+      "version": "before",
+      "viewport": {
+        "name": "desktop",
+        "width": 1280,
+        "height": 900
+      },
+      "screen": "correction-history",
+      "input": "same p3 locked r1; no change; after displays baseline provenance and draft import; full page"
+    },
+    {
+      "file": "before-settings-mobile.png",
+      "version": "before",
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      },
+      "screen": "class-settings",
+      "input": "93 synthetic; same class identity and p3 locked r1; after adds portability/delegation; full page"
+    },
+    {
+      "file": "before-schedule-mobile.png",
+      "version": "before",
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      },
+      "screen": "schedule-draft-controls",
+      "input": "same unchanged synthetic schedule; scrolled to local draft controls; after adds explicit discard and safe completion recovery"
+    },
+    {
+      "file": "before-import-mobile.png",
+      "version": "before",
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      },
+      "screen": "roster-import",
+      "input": "same two proposed identity updates; before blanket approval, after first identity selected; no commit"
+    },
+    {
+      "file": "before-history-mobile.png",
+      "version": "before",
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      },
+      "screen": "correction-history",
+      "input": "same p3 locked r1; no change; after displays baseline provenance and draft import; full page"
+    },
+    {
+      "file": "after-settings-desktop.png",
+      "version": "after",
+      "viewport": {
+        "name": "desktop",
+        "width": 1280,
+        "height": 900
+      },
+      "screen": "class-settings",
+      "input": "93 synthetic; same class identity and p3 locked r1; after adds portability/delegation; full page"
+    },
+    {
+      "file": "after-schedule-desktop.png",
+      "version": "after",
+      "viewport": {
+        "name": "desktop",
+        "width": 1280,
+        "height": 900
+      },
+      "screen": "schedule-draft-controls",
+      "input": "same unchanged synthetic schedule; scrolled to local draft controls; after adds explicit discard and safe completion recovery"
+    },
+    {
+      "file": "after-import-desktop.png",
+      "version": "after",
+      "viewport": {
+        "name": "desktop",
+        "width": 1280,
+        "height": 900
+      },
+      "screen": "roster-import",
+      "input": "same two proposed identity updates; before blanket approval, after first identity selected; no commit"
+    },
+    {
+      "file": "after-history-desktop.png",
+      "version": "after",
+      "viewport": {
+        "name": "desktop",
+        "width": 1280,
+        "height": 900
+      },
+      "screen": "correction-history",
+      "input": "same p3 locked r1; no change; after displays baseline provenance and draft import; full page"
+    },
+    {
+      "file": "after-settings-mobile.png",
+      "version": "after",
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      },
+      "screen": "class-settings",
+      "input": "93 synthetic; same class identity and p3 locked r1; after adds portability/delegation; full page"
+    },
+    {
+      "file": "after-schedule-mobile.png",
+      "version": "after",
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      },
+      "screen": "schedule-draft-controls",
+      "input": "same unchanged synthetic schedule; scrolled to local draft controls; after adds explicit discard and safe completion recovery"
+    },
+    {
+      "file": "after-import-mobile.png",
+      "version": "after",
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      },
+      "screen": "roster-import",
+      "input": "same two proposed identity updates; before blanket approval, after first identity selected; no commit"
+    },
+    {
+      "file": "after-history-mobile.png",
+      "version": "after",
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      },
+      "screen": "correction-history",
+      "input": "same p3 locked r1; no change; after displays baseline provenance and draft import; full page"
+    }
+  ]
+}

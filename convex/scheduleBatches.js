@@ -123,3 +123,9 @@ export const commitUndoJob=mutation({args:{token:v.string(),jobId:v.id("schedule
  if(old){if(old.actorId!==source.user._id||old.requestHash!==a.previewHash||old.sourceJobId!==a.jobId)throw new ConvexError("KUNCI_OPERASI_DIPAKAI");await access(ctx,{token:a.token,kelasId:old.kelasId},old.requiredCapabilities);return{jobId:old._id,mode:old.mode,status:old.status,applied:old.applied,replayed:true};}
  const p=await undoPreview(ctx,a);return createJob(ctx,{...p.args,previewHash:a.previewHash,operationKey:a.operationKey},{sourceJobId:a.jobId,byMeeting:Object.fromEntries(p.eligible.map(i=>[i.pertemuanId,i.undoItemId]))});
 }});
+
+export const findOperation=query({args:{token:v.string(),kelasId:v.id("kelas"),operationKey:v.string()},handler:async(ctx,a)=>{
+ const {user}=await requireCapability(ctx,a.token,a.kelasId,[],false);
+ const job=await ctx.db.query("scheduleJob").withIndex("by_class_operation",q=>q.eq("kelasId",a.kelasId).eq("operationKey",a.operationKey)).unique();
+ if(job&&job.actorId!==user._id)throw new ConvexError("AKSES_DITOLAK");return job;
+}});

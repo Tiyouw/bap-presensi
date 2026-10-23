@@ -18,7 +18,7 @@ const kelas = {
   id: "k1",
   _id: "k1",
   matkulId: "m1",
-  nama: "Kelas Demo",
+  nama: "Kelas Demo",prodi:"Destinasi Pariwisata",tingkat:"3",dosenId:"",asdosId:"",
   matkulNama: "Pengantar Pariwisata Budaya",
   matkulKode: "PPB",
   semester: "GASAL",
@@ -66,16 +66,20 @@ const current = () => version;
 const wait = () => new Promise((resolve) => setTimeout(resolve, requestDelay));
 let controlEngine;
 function syncControls(){if(!controlEngine)return;Object.assign(kelas,controlEngine.ctx.tabel.get('kelas').get('k1'));
+ participants.splice(0,participants.length,...[...controlEngine.ctx.tabel.get('peserta')].map(([id,p])=>({...p,id})));
  server.pertemuan=[...controlEngine.ctx.tabel.get('pertemuan')].map(([id,p])=>({...p,id}));
  server.presensi={};for(const s of controlEngine.ctx.tabel.get('presensi')?.values()||[]) (server.presensi[s.pertemuanId]||=[]).push({pesertaId:s.pesertaId,status:s.status});
 }
-const restoredControls=restoreControlEngine();if(restoredControls)createControlEngine({kelas,participants,server,restore:restoredControls}).then(e=>{controlEngine=e;syncControls();publish()});
+const restoredControls=restoreControlEngine();const controlsReady=restoredControls?createControlEngine({kelas,participants,server,restore:restoredControls}).then(e=>{controlEngine=e;syncControls();publish()}):Promise.resolve();
 
 window.__qa = {
   calls,
+  controlsReady(){return Boolean(controlEngine)},
+  async controlOtherGrant(){const g=await controlEngine.ctx.db.query('classCapability').withIndex('by_class_user',q=>q.eq('kelasId','k1').eq('penggunaId','qa-operator')).unique();await controlEngine.ctx.db.patch(g._id,{capabilities:['schedule'],revision:g.revision+1});await controlEngine.refresh();publish();},
   async enableControls(options={}){controlEngine=await createControlEngine({kelas,participants,server,...options});syncControls();publish();},
+  async controlRole(peran,caps){await controlEngine.ctx.db.patch('qa-user',{peran});if(caps){const old=await controlEngine.ctx.db.query('classCapability').withIndex('by_class_user',q=>q.eq('kelasId','k1').eq('penggunaId','qa-user')).unique();if(old)await controlEngine.ctx.db.patch(old._id,{capabilities:caps,revision:(old.revision||0)+1});else await controlEngine.ctx.db.insert('classCapability',{kelasId:'k1',penggunaId:'qa-user',capabilities:caps,revision:1});}await controlEngine.refresh();publish();},
   async controlAdvance(id='p3'){await controlEngine.advance(id);syncControls();publish();},
-  controlState(){return{meetings:[...controlEngine.ctx.tabel.get('pertemuan')].map(([id,p])=>({...p,id})),jobs:controlEngine.cache.get('scheduleBatches:jobs')||[],revisions:[...controlEngine.ctx.tabel.get('meetingRevision')?.values()||[]]};},
+  controlState(){return{grants:[...controlEngine.ctx.tabel.get('classCapability')?.values()||[]],meetings:[...controlEngine.ctx.tabel.get('pertemuan')].map(([id,p])=>({...p,id})),jobs:controlEngine.cache.get('scheduleBatches:jobs')||[],revisions:[...controlEngine.ctx.tabel.get('meetingRevision')?.values()||[]]};},
   seedHistory(count) {
     kelas.readModelReady = true;
     server.history = Array.from({ length: count }, (_, i) => ({ id: `archive-${i}`, nomor: 3, tanggal: "2026-10-21", revision: count - i, format: "docx", templateVersion: "kelas-k1-v1", url: "https://example.test/bap.docx", pada: count - i }));
@@ -150,7 +154,7 @@ window.__qa = {
 };
 
 export class ConvexReactClient {}
-export function useConvex(){return{query:async(reference,args)=>{if(!controlEngine||!connected)throw Error('offline');calls.push({name:getFunctionName(reference),args});return controlEngine.query(getFunctionName(reference),args)}};}
+export function useConvex(){return{query:async(reference,args)=>{await controlsReady;if(!controlEngine||!connected)throw Error('offline');calls.push({name:getFunctionName(reference),args});return controlEngine.query(getFunctionName(reference),args)}};}
 export function ConvexProvider({ children }) {
   return children;
 }
@@ -175,12 +179,15 @@ export function useQuery(reference, args) {
             kelasIds: ["k1"],
             aktif: true,
             wajibGanti: false,
+            ...(controlEngine?controlEngine.user():{}),
           };
     if (authExpired || args?.token !== "ui-test-token") {
       const error = new Error("TOKEN_KEDALUWARSA");
       error.data = "TOKEN_KEDALUWARSA";
       throw error;
     }
+    if(controlEngine&&["kelola:catalog","kelola:detail","classAccess:list"].includes(name))return controlEngine.cache.get(name);
+    if(restoredControls&&!controlEngine&&name.startsWith("kelola:"))return undefined;
     if (name === "kelola:catalog")
       return {
         kelas: [
@@ -222,7 +229,7 @@ export function useQuery(reference, args) {
       };
     if(name==='revisions:classAvailability')return controlEngine?{enabled:true}:null;
     if(name==='revisions:historyPage'||name==='revisions:printVersionsPage'){if(!controlEngine)return undefined;const rows=controlEngine.cache.get(name==='revisions:historyPage'?'revisions:historyRows:'+args.pertemuanId:'revisions:printRows')||[],start=Number(args.paginationOpts.cursor||0),count=args.paginationOpts.numItems;return{page:rows.slice(start,start+count),isDone:start+count>=rows.length,continueCursor:String(start+count)};}
-    if(name.startsWith('revisions:'))return controlEngine?.cache.get(name+':'+args.pertemuanId);
+    if(name.startsWith('revisions:')){const model=controlEngine?.cache.get(name+':'+args.pertemuanId);if(name==='revisions:editor'&&model&&args.operationKey){const op=[...controlEngine.ctx.tabel.get('meetingRevision')?.values()||[]].find(r=>r.pertemuanId===args.pertemuanId&&r.operationKey===args.operationKey&&r.actorId==='qa-user');return{...model,completedOperation:op?{operationKey:op.operationKey,revision:op.revision,date:op.tanggal}:null};}return model;}
     if(name==='scheduleBatches:jobsPage'){if(!controlEngine)return undefined;const rows=controlEngine.cache.get('scheduleBatches:jobs')||[],start=Number(args.paginationOpts.cursor||0),count=args.paginationOpts.numItems;return{page:rows.slice(start,start+count),isDone:start+count>=rows.length,continueCursor:String(start+count)};}
     if(name==='scheduleBatches:jobDetail')return controlEngine?.cache.get(name+':'+args.jobId);
     if (name === "bap:forSesi") return server.docs[args.pertemuanId] || null;
@@ -248,7 +255,7 @@ export function useQuery(reference, args) {
           };
         });
     return null;
-  }, [tick, name, args === "skip", args?.pertemuanId, args?.token, args?.id, args?.kelasId,args?.jobId, args?.paginationOpts?.numItems, args?.paginationOpts?.cursor]);
+  }, [tick, name, args === "skip", args?.pertemuanId, args?.token, args?.id, args?.kelasId,args?.jobId,args?.operationKey, args?.paginationOpts?.numItems, args?.paginationOpts?.cursor]);
 }
 export function usePaginatedQuery(reference, args, { initialNumItems }) {
   const [count, setCount] = useState(initialNumItems);
@@ -262,8 +269,9 @@ export function useMutation(reference) {
     async (args) => {
       calls.push({ name, args });
       await wait();
+      await controlsReady;
       if (!connected) throw new Error("offline");
-      if(/^(revisions|scheduleBatches|meetingCommands):/.test(name)&&controlEngine){const result=await controlEngine.mutate(name,args);syncControls();publish();return result;}
+      if(/^(revisions|scheduleBatches|meetingCommands|kelola|classAccess|classBackup):/.test(name)&&controlEngine){const result=await controlEngine.mutate(name,args);syncControls();publish();return result;}
       if (name === "seed:jalan") return { dilewati: true };
       const meeting = server.pertemuan.find((p) => p.id === args.pertemuanId);
       if (name === "sesi:simpanDanKunci") {

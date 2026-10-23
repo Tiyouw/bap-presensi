@@ -1,3 +1,5 @@
+import ClassBackup from "../components/ClassBackup.jsx";
+import ClassPermissions from "../components/ClassPermissions.jsx";
 import PdfPreview from "../components/PdfPreview.jsx";
 import ClassTabHeading from "../components/ClassTabHeading.jsx";
 import { useEffect, useRef, useState } from "react";
@@ -217,6 +219,8 @@ export function ClassWorkspace({
     params = new URLSearchParams(path.split("?")[1]),
     tab = params.get("tab") || "pertemuan",
     manage = user.peran !== "OPERATOR",
+    can=cap=>data.controls?.enabled?data.controls.capabilities.includes(cap):manage,
+    scheduleView=data.controls?.enabled||manage,settingsView=["identity","lifecycle","export","delegate"].some(can),
     task = useTask(),
     activate = useMutation(api.kelola.activate),
     archive = useMutation(api.kelola.archive),
@@ -224,13 +228,9 @@ export function ClassWorkspace({
   const tabs = [
     ["pertemuan", "Pertemuan"],
     ["mahasiswa", "Mahasiswa"],
-    ...(manage
-      ? [
-          ["jadwal", "Jadwal"],
-          ["template", "Template BAP"],
-          ["pengaturan", "Pengaturan"],
-        ]
-      : []),
+    ...(scheduleView?[["jadwal","Jadwal"]]:[]),
+    ...(can("template")?[["template","Template BAP"]]:[]),
+    ...(settingsView?[["pengaturan","Pengaturan"]]:[]),
     ["riwayat", "Riwayat"],
   ];
   const checks = [
@@ -275,7 +275,7 @@ export function ClassWorkspace({
           <Notice kind="warning">
             Kelas diarsipkan. Data dan dokumen dapat dibaca; pengubahan
             dinonaktifkan.
-            {manage && (
+            {can("lifecycle") && (
               <button
                 className="button button--outline"
                 onClick={() => setConfirm("restore")}
@@ -296,7 +296,7 @@ export function ClassWorkspace({
             </div>
             <button
               className="button button--primary"
-              disabled={!manage || !checks.every(Boolean)}
+              disabled={!can("identity") || !checks.every(Boolean)}
               onClick={() => setConfirm("activate")}
             >
               Periksa & aktifkan
@@ -325,25 +325,28 @@ export function ClassWorkspace({
             data={data}
             openImport={params.has("import")}
           />
-        ) : tab === "jadwal" && manage ? (
-          <Schedule key={c.id} token={token} data={data} manage={!c.arsip} network={network}/>
-        ) : tab === "template" && manage ? (
-          <TemplateEditor token={token} data={data} manage={!c.arsip} />
-        ) : tab === "pengaturan" && manage ? (
+        ) : tab === "jadwal" && scheduleView ? (
+          <Schedule key={c.id} token={token} data={data} manage={!c.arsip&&can("schedule")} network={network}/>
+        ) : tab === "template" && can("template") ? (
+          <TemplateEditor token={token} data={data} manage={!c.arsip&&can("template")} />
+        ) : tab === "pengaturan" && settingsView ? (
           <>
             <ClassTabHeading
               title="Identitas kelas"
               description="Atur identitas kelas, dosen pengampu, asisten, dan ruang bawaan."
             />
-            <fieldset disabled={c.arsip}>
+            <fieldset disabled={c.arsip||!can("identity")}>
               <ClassForm
                 key={c.id}
                 token={token}
                 catalog={catalog}
                 existing={c}
+                scopeCourse={data.controls?.enabled}
               />
-              <CourseSettings token={token} data={data} />
+              {!data.controls?.enabled&&<CourseSettings token={token} data={data} />}
             </fieldset>
+            {data.controls?.enabled&&can("export")&&<ClassBackup token={token} data={data}/>}
+            {data.controls?.enabled&&can("delegate")&&<ClassPermissions token={token} data={data}/>}
             <div className="mg-panel">
               <h3>Arsip kelas</h3>
               <p>
@@ -352,6 +355,7 @@ export function ClassWorkspace({
               </p>
               <button
                 className="button button--outline"
+                disabled={!can("lifecycle")}
                 onClick={() => setConfirm(c.arsip ? "restore" : "archive")}
               >
                 {c.arsip ? "Pulihkan kelas" : "Arsipkan kelas"}
@@ -422,7 +426,7 @@ export function ClassWorkspace({
                     await archive({
                       token,
                       kelasId: c.id,
-                      arsip: confirm === "archive",
+                      arsip: confirm === "archive",expectedRevision:c.revision,
                     });
                   setConfirm(null);
                 })

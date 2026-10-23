@@ -1,6 +1,6 @@
 import { v, ConvexError } from "convex/values";
 import { mutation, query } from "./_generated/server.js";
-import { requireUser, requireClass, audit, classCapabilities } from "./lib/access.js";
+import { requireUser, requireClass, audit, classCapabilities, requireClassControl } from "./lib/access.js";
 import { classRows, classSnapshot, meetingSummary } from "./lib/classLogic.js";
 import { assertSnapshotSize } from "./lib/snapshotSize.js";
 import { appendRevision,controlEnabled,revisionProtocolEnabled } from "./lib/revisionLedger.js";
@@ -32,7 +32,8 @@ export const catalog = query({
           .map(m => [m._id, m])).values()];
     const kelas = await Promise.all(
       classes.map(async (c) => {
-        if (Number.isFinite(c.jumlahPeserta)) return publicRecord(c);
+        const capabilities=await classCapabilities(ctx,user,c),controlsEnabled=Boolean(c.revisionReady)&&await controlEnabled(ctx);
+        if (Number.isFinite(c.jumlahPeserta)) return {...publicRecord(c),capabilities,controlsEnabled};
         const p = await classRows(ctx, "pertemuan", c._id),
           peserta = await classRows(ctx, "peserta", c._id),
           m = courses.find((m) => m._id === c.matkulId);
@@ -42,8 +43,9 @@ export const catalog = query({
               Object.entries(c).filter(([key]) => key !== "templateDraft"),
             ),
           ),
-          matkulNama: m?.nama,
-          matkulKode: m?.kode,
+          matkulNama: c.courseOverride?.nama||m?.nama,
+          matkulKode: c.courseOverride?.kode||m?.kode,
+          capabilities,controlsEnabled,
           jumlahPeserta: peserta.filter((p) => p.aktif !== false).length,
           jumlahPraktikum: p.filter((p) => !p.cancelled && p.tipe === "REGULER").length,
           jumlahTerkunci: p.filter(
@@ -87,7 +89,7 @@ export const detail = query({
       ctx.db.query("audit").withIndex("by_kelas_pada", q => q.eq("kelasId", kelasId)).order("desc").take(50),
     ]);
     return {
-      kelas: { ...publicRecord(kelas), matkulNama: m.nama, matkulKode: m.kode, matkulRevision: m.revision || 0 },
+      kelas: { ...publicRecord(kelas), matkulNama: kelas.courseOverride?.nama||m.nama, matkulKode: kelas.courseOverride?.kode||m.kode, matkulRevision: m.revision || 0 },
       controls:{enabled:Boolean(kelas.revisionReady)&&await controlEnabled(ctx),capabilities:await classCapabilities(ctx,user,kelas)},
       peserta: peserta.map(publicRecord),
       pertemuan: pertemuan
@@ -121,11 +123,11 @@ export const saveClass = mutation({
   },
   handler: async (ctx, a) => {
     const user = await requireUser(ctx, a.token);
-    if (user.peran === "OPERATOR") throw new ConvexError("AKSES_DITOLAK");
+    if (!a.kelasId && !["ADMIN","PENGELOLA"].includes(user.peran)) throw new ConvexError("AKSES_DITOLAK");
     let old = null,
       source = null;
     if (a.kelasId) {
-      old = (await requireClass(ctx, a.token, a.kelasId, true, true)).kelas;
+      old = (await requireClassControl(ctx, a.token, a.kelasId, ["identity"])).kelas;
       revision(old, a.baseRevision);
     }
     if (a.copyId)
@@ -151,6 +153,7 @@ export const saveClass = mutation({
         throw new ConvexError("AKSES_DITOLAK");
     }
     const fields = {
+      ...((old||source?.courseOverride)?{courseOverride:{nama:text(data.matkulNama||source?.courseOverride?.nama|| (await ctx.db.get(matkulId)).nama,"Mata kuliah"),kode:text(data.matkulKode||source?.courseOverride?.kode||(await ctx.db.get(matkulId)).kode,"Kode",30)}}:{}),
       matkulId,
       nama: text(data.nama, "Nama kelas"),
       semester: text(data.semester || "GASAL", "Semester", 20),
@@ -233,6 +236,8 @@ export const saveCourse = mutation({
       (user.peran !== "ADMIN" && m.dibuatOleh !== user._id && !assigned)
     )
       throw new ConvexError("AKSES_DITOLAK");
+    const affected=await ctx.db.query("kelas").withIndex("by_matkul",q=>q.eq("matkulId",a.id)).collect();
+    if(user.peran!=="ADMIN"&&affected.some(c=>!canSee(user,c)))throw new ConvexError("GUNAKAN_IDENTITAS_PER_KELAS");
     if ((m.revision || 0) !== a.expectedRevision)
       throw new ConvexError("KONFLIK_REVISI");
     await ctx.db.patch(a.id, {
@@ -241,16 +246,16 @@ export const saveCourse = mutation({
       revision: (m.revision || 0) + 1,
     });
     await audit(ctx, user, "MATKUL_UBAH", a.nama);
-    const views = await ctx.db.query("classView").withIndex("by_matkul", q => q.eq("matkulId", a.id)).collect();
-    for (const view of views) await ctx.db.patch(view._id, { data: { ...view.data, matkulNama: a.nama.trim(), matkulKode: a.kode.trim() } });
+    for(const c of affected){await ctx.db.patch(c._id,{revision:c.revision+1});await syncClass(ctx,c._id);}
     return { revision: (m.revision || 0) + 1 };
   },
 });
 export const archive = mutation({
-  args: { token: v.string(), kelasId: v.id("kelas"), arsip: v.boolean() },
+  args: { token: v.string(), kelasId: v.id("kelas"), arsip: v.boolean(),expectedRevision:v.optional(v.number()) },
   handler: async (ctx, a) => {
-    const { user } = await requireClass(ctx, a.token, a.kelasId, true);
-    await ctx.db.patch(a.kelasId, { arsip: a.arsip });
+    const { user,kelas } = await requireClassControl(ctx, a.token, a.kelasId, ["lifecycle"],false);
+    if(kelas.revisionReady&&await revisionProtocolEnabled(ctx)||a.expectedRevision!==undefined)revision(kelas,a.expectedRevision);
+    await ctx.db.patch(a.kelasId, { arsip: a.arsip,revision:kelas.revision+1 });
     await syncClass(ctx, a.kelasId);
     await audit(
       ctx,
@@ -264,13 +269,7 @@ export const archive = mutation({
 export const activate = mutation({
   args: { token: v.string(), kelasId: v.id("kelas") },
   handler: async (ctx, a) => {
-    const { user, kelas } = await requireClass(
-      ctx,
-      a.token,
-      a.kelasId,
-      true,
-      true,
-    );
+    const { user, kelas } = await requireClassControl(ctx,a.token,a.kelasId,["identity"]);
     if (
       kelas.dosen === "Belum diatur" ||
       !(await classRows(ctx, "peserta", a.kelasId)).some(
@@ -297,13 +296,7 @@ export const saveParticipant = mutation({
     baseRevision: v.number(),
   },
   handler: async (ctx, a) => {
-    const { user, kelas } = await requireClass(
-      ctx,
-      a.token,
-      a.kelasId,
-      true,
-      true,
-    );
+    const { user, kelas } = await requireClassControl(ctx,a.token,a.kelasId,["roster"]);
     revision(kelas, a.baseRevision);
     const [row] = normalizeRoster([a.data]),
       rows = await classRows(ctx, "peserta", a.kelasId);
@@ -338,31 +331,28 @@ export const importRoster = mutation({
     source: v.string(),
     baseRevision: v.number(),
     allowUpdate: v.boolean(),
+    updateNims:v.optional(v.array(v.string())),reactivateNims:v.optional(v.array(v.string())),
   },
   handler: async (ctx, a) => {
-    const { user, kelas } = await requireClass(
-      ctx,
-      a.token,
-      a.kelasId,
-      true,
-      true,
-    );
+    const { user, kelas } = await requireClassControl(ctx,a.token,a.kelasId,["roster"]);
     revision(kelas, a.baseRevision);
     const rows = normalizeRoster(a.rows),
       existing = await classRows(ctx, "peserta", a.kelasId);
+    const byNim=new Map(existing.map(p=>[p.nim.toUpperCase(),p])),incoming=new Set(rows.map(r=>r.nim.toUpperCase()));
+    const chosen=new Set((a.updateNims||[]).map(n=>n.toUpperCase())),reactivate=new Set((a.reactivateNims||[]).map(n=>n.toUpperCase()));
+    if([...chosen,...reactivate].some(n=>!incoming.has(n)||!byNim.has(n)))throw new ConvexError("PESERTA_ASING");
+    const scoped=kelas.revisionReady&&await revisionProtocolEnabled(ctx);
+    if(scoped&&a.updateNims===undefined&&rows.some(r=>{const p=byNim.get(r.nim.toUpperCase());return p&&(p.nama!==r.nama||p.golongan!==r.golongan)}))throw new ConvexError("GUNAKAN_EDITOR_ROSTER");
     let urut = Math.max(0, ...existing.map((p) => p.urut));
     for (const row of rows) {
-      const old = existing.find(
-        (p) => p.nim.toUpperCase() === row.nim.toUpperCase(),
-      );
+      const old = byNim.get(row.nim.toUpperCase());
       if (old) {
-        if (
-          (old.nama !== row.nama || old.golongan !== row.golongan) &&
-          !a.allowUpdate
-        )
-          throw new ConvexError("KONFIRMASI_PERUBARUI");
-        await ctx.db.patch(old._id, row);
-        await syncParticipant(ctx, old._id);
+        const different=old.nama!==row.nama||old.golongan!==row.golongan;
+        if(different&&!scoped&&!a.allowUpdate)throw new ConvexError("KONFIRMASI_PERUBARUI");
+        const update=different&&(scoped?chosen.has(row.nim.toUpperCase()):a.allowUpdate),active=old.aktif===false&&reactivate.has(row.nim.toUpperCase());
+        if(!update&&!active)continue;
+        await ctx.db.patch(old._id,{...(update?row:{}),...(active?{aktif:true}:{})});
+        await syncParticipant(ctx,old._id);
       } else
         await syncParticipant(ctx, await ctx.db.insert("peserta", {
           ...row,
@@ -471,13 +461,7 @@ export const saveTemplate = mutation({
     baseRevision: v.number(),
   },
   handler: async (ctx, a) => {
-    const { user, kelas } = await requireClass(
-      ctx,
-      a.token,
-      a.kelasId,
-      true,
-      true,
-    );
+    const { user, kelas } = await requireClassControl(ctx,a.token,a.kelasId,["template"]);
     revision(kelas, a.baseRevision);
     const config = validateTemplate(a.config),
       version = kelas.templateVersion + (a.publish ? 1 : 0);
@@ -513,7 +497,8 @@ export const refreshSnapshot = mutation({
   handler: async (ctx, a) => {
     const p = await ctx.db.get(a.pertemuanId);
     if (!p) throw new ConvexError("PERTEMUAN_TIDAK_ADA");
-    const { user } = await requireClass(ctx, a.token, p.kelasId, true, true);
+    const { user,kelas } = await requireClassControl(ctx,a.token,p.kelasId,["identity","roster","template","history"]);
+    if(kelas.revisionReady&&await revisionProtocolEnabled(ctx))throw new ConvexError("GUNAKAN_EDITOR_KOREKSI");
     if (p.status !== "TERBUKA" || p.revision !== a.baseRevision)
       throw new ConvexError("KONFLIK_REVISI");
     const snapshot = await classSnapshot(ctx, p.kelasId, p);
@@ -566,7 +551,7 @@ export const search = query({
     let candidateBudget = 2000;
     for (const c of classes) {
       if (results.length >= 80 || candidateBudget <= 0) break;
-      const m = await ctx.db.get(c.matkulId),
+      const parent = await ctx.db.get(c.matkulId),m={...parent,...c.courseOverride},
         context = `${m.nama} · ${c.nama} · ${c.semester} ${c.tahunAkademik}`;
       if (matches(`${context} ${m.kode} ${c.dosen} ${c.asdos}`, a.q))
         results.push({
@@ -627,7 +612,7 @@ export const templateConfig = query({
   handler: async (ctx, { token, id }) => {
     const template = await ctx.db.get(id);
     if (!template) throw new ConvexError("DATA_TIDAK_VALID");
-    await requireClass(ctx, token, template.kelasId, true);
+    await requireClassControl(ctx,token,template.kelasId,["template"],false);
     return template.config;
   },
 });

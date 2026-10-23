@@ -36,6 +36,7 @@ export default defineSchema({
     dibuatOleh: v.id("pengguna"),
   }).index("by_creator", ["dibuatOleh"]),
   kelas: defineTable({
+    courseOverride:v.optional(v.object({nama:v.string(),kode:v.string()})),
     revisionReady: v.optional(v.boolean()),
     readModelReady: v.optional(v.boolean()),
     draft: v.optional(v.boolean()),
@@ -152,6 +153,7 @@ export default defineSchema({
     status: v.string(), cancelled: v.boolean(), rowCount: v.number(),
     legacyPartial: v.boolean(), metadataVerified: v.boolean(),
     action: v.string(), reason: v.string(), createdAt: v.number(),
+    actorName:v.optional(v.string()),
     actorId: v.optional(v.id("pengguna")), parentRevision: v.optional(v.number()),
     operationKey: v.optional(v.string()),
     operationHash: v.optional(v.string()),
@@ -161,8 +163,8 @@ export default defineSchema({
   revisionRows: defineTable({ revisionId: v.id("meetingRevision"), part: v.number(), rows: v.array(v.any()) })
     .index("by_revision", ["revisionId", "part"]),
   revisionPayload: defineTable({revisionId:v.id("meetingRevision"),snapshot:v.any()}).index("by_revision",["revisionId"]),
-  classCapability: defineTable({ kelasId: v.id("kelas"), penggunaId: v.id("pengguna"), capabilities: v.array(v.string()) })
-    .index("by_class_user", ["kelasId", "penggunaId"]),
+  classCapability: defineTable({ kelasId: v.id("kelas"), penggunaId: v.id("pengguna"), capabilities: v.array(v.string()),revision:v.optional(v.number()) })
+    .index("by_class_user", ["kelasId", "penggunaId"]).index("by_user",["penggunaId"]),
   scheduleJob: defineTable({kelasId:v.id("kelas"),actorId:v.id("pengguna"),operationKey:v.string(),requestHash:v.string(),
     expectedClassRevision:v.number(),reason:v.string(),status:v.string(),mode:v.string(),createdAt:v.number(),
     count:v.number(),applied:v.number(),skipped:v.number(),requiredCapabilities:v.array(v.string()),
@@ -187,6 +189,7 @@ export default defineSchema({
   audit: defineTable({
     pertemuanId: v.optional(v.id("pertemuan")),
     kelasId: v.optional(v.id("kelas")),
+    actorName:v.optional(v.string()),
     actorId: v.optional(v.id("pengguna")),
     pada: v.number(),
     jenis: v.string(),
