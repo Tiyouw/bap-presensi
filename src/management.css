@@ -1168,3 +1168,24 @@ textarea {
 }
 
 .control-backup-impact{overflow-wrap:anywhere}.control-backup-impact h5{font-size:1em;margin:1.25rem 0 .5rem}
+/* Class setup: one next action above the content, with all five stages visible. */
+.setup-flow { align-items: flex-start; flex-wrap: wrap; gap: 16px 28px; }
+.setup-flow > div:first-child { flex: 1; min-width: min(100%,280px); }
+.setup-flow p:not(.eyebrow) { font-size: .875rem; max-width: 65ch; }
+.setup-next { display: flex; flex-direction: column; gap: 8px; max-width: 100%; }
+.setup-next small { color: var(--bap-muted); max-width: 32ch; }
+.setup-next .button { white-space: normal; }
+.list-pagination { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin: 20px 0 12px; }
+.list-pagination > p { margin: 0 auto 0 0; font-size: .875rem; }
+.list-pagination > label { display: flex; gap: 8px; align-items: center; font-size: .875rem; }
+.list-pagination select { width: auto; min-height: 44px; padding: 8px; }
+.list-pagination > div { display: flex; gap: 12px; align-items: center; font-size: .875rem; }
+.operation-progress, .template-preview-status { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; padding: 12px 0; font-size: .875rem; color: var(--bap-muted); }
+.operation-progress progress, .template-preview-status progress { width: 140px; max-width: 100%; accent-color: var(--bap-accent); }
+.mg-template-grid { grid-template-columns: minmax(0,1.2fr) minmax(0,.8fr); align-items: start; }
+.mg-template-grid > .mg-pdf-preview { order: -1; }
+.template-fields > summary, .schedule-recovery > summary { min-height: 48px; padding: 10px 0; cursor: pointer; font-weight: 600; }
+.template-fields > fieldset { margin-top: 16px; }
+.schedule-save { border-top: 1px solid var(--bap-border); padding-top: 16px; }
+@media(max-width:860px) { .mg-template-grid { grid-template-columns: minmax(0,1fr); } }
+@media(max-width:560px) { .setup-next { width: 100%; } .setup-next .button { width: 100%; } .list-pagination { gap: 12px; } .list-pagination > p { width:100%; } .control-schedule-row { grid-template-columns:minmax(0,1fr); } }

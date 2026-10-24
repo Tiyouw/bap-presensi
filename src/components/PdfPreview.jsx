@@ -133,42 +133,46 @@ export default function PdfPreview({ url, title = "Preview PDF" }) {
               <option value="2">Perbesar 2×</option>
             </select>
           </label>
-          <button
-            type="button"
-            className="button button--outline"
-            disabled={page <= 1}
-            onClick={() => go(page - 1)}
-          >
-            ← Sebelumnya
-          </button>
-          <label className="mg-pdf-page">
-            <span>Halaman</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min="1"
-              max={document.numPages}
-              aria-label="Halaman PDF"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onBlur={() => go(draft)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  go(draft);
-                }
-              }}
-            />
-            <span>/ {document.numPages}</span>
-          </label>
-          <button
-            type="button"
-            className="button button--outline"
-            disabled={page >= document.numPages}
-            onClick={() => go(page + 1)}
-          >
-            Berikutnya →
-          </button>
+          {document.numPages > 1 && (
+            <>
+              <button
+                type="button"
+                className="button button--outline"
+                disabled={page <= 1}
+                onClick={() => go(page - 1)}
+              >
+                ← Sebelumnya
+              </button>
+              <label className="mg-pdf-page">
+                <span>Halaman</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min="1"
+                  max={document.numPages}
+                  aria-label="Halaman PDF"
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onBlur={() => go(draft)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      go(draft);
+                    }
+                  }}
+                />
+                <span>/ {document.numPages}</span>
+              </label>
+              <button
+                type="button"
+                className="button button--outline"
+                disabled={page >= document.numPages}
+                onClick={() => go(page + 1)}
+              >
+                Berikutnya →
+              </button>
+            </>
+          )}
         </div>
       )}
       {error ? (

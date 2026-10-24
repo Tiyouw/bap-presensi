@@ -102,7 +102,7 @@ const check = (engine, test) => {
       1,
     );
     assert.equal(
-      await p.locator('.mg-setup-steps [aria-current="step"]').textContent(),
+      await p.getByRole('navigation',{name:'Bagian kelas',exact:true}).locator('a[aria-current="page"]').textContent(),
       "2 · Mahasiswa",
     );
     const newURL = p.url();

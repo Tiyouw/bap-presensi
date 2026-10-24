@@ -7,6 +7,7 @@ import { bahanGenerateLogic, klaimLogic, finalisasiLogic } from "./lib/bapLogic.
 import { bahanPaketLogic, ringkasanCetakLogic } from "./lib/printLogic.js";
 import { documentUrl } from "./lib/documentUrl.js";
 import { archiveMetadata } from "./lib/revisionLedger.js";
+import { validateTemplate } from "../bap-shared/management.js";
 export const fileAccess = internalQuery({
   args: { token: v.string(), id: v.id("bapDoc") },
   handler: async (ctx, a) => {
@@ -145,16 +146,17 @@ export const historyPage = query({
   },
 });
 export const previewData = internalQuery({
-  args: { token: v.string(), kelasId: v.id("kelas") },
+  args: { token: v.string(), kelasId: v.id("kelas"), config: v.optional(v.any()) },
   handler: async (ctx, a) => {
     const { kelas } = await requireClassControl(ctx, a.token, a.kelasId, ["template"],false);
+    const first = (await classRows(ctx, "pertemuan", a.kelasId)).filter(p => !p.cancelled && p.tipe === "REGULER" && p.status === "TERBUKA" && !p.hasAttendanceHistory).sort((x,y)=>x.nomor-y.nomor)[0];
     const m = {
-      nomor: 1,
-      tanggal: new Date().toISOString().slice(0, 10),
-      tempat: kelas.tempat,
+      nomor: first?.nomor || 1,
+      tanggal: first?.tanggal || new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10),
+      tempat: first?.tempat || kelas.tempat,
     };
     const snapshot = await classSnapshot(ctx, a.kelasId, m);
-    snapshot.template = kelas.templateDraft;
+    snapshot.template = a.config === undefined ? kelas.templateDraft : validateTemplate(a.config);
     return {
       snapshot,
       pertemuan: m,

@@ -14,8 +14,10 @@ export default function AppDialogs() {
   const [toast, setToast] = useState("");
   useEffect(() => {
     const onToast = (e) => setToast(e.detail);
+    const onNavigate = () => setToast("");
     window.addEventListener("bap:toast", onToast);
-    return () => window.removeEventListener("bap:toast", onToast);
+    window.addEventListener("bap:navigate", onNavigate);
+    return () => { window.removeEventListener("bap:toast", onToast); window.removeEventListener("bap:navigate", onNavigate); };
   }, []);
   useEffect(() => {
     if (!toast) return;

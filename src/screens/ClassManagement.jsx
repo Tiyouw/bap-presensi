@@ -1,5 +1,7 @@
+import FileDrop from "../components/FileDrop.jsx";
 import { HelpButton } from "../components/Help.jsx";
 import PdfPreview from "../components/PdfPreview.jsx";
+import Pagination from "../components/Pagination.jsx";
 import ClassTabHeading from "../components/ClassTabHeading.jsx";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useAction, useQuery } from "convex/react";
@@ -52,7 +54,16 @@ const classFields = [
   ["asdosId", "Identitas asdos (opsional)"],
   ["tempat", "Ruang bawaan"],
 ];
-export function ClassForm({ token, catalog, existing, copy, onClose,scopeCourse=false }) {
+export function ClassForm({
+  token,
+  catalog,
+  existing,
+  copy,
+  onClose,
+  scopeCourse = false,
+  onSaved,
+  onBusy,
+}) {
   const source = existing || copy,
     [form, setForm] = useState({
       ...defaults,
@@ -65,15 +76,35 @@ export function ClassForm({ token, catalog, existing, copy, onClose,scopeCourse=
   const save = useMutation(api.kelola.saveClass),
     task = useTask();
   const guard = useEditorGuard({ form, matkulId, copyRoster }, true, task.busy);
-  const [createdId, setCreatedId] = useState(null), [redirectFailed, setRedirectFailed] = useState(false);
+  const [createdId, setCreatedId] = useState(null),
+    [redirectFailed, setRedirectFailed] = useState(false);
   const creating = useRef(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
+  useEffect(() => {
+    onBusy?.(task.busy);
+  }, [task.busy, onBusy]);
+  useEffect(() => () => onBusy?.(false), [onBusy]);
+  useEffect(() => {
+    if (settingsSaved && !task.busy) {
+      setSettingsSaved(false);
+      onSaved?.();
+    }
+  }, [settingsSaved, task.busy]);
   const mounted = useRef(true);
-  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
-  const openCreated = async id => {
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  const openCreated = async (id) => {
     await waitForNavigationIdle();
     if (!mounted.current) return;
     const opened = await navigate(`/kelas/${id}?tab=mahasiswa`);
-    if (opened) showAppToast("Kelas draf berhasil dibuat. Tambahkan atau periksa mahasiswa.");
+    if (opened)
+      showAppToast(
+        "Kelas draf berhasil dibuat. Tambahkan atau periksa mahasiswa.",
+      );
     else if (mounted.current) setRedirectFailed(true);
   };
   useEffect(() => {
@@ -83,41 +114,65 @@ export function ClassForm({ token, catalog, existing, copy, onClose,scopeCourse=
   return (
     <TaskForm
       task={task}
+      id={existing ? "setup-identity" : undefined}
       className="mg-class-form"
       onSubmit={() => {
         if (creating.current || createdId) return Promise.resolve();
         creating.current = true;
-        return task.run(
-          async () => {
-            const data = Object.fromEntries(
-              Object.keys(defaults).map((k) => [k, form[k] ?? defaults[k]]),
-            );
-            if (matkulId) data.matkulId = matkulId;
-            const id = await save({
-              token,
-              data,
-              ...(existing ? { kelasId: existing.id, baseRevision } : {}),
-              ...(copy ? { copyId: copy.id, copyRoster } : {}),
-            });
-            if (!mounted.current) return;
-            guard.markSaved();
-            if (existing) {
-              setBaseRevision((r) => r + 1);
-              onClose?.();
-            } else { rememberCreatedClass(id); setCreatedId(id); }
-          },
-          existing ? "Pengaturan kelas tersimpan." : "Kelas draf dibuat.",
-        ).finally(() => { creating.current = false; });
+        return task
+          .run(
+            async () => {
+              const data = Object.fromEntries(
+                Object.keys(defaults).map((k) => [k, form[k] ?? defaults[k]]),
+              );
+              if (matkulId) data.matkulId = matkulId;
+              const id = await save({
+                token,
+                data,
+                ...(existing ? { kelasId: existing.id, baseRevision } : {}),
+                ...(copy ? { copyId: copy.id, copyRoster } : {}),
+              });
+              if (!mounted.current) return;
+              guard.markSaved();
+              if (existing) {
+                setBaseRevision((r) => r + 1);
+                onClose?.();
+                setSettingsSaved(true);
+              } else {
+                rememberCreatedClass(id);
+                setCreatedId(id);
+              }
+            },
+            existing ? "Pengaturan kelas tersimpan." : "Kelas draf dibuat.",
+          )
+          .finally(() => {
+            creating.current = false;
+          });
       }}
     >
-      {redirectFailed && <Notice>Kelas sudah tersimpan. Lanjutkan menggunakan kelas yang sama.<button type="button" className="button button--primary" onClick={() => openCreated(createdId)}>Buka Mahasiswa</button></Notice>}
+      {redirectFailed && (
+        <Notice>
+          Kelas sudah tersimpan. Lanjutkan menggunakan kelas yang sama.
+          <button
+            type="button"
+            className="button button--primary"
+            onClick={() => openCreated(createdId)}
+          >
+            Buka Mahasiswa
+          </button>
+        </Notice>
+      )}
       {existing && (
         <RevisionNotice
           base={baseRevision}
           current={existing.revision}
           onReload={() => {
             setForm({ ...defaults, ...existing });
-            guard.markSaved({ form: { ...defaults, ...existing }, matkulId, copyRoster });
+            guard.markSaved({
+              form: { ...defaults, ...existing },
+              matkulId,
+              copyRoster,
+            });
             setBaseRevision(existing.revision);
             task.clear();
           }}
@@ -137,7 +192,7 @@ export function ClassForm({ token, catalog, existing, copy, onClose,scopeCourse=
           ]}
         />
       )}
-      {(scopeCourse||!existing && !matkulId) && (
+      {(scopeCourse || (!existing && !matkulId)) && (
         <div className="mg-form-grid">
           <Field
             label="Nama mata kuliah"
@@ -184,7 +239,13 @@ export function ClassForm({ token, catalog, existing, copy, onClose,scopeCourse=
           : "Kelas disimpan sebagai draf. Berikutnya masukkan mahasiswa, siapkan jadwal, periksa template, lalu aktifkan."}
       </p>
       <button className="button button--primary" disabled={Boolean(createdId)}>
-        {existing ? "Simpan pengaturan" : createdId ? "Kelas sudah tersimpan" : task.busy ? "Menyimpan…" : "Simpan & lanjut ke Mahasiswa →"}
+        {existing
+          ? "Simpan pengaturan"
+          : createdId
+            ? "Kelas sudah tersimpan"
+            : task.busy
+              ? "Menyimpan…"
+              : "Simpan & lanjut ke Mahasiswa →"}
       </button>
     </TaskForm>
   );
@@ -194,8 +255,12 @@ export function Participants({ token, user, data, openImport = false }) {
     [showInactive, setInactive] = useState(false),
     [edit, setEdit] = useState(null),
     [importing, setImporting] = useState(openImport),
-    [limit, setLimit] = useState(50);
-  const manage = (data.controls?.enabled?data.controls.capabilities.includes("roster"):user.peran !== "OPERATOR") && !data.kelas.arsip,
+    [page, setPage] = useState(0),
+    [pageSize, setPageSize] = useState(10);
+  const manage =
+      (data.controls?.enabled
+        ? data.controls.capabilities.includes("roster")
+        : user.peran !== "OPERATOR") && !data.kelas.arsip,
     save = useMutation(api.kelola.saveParticipant),
     task = useTask();
   const rows = data.peserta.filter(
@@ -253,40 +318,64 @@ export function Participants({ token, user, data, openImport = false }) {
           value={query}
           onChange={(v) => {
             setQuery(v);
-            setLimit(50);
+            setPage(0);
           }}
         />
         <label className="mg-check">
           <input
             type="checkbox"
             checked={showInactive}
-            onChange={(e) => setInactive(e.target.checked)}
+            onChange={(e) => {
+              setInactive(e.target.checked);
+              setPage(0);
+            }}
           />
           Tampilkan nonaktif
         </label>
       </div>
+      {data.peserta.length > 0 && (
+        <Pagination
+          total={rows.length}
+          page={page}
+          size={pageSize}
+          onPage={setPage}
+          onSize={setPageSize}
+          label="mahasiswa"
+        />
+      )}
       <div className="mg-panel mg-roster-list">
-        {rows.slice(0, limit).map((p) => (
-          <div className="mg-list-row" key={p.id}>
-            <span>
-              <strong>{p.nama}</strong>
-              <small>
-                {p.nim} · Gol. {p.golongan}
-                {p.aktif === false ? " · Nonaktif" : ""}
-              </small>
-            </span>
-            {manage && (
-              <button
-                className="button button--outline"
-                onClick={() =>
-                  setEdit({ ...p, _baseRevision: data.kelas.revision })
-                }
-              >
-                Ubah
-              </button>
-            )}
-          </div>
-        ))}
+        {rows
+          .slice(
+            Math.min(page, Math.max(0, Math.ceil(rows.length / pageSize) - 1)) *
+              pageSize,
+            (Math.min(
+              page,
+              Math.max(0, Math.ceil(rows.length / pageSize) - 1),
+            ) +
+              1) *
+              pageSize,
+          )
+          .map((p) => (
+            <div className="mg-list-row" key={p.id}>
+              <span>
+                <strong>{p.nama}</strong>
+                <small>
+                  {p.nim} · Gol. {p.golongan}
+                  {p.aktif === false ? " · Nonaktif" : ""}
+                </small>
+              </span>
+              {manage && (
+                <button
+                  className="button button--outline"
+                  onClick={() =>
+                    setEdit({ ...p, _baseRevision: data.kelas.revision })
+                  }
+                >
+                  Ubah
+                </button>
+              )}
+            </div>
+          ))}
         {!rows.length && (
           <div className="empty-state">
             <h3>{query ? "Tidak ada hasil" : "Belum ada mahasiswa"}</h3>
@@ -297,16 +386,7 @@ export function Participants({ token, user, data, openImport = false }) {
             </p>
           </div>
         )}
-        {rows.length > limit && (
-          <button
-            className="button button--quiet"
-            onClick={() => setLimit((l) => l + 50)}
-          >
-            Tampilkan 50 berikutnya
-          </button>
-        )}
       </div>
-      {manage && (!data.controls?.enabled || data.controls.capabilities.includes("schedule")) && data.kelas.draft && data.peserta.some(p => p.aktif !== false) && <button type="button" className="button button--outline" onClick={() => navigate(`/kelas/${data.kelas.id}?tab=jadwal`)}>Lanjut ke Jadwal →</button>}
       {edit && (
         <ParticipantEditor
           key={edit.id || "new"}
@@ -333,7 +413,10 @@ export function Participants({ token, user, data, openImport = false }) {
           token={token}
           user={user}
           data={data}
-          onClose={() => setImporting(false)}
+          onClose={() => {
+            setImporting(false);
+            setPage(0);
+          }}
         />
       )}
     </section>
@@ -345,7 +428,9 @@ function ParticipantEditor({ edit, task, onClose, onSave }) {
   return (
     <Modal
       title={edit.id ? "Ubah mahasiswa" : "Tambah mahasiswa"}
-      onClose={async () => { if (await guard.canDiscard()) onClose(); }}
+      onClose={async () => {
+        if (await guard.canDiscard()) onClose();
+      }}
       busy={task.busy}
     >
       <TaskForm
@@ -401,7 +486,8 @@ export function ImportDialog({ token, user, data, onClose }) {
     [mapping, setMapping] = useState({ nim: "", nama: "", golongan: "" }),
     [source, setSource] = useState(""),
     [allowUpdate, setAllow] = useState(false),
-    [updateNims,setUpdateNims]=useState([]),[reactivateNims,setReactivateNims]=useState([]),
+    [updateNims, setUpdateNims] = useState([]),
+    [reactivateNims, setReactivateNims] = useState([]),
     [errorsOnly, setErrorsOnly] = useState(false),
     task = useTask(),
     commit = useMutation(api.kelola.importRoster);
@@ -415,10 +501,28 @@ export function ImportDialog({ token, user, data, onClose }) {
     ),
     errors = preview.filter((r) => r.error),
     updates = preview.filter((r) => r.action === "Perbarui");
+  const [previewPage, setPreviewPage] = useState(0),
+    [previewSize, setPreviewSize] = useState(10);
+  const filteredPreview = errorsOnly ? errors : preview,
+    pageIndex = Math.min(
+      previewPage,
+      Math.max(0, Math.ceil(filteredPreview.length / previewSize) - 1),
+    ),
+    visibleRows = filteredPreview.slice(
+      pageIndex * previewSize,
+      (pageIndex + 1) * previewSize,
+    );
+  useEffect(
+    () => setPreviewPage(0),
+    [errorsOnly, mapping.nim, mapping.nama, mapping.golongan],
+  );
   const mappingKey = `bap.mapping.${user.id}.${data.kelas.id}`;
   const choose = (index, list = sheets) => {
     setSheet(String(index));
-    setAllow(false);setUpdateNims([]);setReactivateNims([]);
+    setPreviewPage(0);
+    setAllow(false);
+    setUpdateNims([]);
+    setReactivateNims([]);
     const s = list[+index];
     let map = suggestMapping(s.headers);
     try {
@@ -428,36 +532,47 @@ export function ImportDialog({ token, user, data, onClose }) {
     setMapping(map);
   };
   return (
-    <Modal title="Impor mahasiswa" onClose={onClose} wide busy={task.busy} headerActions={<HelpButton topic="import"/>}>
+    <Modal
+      title="Impor mahasiswa"
+      onClose={onClose}
+      wide
+      busy={task.busy}
+      headerActions={<HelpButton topic="import" />}
+    >
       <Feedback task={task} />
+      {task.busy && (
+        <div className="operation-progress" role="status">
+          <progress aria-label="Proses impor mahasiswa" />
+          <span>Membaca atau menyimpan daftar mahasiswa…</span>
+        </div>
+      )}
       <p>
-        Unggah .xlsx atau .csv, cocokkan kolom, lalu periksa sebelum memasukkan
-        data. NIM diperlakukan sebagai teks.
+        Seret file .xlsx, .xls atau .csv, cocokkan kolom, lalu periksa sebelum
+        memasukkan data. NIM diperlakukan sebagai teks.
       </p>
-      <label className="mg-field">
-        <span>File mahasiswa (maksimum 5 MB)</span>
-        <input
-          type="file"
-          accept=".xlsx,.csv"
-          disabled={task.busy}
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file)
-              task
-                .run(async () => {
-                  const list = await readRosterFile(file);
-                  const first = list.findIndex(s => s.headers.length && s.rows.length);
-                  if (first < 0)
-                    throw Error("File kosong atau tidak memiliki header.");
-                  setSheets(list);
-                  setSource(file.name);
-                  choose(first, list);
-                  setAllow(false);
-                }, "File dibaca. Periksa pemetaan kolom.")
-                .catch(() => {});
-          }}
-        />
-      </label>
+      <FileDrop
+        label="File mahasiswa (maksimum 5 MB)"
+        accept=".xlsx,.xls,.csv"
+        disabled={task.busy}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file)
+            task
+              .run(async () => {
+                const list = await readRosterFile(file);
+                const first = list.findIndex(
+                  (s) => s.headers.length && s.rows.length,
+                );
+                if (first < 0)
+                  throw Error("File kosong atau tidak memiliki header.");
+                setSheets(list);
+                setSource(file.name);
+                choose(first, list);
+                setAllow(false);
+              }, "File dibaca. Periksa pemetaan kolom.")
+              .catch(() => {});
+        }}
+      />
       {sheet && (
         <>
           <Field
@@ -479,7 +594,12 @@ export function ImportDialog({ token, user, data, onClose }) {
                 key={k}
                 label={label}
                 value={mapping[k]}
-                onChange={(v) => { setMapping((m) => ({ ...m, [k]: v })); setAllow(false);setUpdateNims([]);setReactivateNims([]); }}
+                onChange={(v) => {
+                  setMapping((m) => ({ ...m, [k]: v }));
+                  setAllow(false);
+                  setUpdateNims([]);
+                  setReactivateNims([]);
+                }}
                 options={[
                   {
                     value: "",
@@ -497,8 +617,10 @@ export function ImportDialog({ token, user, data, onClose }) {
           {preview.length > 0 && (
             <>
               <p role="status">
-                <strong>{preview.length} baris</strong> · {errors.length}{" "}
-                bermasalah · {updates.length} akan diperbarui
+                <strong>
+                  {preview.length} baris · {source}
+                </strong>{" "}
+                · {errors.length} bermasalah · {updates.length} akan diperbarui
               </p>
               <label className="mg-check">
                 <input
@@ -508,54 +630,15 @@ export function ImportDialog({ token, user, data, onClose }) {
                 />
                 Tampilkan hanya baris bermasalah
               </label>
-              <div className="mg-table-scroll">
-                <table className="mg-table">
-                  <thead>
-                    <tr>
-                      <th>Baris</th>
-                      <th>NIM</th>
-                      <th>Nama</th>
-                      <th>Gol.</th>
-                      <th>Hasil</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(errorsOnly ? errors : preview).slice(0, 100).map((r) => (
-                      <tr key={r.row}>
-                        <td>{r.row}</td>
-                        <td>{r.nim}</td>
-                        <td>{r.nama}</td>
-                        <td>{r.golongan}</td>
-                        <td className={r.error ? "mg-error-text" : ""}>
-                          {r.error || r.action}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <p className="muted">
-                Preview menampilkan hingga 100 baris; seluruh {preview.length}{" "}
-                baris divalidasi. Batas impor 2000 baris.
-              </p>
-              {data.controls?.enabled?<div className="mg-panel"><h3>Pilih pembaruan peserta</h3><p>Peserta baru ditambahkan. Identitas yang tidak dipilih dan peserta nonaktif tetap dipertahankan.</p>{updates.map(r=><label className="mg-check" key={r.nim}><input type="checkbox" checked={updateNims.includes(r.nim)} onChange={e=>setUpdateNims(ids=>e.target.checked?[...ids,r.nim]:ids.filter(id=>id!==r.nim))}/><span>Perbarui {r.nim}: {r.nama} · {r.golongan}</span></label>)}{preview.filter(r=>data.peserta.some(p=>p.nim.toUpperCase()===r.nim.toUpperCase()&&p.aktif===false)).map(r=><label className="mg-check" key={r.nim}><input type="checkbox" checked={reactivateNims.includes(r.nim)} onChange={e=>setReactivateNims(ids=>e.target.checked?[...ids,r.nim]:ids.filter(id=>id!==r.nim))}/><span>Aktifkan kembali {r.nim}</span></label>)}</div>:updates.length > 0 && (
-                <label className="mg-check">
-                  <input
-                    type="checkbox"
-                    checked={allowUpdate}
-                    onChange={(e) => setAllow(e.target.checked)}
-                  />
-                  Saya setuju memperbarui nama/golongan mahasiswa yang ditandai
-                  Perbarui.
-                </label>
-              )}
               <button
                 className="button button--primary"
                 disabled={
                   task.busy ||
                   errors.length > 0 ||
                   preview.length > 2000 ||
-                  (!data.controls?.enabled && updates.length > 0 && !allowUpdate)
+                  (!data.controls?.enabled &&
+                    updates.length > 0 &&
+                    !allowUpdate)
                 }
                 onClick={() =>
                   task
@@ -571,7 +654,9 @@ export function ImportDialog({ token, user, data, onClose }) {
                         source,
                         baseRevision,
                         allowUpdate,
-                        ...(data.controls?.enabled?{updateNims,reactivateNims}:{}),
+                        ...(data.controls?.enabled
+                          ? { updateNims, reactivateNims }
+                          : {}),
                       });
                       try {
                         localStorage.setItem(
@@ -582,6 +667,9 @@ export function ImportDialog({ token, user, data, onClose }) {
                           }),
                         );
                       } catch {}
+                      showAppToast(
+                        `${preview.length} mahasiswa diproses. ${data.kelas.draft ? "Berikutnya, siapkan jadwal." : "Daftar mahasiswa diperbarui."}`,
+                      );
                       onClose();
                     }, "Impor selesai.")
                     .catch(() => {})
@@ -589,6 +677,109 @@ export function ImportDialog({ token, user, data, onClose }) {
               >
                 Konfirmasi impor {preview.length} mahasiswa
               </button>
+              <Pagination
+                total={filteredPreview.length}
+                page={previewPage}
+                size={previewSize}
+                onPage={setPreviewPage}
+                onSize={setPreviewSize}
+                label="preview impor"
+              />
+              <div className="mg-table-scroll">
+                <table className="mg-table">
+                  <thead>
+                    <tr>
+                      <th>Baris</th>
+                      <th>NIM</th>
+                      <th>Nama</th>
+                      <th>Gol.</th>
+                      <th>Hasil</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleRows.map((r) => (
+                      <tr key={r.row}>
+                        <td>{r.row}</td>
+                        <td>{r.nim}</td>
+                        <td>{r.nama}</td>
+                        <td>{r.golongan}</td>
+                        <td className={r.error ? "mg-error-text" : ""}>
+                          {r.error || r.action}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="muted">
+                Seluruh {preview.length} baris divalidasi. Pilihan pembaruan
+                tetap tersimpan saat berpindah halaman. Batas impor 2000 baris.
+              </p>
+              {data.controls?.enabled ? (
+                <div className="mg-panel">
+                  <h3>Pilih pembaruan peserta</h3>
+                  <p>
+                    Peserta baru ditambahkan. Identitas yang tidak dipilih dan
+                    peserta nonaktif tetap dipertahankan.
+                  </p>
+                  {updates
+                    .filter((r) => visibleRows.some((v) => v.nim === r.nim))
+                    .map((r) => (
+                      <label className="mg-check" key={r.nim}>
+                        <input
+                          type="checkbox"
+                          checked={updateNims.includes(r.nim)}
+                          onChange={(e) =>
+                            setUpdateNims((ids) =>
+                              e.target.checked
+                                ? [...ids, r.nim]
+                                : ids.filter((id) => id !== r.nim),
+                            )
+                          }
+                        />
+                        <span>
+                          Perbarui {r.nim}: {r.nama} · {r.golongan}
+                        </span>
+                      </label>
+                    ))}
+                  {visibleRows
+                    .filter((r) =>
+                      data.peserta.some(
+                        (p) =>
+                          p.nim.toUpperCase() === r.nim.toUpperCase() &&
+                          p.aktif === false,
+                      ),
+                    )
+                    .map((r) => (
+                      <label className="mg-check" key={r.nim}>
+                        <input
+                          type="checkbox"
+                          checked={reactivateNims.includes(r.nim)}
+                          onChange={(e) =>
+                            setReactivateNims((ids) =>
+                              e.target.checked
+                                ? [...ids, r.nim]
+                                : ids.filter((id) => id !== r.nim),
+                            )
+                          }
+                        />
+                        <span>Aktifkan kembali {r.nim}</span>
+                      </label>
+                    ))}
+                </div>
+              ) : (
+                updates.length > 0 && (
+                  <label className="mg-check">
+                    <input
+                      type="checkbox"
+                      checked={allowUpdate}
+                      onChange={(e) => setAllow(e.target.checked)}
+                    />
+                    Saya setuju memperbarui nama/golongan mahasiswa yang
+                    ditandai Perbarui.
+                  </label>
+                )
+              )}
             </>
           )}
           {!sheet.rows.length && (
@@ -603,7 +794,13 @@ export function ImportDialog({ token, user, data, onClose }) {
     </Modal>
   );
 }
-export function Schedule(props){return props.data.controls?.enabled?<ScheduleManager {...props}/>:<LegacySchedule {...props}/>;}
+export function Schedule(props) {
+  return props.data.controls?.enabled ? (
+    <ScheduleManager {...props} />
+  ) : (
+    <LegacySchedule {...props} />
+  );
+}
 function LegacySchedule({ token, data, manage }) {
   const [baseRevision, setBaseRevision] = useState(data.kelas.revision);
   const [rows, setRows] = useState(() =>
@@ -623,12 +820,12 @@ function LegacySchedule({ token, data, manage }) {
   useEffect(() => {
     if (saved && data.kelas.revision >= saved) {
       const next = data.pertemuan.map((p) => ({
-          id: p.id,
-          nomor: p.nomor,
-          tanggal: p.tanggal,
-          tempat: p.tempat,
-          tipe: p.tipe,
-        }));
+        id: p.id,
+        nomor: p.nomor,
+        tanggal: p.tanggal,
+        tempat: p.tempat,
+        tipe: p.tipe,
+      }));
       setRows(next);
       guard.markSaved(next);
       setSaved(false);
@@ -762,7 +959,19 @@ function LegacySchedule({ token, data, manage }) {
                 </button>
               )}
               {locked && <small>Riwayat dipertahankan</small>}
-              {data.controls?.enabled && <button className="button button--outline" disabled={!manage} onClick={()=>navigate(`/kelas/${data.kelas.id}?tab=jadwal&correct=${r.id}`)}>Koreksi sesi {r.nomor}</button>}
+              {data.controls?.enabled && (
+                <button
+                  className="button button--outline"
+                  disabled={!manage}
+                  onClick={() =>
+                    navigate(
+                      `/kelas/${data.kelas.id}?tab=jadwal&correct=${r.id}`,
+                    )
+                  }
+                >
+                  Koreksi sesi {r.nomor}
+                </button>
+              )}
             </div>
           );
         })}
@@ -839,7 +1048,7 @@ function LegacySchedule({ token, data, manage }) {
     </section>
   );
 }
-export function TemplateEditor({ token, data, manage }) {
+export function TemplateEditor({ token, data, manage, onStepState }) {
   const [baseRevision, setBaseRevision] = useState(data.kelas.revision);
   const [config, setRawConfig] = useState({
       ...DEFAULT_TEMPLATE,
@@ -851,11 +1060,13 @@ export function TemplateEditor({ token, data, manage }) {
     save = useMutation(api.kelola.saveTemplate),
     makePreview = useAction(api.bapNode.preview);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
-  const historicalConfig = useQuery(api.kelola.templateConfig, selectedTemplate ? { token, id: selectedTemplate } : "skip");
+  const historicalConfig = useQuery(
+    api.kelola.templateConfig,
+    selectedTemplate ? { token, id: selectedTemplate } : "skip",
+  );
   const guard = useEditorGuard(config, manage, task.busy);
   const setConfig = (value) => {
     setRawConfig(value);
-    setPreview(null);
   };
   useEffect(() => {
     if (historicalConfig && selectedTemplate) {
@@ -869,6 +1080,83 @@ export function TemplateEditor({ token, data, manage }) {
     },
     [preview],
   );
+  const [previewState, setPreviewState] = useState("loading"),
+    [operation, setOperation] = useState("Menyimpan template…"),
+    [previewError, setPreviewError] = useState(""),
+    [retryPreview, setRetryPreview] = useState(0),
+    [continued, setContinued] = useState(false);
+  const previewTicket = useRef(0),
+    saving = useRef(false);
+  const configKey = JSON.stringify(config);
+  useEffect(() => () => onStepState?.({busy:false,ready:false}), [onStepState]);
+  const savedConfigKey = useRef(configKey);
+  const [previewConfigKey, setPreviewConfigKey] = useState("");
+  useEffect(() => {
+    onStepState?.({
+      busy: task.busy,
+      ready: previewState === "ready" && previewConfigKey === configKey,
+    });
+  }, [task.busy, previewState, previewConfigKey, configKey, onStepState]);
+  useEffect(() => {
+    if (continued && !task.busy)
+      void navigate(`/kelas/${data.kelas.id}?tab=review`);
+  }, [continued, task.busy]);
+  useEffect(() => {
+    const ticket = ++previewTicket.current;
+    let active = true;
+    setPreviewState("loading");
+    setPreviewError("");
+    const timer = setTimeout(async () => {
+      try {
+        const p = await makePreview({
+          token,
+          kelasId: data.kelas.id,
+          config: JSON.parse(configKey),
+        });
+        if (!active || ticket !== previewTicket.current) return;
+        const bytes = Uint8Array.from(atob(p.base64), (c) => c.charCodeAt(0));
+        setPreview({
+          url: URL.createObjectURL(
+            new Blob([bytes], { type: "application/pdf" }),
+          ),
+          pages: p.pageCount,
+        });
+        setPreviewState("ready");
+        setPreviewConfigKey(configKey);
+      } catch (e) {
+        if (active && ticket === previewTicket.current) {
+          setPreviewState("error");
+          setPreviewError(
+            e?.data?.message ||
+              e?.message ||
+              "Preview belum dapat dibuat. Periksa isian dan koneksi.",
+          );
+        }
+      }
+    }, 500);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [
+    token,
+    data.kelas.id,
+    data.kelas.revision,
+    configKey,
+    retryPreview,
+    makePreview,
+  ]);
+  const runSave = (fn, message) => {
+    if (saving.current) return;
+    setOperation("Menyimpan template…");
+    saving.current = true;
+    task
+      .run(fn, message)
+      .catch(() => {})
+      .finally(() => {
+        saving.current = false;
+      });
+  };
   const saveConfig = async (publish) => {
     const result = await save({
       token,
@@ -879,153 +1167,183 @@ export function TemplateEditor({ token, data, manage }) {
     });
     setBaseRevision((r) => r + 1);
     guard.markSaved(config);
+    savedConfigKey.current = JSON.stringify(config);
     return result;
   };
   return (
     <section>
-      <ClassTabHeading
-        title="Template BAP"
-        description={`Versi terbit ${data.kelas.templateVersion}. Perubahan berlaku pada sesi berikutnya.`}
-      >
-        <RevisionNotice
-          base={baseRevision}
-          current={data.kelas.revision}
-          onReload={() => {
-            setConfig({ ...DEFAULT_TEMPLATE, ...data.kelas.templateDraft });
-            guard.markSaved({ ...DEFAULT_TEMPLATE, ...data.kelas.templateDraft });
-            setBaseRevision(data.kelas.revision);
-            setPreview(null);
-            task.clear();
-          }}
+      {!data.kelas.draft && (
+        <ClassTabHeading
+          title="Template BAP"
+          description={`Versi terbit ${data.kelas.templateVersion}. Perubahan berlaku pada sesi berikutnya.`}
         />
-      </ClassTabHeading>
+      )}
+      <RevisionNotice
+        base={baseRevision}
+        current={data.kelas.revision}
+        onReload={() => {
+          setConfig({ ...DEFAULT_TEMPLATE, ...data.kelas.templateDraft });
+          guard.markSaved({
+            ...DEFAULT_TEMPLATE,
+            ...data.kelas.templateDraft,
+          });
+          savedConfigKey.current = JSON.stringify({ ...DEFAULT_TEMPLATE, ...data.kelas.templateDraft });
+          setBaseRevision(data.kelas.revision);
+          task.clear();
+        }}
+      />
+
       <Feedback task={task} />
+      <form
+        id="setup-template"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (
+            !manage ||
+            previewState !== "ready" ||
+            previewConfigKey !== configKey
+          )
+            return;
+          runSave(async () => {
+            await saveConfig(true);
+            setContinued(true);
+          }, "Template tersimpan.");
+        }}
+      />
+      {task.busy && (
+        <div className="operation-progress" role="status">
+          <progress aria-label="Penyimpanan template" />
+          <span>{operation}</span>
+        </div>
+      )}
       <div className="mg-template-grid">
         <div>
-          <fieldset disabled={!manage || task.busy} className="mg-panel">
-            <h3>Kop & identitas dokumen</h3>
-            <button
-              className="button button--outline"
-              onClick={() => setConfig({ ...DEFAULT_TEMPLATE })}
-            >
-              Gunakan format resmi
-            </button>
-            <p className="muted">
-              Mengembalikan isi editor ke kop DOCX asli. Simpan sebagai draf dan
-              periksa preview sebelum menerbitkan.
-            </p>
-            {[
-              ["institusi", "Institusi / kementerian"],
-              ["unit", "Nama institusi"],
-              ["jurusan", "Jurusan (opsional)"],
-              ["alamat", "Alamat / telepon / faks"],
-              ["kontak", "Email / situs (opsional)"],
-              ["judul", "Judul form"],
-              ["labelDosen", "Label dosen"],
-              ["labelAsdos", "Label asdos"],
-            ].map(([k, label]) => (
-              <Field
-                key={k}
-                label={label}
-                value={config[k]}
-                onChange={(v) => setConfig((c) => ({ ...c, [k]: v }))}
-                maxLength={k === "judul" ? 240 : 180}
-                required={["institusi", "unit", "judul"].includes(k)}
-              />
-            ))}
-            <p className="muted">
-              Kosongkan label dosen dan asdos untuk mencetak nama langsung,
-              seperti pada form resmi.
-            </p>
-            <label className="mg-field">
-              <span>Logo PNG/JPEG (maksimum 350 KB)</span>
-              <input
-                type="file"
-                accept="image/png,image/jpeg"
+          <details
+            className="mg-panel template-fields"
+            open={!data.kelas.draft}
+          >
+            <summary>Edit kop & identitas dokumen</summary>
+            <fieldset disabled={!manage || task.busy}>
+              <button
+                className="button button--outline"
+                onClick={() => setConfig({ ...DEFAULT_TEMPLATE })}
+              >
+                Gunakan format resmi
+              </button>
+              <p className="muted">
+                Mengembalikan isi editor ke kop DOCX asli. Simpan sebagai draf
+                dan periksa preview sebelum menerbitkan.
+              </p>
+              {[
+                ["institusi", "Institusi / kementerian"],
+                ["unit", "Nama institusi"],
+                ["jurusan", "Jurusan (opsional)"],
+                ["alamat", "Alamat / telepon / faks"],
+                ["kontak", "Email / situs (opsional)"],
+                ["judul", "Judul form"],
+                ["labelDosen", "Label dosen"],
+                ["labelAsdos", "Label asdos"],
+              ].map(([k, label]) => (
+                <Field
+                  key={k}
+                  label={label}
+                  value={config[k]}
+                  onChange={(v) => setConfig((c) => ({ ...c, [k]: v }))}
+                  maxLength={k === "judul" ? 240 : 180}
+                  required={["institusi", "unit", "judul"].includes(k)}
+                />
+              ))}
+              <p className="muted">
+                Kosongkan label dosen dan asdos untuk mencetak nama langsung,
+                seperti pada form resmi.
+              </p>
+              <FileDrop
+                label="Logo PNG/JPEG (maksimum 350 KB)"
+                accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+                disabled={task.busy}
                 onChange={(e) => {
                   const file = e.target.files?.[0];
-                  if (file)
+                  if (file) {
+                    setOperation("Membaca logo…");
                     task
                       .run(async () => {
                         if (file.size > 350000)
                           throw Error("Logo maksimum 350 KB.");
+                        const header = new Uint8Array(
+                          await file.slice(0, 8).arrayBuffer(),
+                        );
+                        const png = [137, 80, 78, 71, 13, 10, 26, 10].every(
+                            (byte, i) => header[i] === byte,
+                          ),
+                          jpeg = header[0] === 255 && header[1] === 216;
+                        if (!png && !jpeg)
+                          throw Error(
+                            "Gunakan gambar PNG atau JPEG yang valid.",
+                          );
                         const value = await new Promise((resolve, reject) => {
                           const r = new FileReader();
                           r.onload = () => resolve(r.result);
                           r.onerror = reject;
-                          r.readAsDataURL(file);
+                          r.readAsDataURL(
+                            new Blob([file], {
+                              type: png ? "image/png" : "image/jpeg",
+                            }),
+                          );
                         });
                         setConfig((c) => ({ ...c, logo: value }));
-                      }, "Logo dipilih. Simpan dan periksa preview.")
+                      }, "Logo dipilih. Preview sedang diperbarui.")
                       .catch(() => {});
+                  }
                 }}
               />
-            </label>
-            {config.logo && (
-              <div className="mg-logo-preview">
-                <img src={config.logo} alt="Logo yang dipilih" />
-                <button
-                  className="button button--quiet"
-                  onClick={() => setConfig((c) => ({ ...c, logo: "" }))}
-                >
-                  Kembali ke logo resmi
-                </button>
-              </div>
-            )}
-            <p className="muted">
-              Dosen, asdos, program studi, dan semester diambil dari Pengaturan
-              kelas. Format tabel resmi tetap dipertahankan.
-            </p>
-            <div className="mg-inline-actions">
-              <button
-                className="button button--outline"
-                onClick={() =>
-                  task
-                    .run(() => saveConfig(false), "Draf template tersimpan.")
-                    .catch(() => {})
-                }
-              >
-                Simpan draf
-              </button>
-              <button
-                className="button button--outline"
-                onClick={() =>
-                  task
-                    .run(async () => {
-                      await saveConfig(false);
-                      const p = await makePreview({
-                        token,
-                        kelasId: data.kelas.id,
-                      });
-                      setPreview({
-                        url: URL.createObjectURL(
-                          new Blob(
-                            [
-                              Uint8Array.from(atob(p.base64), (c) =>
-                                c.charCodeAt(0),
-                              ),
-                            ],
-                            { type: "application/pdf" },
-                          ),
-                        ),
-                        pages: p.pageCount,
-                      });
-                    }, "Preview siap.")
-                    .catch(() => {})
-                }
-              >
-                Simpan & preview PDF
-              </button>
-              <button
-                className="button button--primary"
-                onClick={() => setConfirm(true)}
-              >
-                Terbitkan versi baru
-              </button>
-            </div>
-          </fieldset>
-          <div className="mg-panel">
-            <h3>Riwayat versi</h3>
+              {config.logo && (
+                <div className="mg-logo-preview">
+                  <img src={config.logo} alt="Logo yang dipilih" />
+                  <button
+                    className="button button--quiet"
+                    onClick={() => setConfig((c) => ({ ...c, logo: "" }))}
+                  >
+                    Kembali ke logo resmi
+                  </button>
+                </div>
+              )}
+              <p className="muted">
+                Dosen, asdos, program studi, dan semester diambil dari
+                Pengaturan kelas. Format tabel resmi tetap dipertahankan.
+              </p>
+              {!data.kelas.draft && (
+                <div className="mg-inline-actions">
+                  <button
+                    type="button"
+                    className="button button--outline"
+                    onClick={() =>
+                      runSave(
+                        () => saveConfig(false),
+                        "Draf template tersimpan.",
+                      )
+                    }
+                  >
+                    {task.busy ? "Menyimpan…" : "Simpan draf"}
+                  </button>
+                  <button
+                    type="button"
+                    className="button button--primary"
+                    disabled={
+                      previewState !== "ready" || previewConfigKey !== configKey
+                    }
+                    onClick={() => setConfirm(true)}
+                  >
+                    Terbitkan versi baru
+                  </button>
+                </div>
+              )}
+            </fieldset>
+          </details>
+          <details
+            className="mg-panel template-fields"
+            open={!data.kelas.draft}
+          >
+            <summary>Riwayat versi</summary>
             {data.templates.map((t) => (
               <div className="mg-list-row" key={t.id}>
                 <span>
@@ -1038,19 +1356,59 @@ export function TemplateEditor({ token, data, manage }) {
                   <button
                     className="button button--quiet"
                     disabled={task.busy || Boolean(selectedTemplate)}
-                    onClick={() => t.config ? setConfig({ ...DEFAULT_TEMPLATE, ...t.config }) : setSelectedTemplate(t.id)}
+                    onClick={() =>
+                      t.config
+                        ? setConfig({ ...DEFAULT_TEMPLATE, ...t.config })
+                        : setSelectedTemplate(t.id)
+                    }
                   >
                     Salin ke editor
                   </button>
                 )}
               </div>
             ))}
-          </div>
+          </details>
         </div>
-        <div className="mg-pdf-preview mg-panel">
+        <div
+          className="mg-pdf-preview mg-panel"
+          aria-busy={previewState === "loading"}
+        >
+          <div role="status" className="template-preview-status">
+            {previewState === "loading" ? (
+              <>
+                <progress aria-label="Membuat preview template" />
+                <span>
+                  {preview
+                    ? "Memperbarui preview…"
+                    : "Menyiapkan preview template…"}
+                </span>
+              </>
+            ) : previewState === "ready" ? (
+              <span>
+                {savedConfigKey.current === configKey
+                  ? "Preview sesuai template tersimpan"
+                  : "Preview terbaru · perubahan belum disimpan"}
+              </span>
+            ) : (
+              <Notice kind="error">
+                {previewError}
+                <button
+                  type="button"
+                  className="button button--outline"
+                  onClick={() => setRetryPreview((n) => n + 1)}
+                >
+                  Coba preview lagi
+                </button>
+              </Notice>
+            )}
+          </div>
           {preview ? (
             <>
               <h3>Preview dokumen · {preview.pages} halaman</h3>
+              <p className="muted">
+                Contoh BAP dengan nama contoh dan tanggal pertemuan pertama yang
+                belum diisi.
+              </p>
               <PdfPreview title="Preview PDF BAP" url={preview.url} />
               <a
                 className="button button--outline"
@@ -1061,14 +1419,10 @@ export function TemplateEditor({ token, data, manage }) {
               </a>
             </>
           ) : (
-            <div className="empty-state">
-              <h3>Periksa hasil sebelum terbit.</h3>
-              <p>
-                Simpan & preview untuk melihat PDF dari generator yang sama
-                dengan unduhan. Preview menggunakan nama contoh.
-              </p>
-              <p>Folio 215 × 330 mm · 12 slot per form</p>
-            </div>
+            <p className="muted">
+              Preview tampil otomatis tanpa menyimpan. Folio 215 × 330 mm · 12
+              slot per form.
+            </p>
           )}
         </div>
       </div>
@@ -1086,12 +1440,10 @@ export function TemplateEditor({ token, data, manage }) {
           <button
             className="button button--primary"
             onClick={() =>
-              task
-                .run(async () => {
-                  await saveConfig(true);
-                  setConfirm(false);
-                }, "Template diterbitkan.")
-                .catch(() => {})
+              runSave(async () => {
+                await saveConfig(true);
+                setConfirm(false);
+              }, "Template diterbitkan.")
             }
           >
             Ya, terbitkan

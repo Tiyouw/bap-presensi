@@ -180,7 +180,7 @@ async function noOverflow(p) {
     await page
       .getByLabel("Nama institusi", { exact: true })
       .fill("POLITEKNIK DEMO");
-    await page.getByRole("button", { name: "Simpan & preview PDF" }).click();
+    await page.getByRole("button", { name: "Simpan template & lanjut →" }).click();
     await page
       .getByRole("heading", { name: /Preview dokumen/ })
       .waitFor({ timeout: 30000 });
@@ -212,7 +212,7 @@ async function noOverflow(p) {
     await page.getByRole("button", { name: "Ya, terbitkan" }).click();
     await page.getByText("Template diterbitkan.", { exact: true }).waitFor();
     await page
-      .getByRole("button", { name: "Periksa & aktifkan", exact: true })
+      .getByRole("button", { name: "Aktifkan kelas", exact: true })
       .click();
     await page
       .getByRole("button", { name: "Ya, aktifkan", exact: true })

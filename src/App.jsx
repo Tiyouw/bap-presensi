@@ -230,7 +230,7 @@ function Authenticated({ token, user, path, network, onLogout }) {
             </Notice>
           </div>
         )}
-        <HelpWelcome/>
+        {pathname !== "/kelas/baru" && !data.kelas.find(c => c.id === kelasId)?.draft && <HelpWelcome/>}
         {content}
       </Workspace>
       {print && (
