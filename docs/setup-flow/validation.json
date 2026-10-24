@@ -1,0 +1,296 @@
+{
+  "base": "0334d0009814809b18bc1c6223ba049c769a1319",
+  "checkedAt": "2026-10-24T08:55:48.633Z",
+  "workingTreeFingerprint": "141fb90dfb40bd130ec00fd65e87d49e500b39f67ec1c3f02e688b00111280a1",
+  "strategy": "Complete regression followed by targeted reruns for final UI polish and corrected navigation test selector.",
+  "regression": {
+    "sourceFingerprint": "1e62b5942d9400907a0d75e8cb32cc6f3a14b1056b9996568a2dca3fb60420a4",
+    "passed": [
+      {
+        "script": "scripts/test-logic.mjs",
+        "passed": true,
+        "durationMs": 445
+      },
+      {
+        "script": "scripts/test-handlers.mjs",
+        "passed": true,
+        "durationMs": 339
+      },
+      {
+        "script": "scripts/check-convex.mjs",
+        "passed": true,
+        "durationMs": 227
+      },
+      {
+        "script": "scripts/test-ui-logic.mjs",
+        "passed": true,
+        "durationMs": 206
+      },
+      {
+        "script": "scripts/test-print.mjs",
+        "passed": true,
+        "durationMs": 4843
+      },
+      {
+        "script": "scripts/test-management-unit.mjs",
+        "passed": true,
+        "durationMs": 1799
+      },
+      {
+        "script": "scripts/test-document-fidelity.mjs",
+        "passed": true,
+        "durationMs": 1486
+      },
+      {
+        "script": "scripts/test-panggil.mjs",
+        "passed": true,
+        "durationMs": 196
+      },
+      {
+        "script": "scripts/test-audit.mjs",
+        "passed": true,
+        "durationMs": 402
+      },
+      {
+        "script": "scripts/test-revision-foundation.mjs",
+        "passed": true,
+        "durationMs": 419
+      },
+      {
+        "script": "scripts/test-corrections.mjs",
+        "passed": true,
+        "durationMs": 474
+      },
+      {
+        "script": "scripts/test-lifecycle.mjs",
+        "passed": true,
+        "durationMs": 439
+      },
+      {
+        "script": "scripts/test-schedule-batches.mjs",
+        "passed": true,
+        "durationMs": 479
+      },
+      {
+        "script": "scripts/test-meeting-commands.mjs",
+        "passed": true,
+        "durationMs": 417
+      },
+      {
+        "script": "scripts/test-class-controls.mjs",
+        "passed": true,
+        "durationMs": 485
+      },
+      {
+        "script": "scripts/test-help.mjs",
+        "passed": true,
+        "durationMs": 206
+      },
+      {
+        "script": "scripts/test-setup-flow.mjs",
+        "passed": true,
+        "durationMs": 462
+      },
+      {
+        "script": "scripts/test-documents-v2.mjs",
+        "passed": true,
+        "durationMs": 21755
+      },
+      {
+        "script": "scripts/ui/audit.cjs",
+        "passed": true,
+        "durationMs": 54033
+      },
+      {
+        "script": "scripts/ui/panggil.cjs",
+        "passed": true,
+        "durationMs": 158130
+      },
+      {
+        "script": "scripts/ui/sidebar.cjs",
+        "passed": true,
+        "durationMs": 75878
+      },
+      {
+        "script": "scripts/ui/faults.cjs",
+        "passed": true,
+        "durationMs": 18399
+      },
+      {
+        "script": "scripts/ui/class-layout.cjs",
+        "passed": true,
+        "durationMs": 26343
+      },
+      {
+        "script": "scripts/ui/pdf.cjs",
+        "passed": true,
+        "durationMs": 18292
+      },
+      {
+        "script": "scripts/ui/offline.cjs",
+        "passed": true,
+        "durationMs": 37819
+      },
+      {
+        "script": "scripts/ui/corrections.cjs",
+        "passed": true,
+        "durationMs": 34936
+      },
+      {
+        "script": "scripts/ui/lifecycle.cjs",
+        "passed": true,
+        "durationMs": 49235
+      },
+      {
+        "script": "scripts/ui/class-controls.cjs",
+        "passed": true,
+        "durationMs": 59322
+      },
+      {
+        "script": "scripts/ui/help.cjs",
+        "passed": true,
+        "durationMs": 117724
+      }
+    ],
+    "resolvedFailure": "An obsolete test selector for aria-current caused class-flow to stop the combined run. The corrected selector and full class-flow rerun passed."
+  },
+  "followups": {
+    "setupFlow": {
+      "passed": true,
+      "checks": [
+        {
+          "engine": "chromium",
+          "test": "roster pagination bounds rows, resets with search, and supports page size",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "drag/drop validates files, preserves XLS leading zeros, imports CSV and keeps next above a paginated roster",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "new schedule starts with adding a meeting, has a custom calendar, and leads to Template rather than activation",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "manual dates save before continuing; template preview refreshes without writes, save shows progress and advances once to review",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "five-step setup ends with review and explicit activation, then opens attendance",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "calendar keyboard moves through dates and Escape cancels without editing the date",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "external class revision refresh and explicit reload keep preview visible without template writes",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "phone/desktop, light/dark, 200% text, automated accessibility and no native dialogs/runtime errors",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "roster pagination bounds rows, resets with search, and supports page size",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "drag/drop validates files, preserves XLS leading zeros, imports CSV and keeps next above a paginated roster",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "new schedule starts with adding a meeting, has a custom calendar, and leads to Template rather than activation",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "manual dates save before continuing; template preview refreshes without writes, save shows progress and advances once to review",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "five-step setup ends with review and explicit activation, then opens attendance",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "calendar keyboard moves through dates and Escape cancels without editing the date",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "external class revision refresh and explicit reload keep preview visible without template writes",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "phone/desktop, light/dark, 200% text, automated accessibility and no native dialogs/runtime errors",
+          "passed": true
+        }
+      ]
+    },
+    "classFlow": {
+      "passed": true,
+      "count": 12
+    },
+    "help": {
+      "passed": true,
+      "count": 40
+    },
+    "classControls": {
+      "passed": true,
+      "count": 28,
+      "drag": [
+        "backup JSON",
+        "schedule draft JSON"
+      ]
+    },
+    "corrections": {
+      "passed": true,
+      "count": 22,
+      "drag": [
+        "correction draft JSON"
+      ]
+    },
+    "pdfViewer": {
+      "passed": true,
+      "browsers": [
+        "Chromium",
+        "WebKit"
+      ],
+      "coverage": "Real PDF pixels, multiple pages, zoom and accessible text"
+    },
+    "previewData": {
+      "passed": true,
+      "coverage": "No writes with supplied config or without any meetings; invalid config and foreign class access rejected; leading-zero XLS NIM preserved"
+    }
+  },
+  "productionBuild": {
+    "passed": true,
+    "env": "VITE_CONVEX_URL=https://example.convex.cloud"
+  },
+  "npmAudit": {
+    "passed": true,
+    "vulnerabilities": 0
+  },
+  "screenshots": {
+    "base": "0334d0009814809b18bc1c6223ba049c769a1319",
+    "viewports": [
+      "1280x900",
+      "390x844"
+    ],
+    "fixture": "Synthetic Admin Demo, 93 QA participants, same course/class identities"
+  },
+  "humanScreenReaderTested": false
+}

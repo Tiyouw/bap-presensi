@@ -60,3 +60,8 @@ Uji mencakup Chromium/WebKit, aksesibilitas otomatis, 320/390/1280 px, tema
 terang/gelap, teks 200%, pemulihan setelah reload, akses kelas dan preview tanpa
 penyimpanan. Generator PDF pada fixture memakai renderer produksi dengan data
 sintetis. Uji manusia dengan NVDA/VoiceOver dan calon pengguna belum dilakukan.
+
+Hasil: 29 suite pada run regresi awal lulus. Setelah koreksi selector uji
+navigasi dan perapian akhir, ulangan alur kelas (12), persiapan lengkap (16),
+bantuan (40), kontrol kelas (28), koreksi (22), serta PDF viewer lulus. Build
+produksi dan audit dependensi juga lulus (0 kerentanan).
