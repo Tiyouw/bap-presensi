@@ -49,6 +49,7 @@ const initial = {
 let server = read("ui-qa.server", initial);
 let connected = read("ui-qa.connected", true);
 let generationFails = false;
+let loseAdditionResponse = false;
 let authExpired = false;
 const calls = [];
 const heldQueries = new Set();
@@ -74,6 +75,8 @@ const restoredControls=restoreControlEngine();const controlsReady=restoredContro
 
 window.__qa = {
   calls,
+  loseAdditionResponseOnce(){loseAdditionResponse=true},
+  async emptySchedule(){await controlsReady;for(const p of await controlEngine.ctx.db.query("pertemuan").collect())if(p.kelasId==="k1")await controlEngine.ctx.db.delete(p._id);await controlEngine.ctx.db.patch("k1",{draft:true});await controlEngine.refresh();syncControls();publish();},
   controlsReady(){return Boolean(controlEngine)},
   async controlOtherGrant(){await controlsReady;const g=await controlEngine.ctx.db.query('classCapability').withIndex('by_class_user',q=>q.eq('kelasId','k1').eq('penggunaId','qa-operator')).unique();await controlEngine.ctx.db.patch(g._id,{capabilities:['schedule'],revision:g.revision+1});await controlEngine.refresh();publish();},
   async enableControls(options={}){controlEngine=await createControlEngine({kelas,participants,server,...options});syncControls();publish();},
@@ -277,7 +280,7 @@ export function useMutation(reference) {
       await wait();
       await controlsReady;
       if (!connected) throw new Error("offline");
-      if(/^(revisions|scheduleBatches|meetingCommands|kelola|classAccess|classBackup):/.test(name)&&controlEngine){const result=await controlEngine.mutate(name,args);syncControls();publish();return result;}
+      if(/^(revisions|scheduleBatches|meetingCommands|kelola|classAccess|classBackup):/.test(name)&&controlEngine){const result=await controlEngine.mutate(name,args);syncControls();publish();if(name==="meetingCommands:addMeetings"&&loseAdditionResponse){loseAdditionResponse=false;throw Error("Simulated lost response")}return result;}
       if (name === "seed:jalan") return { dilewati: true };
       const meeting = server.pertemuan.find((p) => p.id === args.pertemuanId);
       if (name === "sesi:simpanDanKunci") {

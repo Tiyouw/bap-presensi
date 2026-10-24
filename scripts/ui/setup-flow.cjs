@@ -1,3 +1,4 @@
+const openMeeting=require("./meeting-card-ui.cjs");
 const { chromium, webkit } = require("playwright"),
   { spawn } = require("child_process"),
   fs = require("fs"),
@@ -211,19 +212,22 @@ async function drop(p, label, name, type, bytes) {
         .isVisible(),
       false,
     );
-    await p.getByLabel('Tanggal pertemuan baru',{exact:true}).fill('2026-02-30');
-    await p.getByLabel('Ruang pertemuan baru',{exact:true}).focus();
+    await p.locator('.schedule-empty').click();
+    assert.equal(await p.locator('.schedule-card-toggle[aria-expanded="true"]').count(),0);
+    await openMeeting(p,1);
+    await p.getByLabel('Tanggal pertemuan baru 1',{exact:true}).fill('2026-02-30');
+    await p.getByLabel('Ruang pertemuan baru 1',{exact:true}).focus();
     await p.getByRole('alert').filter({hasText:'Isi tanggal yang valid'}).waitFor();
-    assert.equal(await p.getByRole('button',{name:'Simpan pertemuan baru',exact:true}).isDisabled(),true);
+    assert.equal(await p.getByRole('button',{name:'Simpan jadwal',exact:true}).getAttribute('aria-disabled'),'true');
     assert.equal(await p.evaluate(()=>window.__qa.calls.filter(c=>c.name==='meetingCommands:addMeeting').length),0);
     await p
       .getByRole("button", {
-        name: "Pilih tanggal: Tanggal pertemuan baru",
+        name: "Pilih tanggal: Tanggal pertemuan baru 1",
         exact: true,
       })
       .click();
     const calendar = p.getByRole("dialog", {
-      name: "Pilih tanggal · Tanggal pertemuan baru",
+      name: "Pilih tanggal · Tanggal pertemuan baru 1",
       exact: true,
     });
     await calendar
@@ -233,16 +237,18 @@ async function drop(p, label, name, type, bytes) {
     await calendar.locator('[data-calendar-date="2026-10-26"]').click();
     assert.equal(
       await p
-        .getByLabel("Tanggal pertemuan baru", { exact: true })
+        .getByLabel("Tanggal pertemuan baru 1", { exact: true })
         .inputValue(),
       "2026-10-26",
     );
     assert.equal(await p.locator("input[type=date]").count(), 0);
     await p.evaluate(() => window.__qa.setRequestDelay(700));
     await p
-      .getByRole("button", { name: "Simpan pertemuan baru", exact: true })
+      .getByRole("button", { name: "Simpan jadwal", exact: true })
       .click();
-    await p.getByText("Menyimpan pertemuan…", { exact: true }).waitFor();
+    await p.getByRole("button",{name:"Menyimpan jadwal…",exact:true}).waitFor();
+    await p.waitForFunction(()=>document.querySelectorAll(".schedule-card-shell.is-new").length===0);
+    await openMeeting(p,1);
     await p.getByLabel("Tanggal pertemuan 1", { exact: true }).waitFor();
     await p
       .getByRole("button", { name: "Lanjut ke Template BAP →", exact: true })
@@ -296,7 +302,7 @@ async function drop(p, label, name, type, bytes) {
       .getByRole("button", { name: "Simpan template & lanjut →", exact: true })
       .waitFor({ state: "visible" });
     await p.waitForFunction(
-      () => !document.querySelector('[form="setup-template"]').disabled,
+      () => document.querySelector('[form="setup-template"]').getAttribute('aria-disabled')==='false',
     );
     assert.equal(
       await p.evaluate(
@@ -360,6 +366,7 @@ async function drop(p, label, name, type, bytes) {
       const { navigate } = await import("/src/lib/navigation.js");
       await navigate(`/kelas/${classId}?tab=jadwal`);
     }, classId);
+    await openMeeting(p,1);
     await p
       .getByRole("button", {
         name: "Pilih tanggal: Tanggal pertemuan 1",

@@ -1,0 +1,1 @@
+module.exports=async function openMeeting(p,n){const card=p.locator('.schedule-card-shell').filter({has:p.getByText('Pertemuan '+n,{exact:true})}),toggle=card.locator('.schedule-card-toggle');await toggle.waitFor();if(await toggle.getAttribute('aria-expanded')!=='true')await toggle.click();};

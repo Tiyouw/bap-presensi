@@ -155,9 +155,9 @@ export const HELP_TOPICS = {
   ),
   schedule: topic(
     "Jadwal dan tanggal pertemuan",
-    "Tambahkan pertemuan atau edit tanggal langsung pada barisnya, lalu periksa dan simpan.",
+    "Tambahkan kartu pertemuan, atur isinya, lalu simpan jadwal sekaligus.",
     [
-      "Periksa nomor, tanggal, ruang dan jenis. Teori, UTS, UAS dan Libur tidak memakai BAP praktikum aktif.",
+      "Kartu baru tetap tertutup. Kartu pertama memakai hari ini; kartu selanjutnya mengikuti tanggal kartu sebelumnya +7 hari. Menambah lebih dari 16 pertemuan memerlukan konfirmasi. Periksa nomor, tanggal, ruang dan jenis sebelum Simpan jadwal. Teori, UTS, UAS dan Libur tidak memakai BAP praktikum aktif.",
       "Sesi kosong tanpa riwayat dapat ditambah/dihapus sesuai izin. Sesi yang memiliki riwayat menggunakan pembatalan/pemulihan agar arsip tidak hilang.",
     ],
     ["jadwal", "kelas"],

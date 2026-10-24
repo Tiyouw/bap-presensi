@@ -33,3 +33,4 @@ jobs:
       - run: npm run test:help-ui
       - run: npm run test:class-flow
       - run: npm run test:setup-flow
+      - run: npm run test:schedule-cards

@@ -1,0 +1,727 @@
+{
+  "base": "58ab0072d85b9777488e61c6fb0a2367e05b63b2",
+  "checkedAt": "2026-10-24T10:34:36.217Z",
+  "sourceFingerprint": "d12823f33dfc5389a8e269a24a5a40897e5f7355b129ed332bd38255de967c39",
+  "strategy": "Full npm test plus affected browser suites; unchanged unrelated browser suites were not rerun.",
+  "unit": {
+    "passed": true,
+    "scripts": 18
+  },
+  "browserChecks": 132,
+  "suites": {
+    "scheduleCards": {
+      "passed": true,
+      "count": 20,
+      "checks": [
+        {
+          "engine": "chromium",
+          "test": "unavailable next explains prerequisites and focuses the large empty state",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "add creates closed drafts without server writes; edited previous date advances seven days over year boundary",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "sixteen is a soft limit: seventeenth and later additions require explicit application confirmation",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "corner trash stays outside the toggle and deletes a closed draft without expanding it",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "invalid fields explain and focus the fix; sixteen drafts save together in one atomic command with progress",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "lost response and reload retain the exact request; retry confirms existing results without duplicate meetings",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "saved dates continue through existing revision preview and preserve historical safeguards",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "back-to-top returns to schedule save actions after repeated additions",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "unavailable add explains permissions without bypassing class access",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "phone/desktop, light/dark, enlarged text, automated accessibility and no unexpected native dialogs or runtime errors",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "unavailable next explains prerequisites and focuses the large empty state",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "add creates closed drafts without server writes; edited previous date advances seven days over year boundary",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "sixteen is a soft limit: seventeenth and later additions require explicit application confirmation",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "corner trash stays outside the toggle and deletes a closed draft without expanding it",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "invalid fields explain and focus the fix; sixteen drafts save together in one atomic command with progress",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "lost response and reload retain the exact request; retry confirms existing results without duplicate meetings",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "saved dates continue through existing revision preview and preserve historical safeguards",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "back-to-top returns to schedule save actions after repeated additions",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "unavailable add explains permissions without bypassing class access",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "phone/desktop, light/dark, enlarged text, automated accessibility and no unexpected native dialogs or runtime errors",
+          "passed": true
+        }
+      ]
+    },
+    "setupFlow": {
+      "passed": true,
+      "count": 16,
+      "checks": [
+        {
+          "engine": "chromium",
+          "test": "roster pagination bounds rows, resets with search, and supports page size",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "drag/drop validates files, preserves XLS leading zeros, imports CSV and keeps next above a paginated roster",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "new schedule starts with adding a meeting, has a custom calendar, and leads to Template rather than activation",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "manual dates save before continuing; template preview refreshes without writes, save shows progress and advances once to review",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "five-step setup ends with review and explicit activation, then opens attendance",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "calendar keyboard moves through dates and Escape cancels without editing the date",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "external class revision refresh and explicit reload keep preview visible without template writes",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "phone/desktop, light/dark, 200% text, automated accessibility and no native dialogs/runtime errors",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "roster pagination bounds rows, resets with search, and supports page size",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "drag/drop validates files, preserves XLS leading zeros, imports CSV and keeps next above a paginated roster",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "new schedule starts with adding a meeting, has a custom calendar, and leads to Template rather than activation",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "manual dates save before continuing; template preview refreshes without writes, save shows progress and advances once to review",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "five-step setup ends with review and explicit activation, then opens attendance",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "calendar keyboard moves through dates and Escape cancels without editing the date",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "external class revision refresh and explicit reload keep preview visible without template writes",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "phone/desktop, light/dark, 200% text, automated accessibility and no native dialogs/runtime errors",
+          "passed": true
+        }
+      ]
+    },
+    "classControls": {
+      "passed": true,
+      "count": 28,
+      "checks": [
+        {
+          "engine": "chromium",
+          "test": "delegation panel saves explicit per-class Operator capabilities through server handler",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "concurrent grant update preserves local choices and requires explicit reload before save",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "paged JSON backup includes synthetic current/history data and no credentials/file auth",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "selective class identity restore does not revise existing sessions",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "meeting backup restore creates a new version with earlier versions retained",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "cross-class namespace cannot restore until explicitly chosen and previewed",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "malformed backup is rejected without breaking the page or discarding current file",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "roster UI reactivates a selected student and imports selected identity updates only",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "explicit archive/restore uses class revision and all three Unicode CSV files download",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "explicit bulk draft discard survives reload without creating or changing server jobs",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "schedule draft file restores inputs and detects an already-created job without duplicate execution",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "history/lifecycle-only Operator can navigate readonly schedule without receiving schedule write rights",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "permission revocation rejects open editor preview without losing its draft",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "keyboard focus, true 200% text, dark mode and 320/390/1280px without page overflow",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "delegation panel saves explicit per-class Operator capabilities through server handler",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "concurrent grant update preserves local choices and requires explicit reload before save",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "paged JSON backup includes synthetic current/history data and no credentials/file auth",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "selective class identity restore does not revise existing sessions",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "meeting backup restore creates a new version with earlier versions retained",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "cross-class namespace cannot restore until explicitly chosen and previewed",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "malformed backup is rejected without breaking the page or discarding current file",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "roster UI reactivates a selected student and imports selected identity updates only",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "explicit archive/restore uses class revision and all three Unicode CSV files download",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "explicit bulk draft discard survives reload without creating or changing server jobs",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "schedule draft file restores inputs and detects an already-created job without duplicate execution",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "history/lifecycle-only Operator can navigate readonly schedule without receiving schedule write rights",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "permission revocation rejects open editor preview without losing its draft",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "keyboard focus, true 200% text, dark mode and 320/390/1280px without page overflow",
+          "passed": true
+        }
+      ]
+    },
+    "lifecycle": {
+      "passed": true,
+      "count": 16,
+      "checks": [
+        {
+          "engine": "chromium",
+          "test": "manual dates automatically apply and interrupted saving exposes resumable work",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "pause, reload and resume preserve exactly-once item revisions",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "batch undo publishes compensating revisions with the original job retained",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "historical packet explicitly pins revisionId even after cancellation",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "cancel/restore is explicit and remains versioned",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "type conversion requires a deliberate attendance restoration choice",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "new/empty-session add and deletion remain separate from historical cancellation",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "responsive schedule, dark theme, enlarged text and no runtime errors",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "manual dates automatically apply and interrupted saving exposes resumable work",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "pause, reload and resume preserve exactly-once item revisions",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "batch undo publishes compensating revisions with the original job retained",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "historical packet explicitly pins revisionId even after cancellation",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "cancel/restore is explicit and remains versioned",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "type conversion requires a deliberate attendance restoration choice",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "new/empty-session add and deletion remain separate from historical cancellation",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "responsive schedule, dark theme, enlarged text and no runtime errors",
+          "passed": true
+        }
+      ]
+    },
+    "help": {
+      "passed": true,
+      "count": 40,
+      "checks": [
+        {
+          "engine": "chromium",
+          "name": "one compact header help icon and clear session action fit desktop and phone",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "hover/focus tooltip, pointer into text, Escape and detail keep academic state intact",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "Enter/Space and touch/outside dismissal operate only the help control",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "mobile sidebar help remains visible outside the closed drawer and restores scrolling/focus",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "linked guide and multiword search use matching content without server requests",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "correction tour is read-only, traps keyboard and completes with separately recorded progress",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "missing required elements cannot claim completion; pending waits cancel when help is opened",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "tour storage quota leaves content usable and reports unsaved progress",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "tour reload/replay preserves draft; disappearing targets and role changes clean every overlay",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "detail inside import dialog keeps parent modal, selected file preview and focus intact",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "class tour only points to existing permitted tabs and never navigates",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "attendance tour preserves statuses, filters and server state",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "nested Mode Panggil help blocks status shortcuts and Escape closes only top help",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "help pauses an active group-exit countdown and never restarts it implicitly",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "all management/help areas, permissions and backup explanations are reachable",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "online/offline help and access-sensitive search explain actual availability",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "disabled reasons reflect selection/permissions and never expose a forbidden correction link",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "help panels and tours fit mobile/desktop, dark/light, true 200% text and accessible semantics",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "login/profile/accounts/documents and template guides are reachable with accurate legacy guidance",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "name": "no runtime errors in help, tours and all exercised parent flows",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "name": "one compact header help icon and clear session action fit desktop and phone",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "name": "hover/focus tooltip, pointer into text, Escape and detail keep academic state intact",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "name": "Enter/Space and touch/outside dismissal operate only the help control",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "name": "mobile sidebar help remains visible outside the closed drawer and restores scrolling/focus",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "name": "linked guide and multiword search use matching content without server requests",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "name": "correction tour is read-only, traps keyboard and completes with separately recorded progress",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "name": "missing required elements cannot claim completion; pending waits cancel when help is opened",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "name": "tour storage quota leaves content usable and reports unsaved progress",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "name": "tour reload/replay preserves draft; disappearing targets and role changes clean every overlay",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "name": "detail inside import dialog keeps parent modal, selected file preview and focus intact",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "name": "class tour only points to existing permitted tabs and never navigates",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "name": "attendance tour preserves statuses, filters and server state",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "name": "nested Mode Panggil help blocks status shortcuts and Escape closes only top help",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "name": "help pauses an active group-exit countdown and never restarts it implicitly",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "name": "all management/help areas, permissions and backup explanations are reachable",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "name": "online/offline help and access-sensitive search explain actual availability",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "name": "disabled reasons reflect selection/permissions and never expose a forbidden correction link",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "name": "help panels and tours fit mobile/desktop, dark/light, true 200% text and accessible semantics",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "name": "login/profile/accounts/documents and template guides are reachable with accurate legacy guidance",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "name": "no runtime errors in help, tours and all exercised parent flows",
+          "passed": true
+        }
+      ]
+    },
+    "classFlow": {
+      "passed": true,
+      "count": 12,
+      "checks": [
+        {
+          "engine": "chromium",
+          "test": "single draft creation redirects automatically despite catalog lag and a busy navigation attempt",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "nested discard decision traps focus, Escape preserves student input and confirm closes only the editor",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "cancelled navigation and browser Back preserve changes; confirmed Back and Forward synchronize route and URL",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "compact dialog fits phone/desktop, light/dark and 200% text, with automated accessibility checks",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "failed save keeps the class form and allows retry without redirect",
+          "passed": true
+        },
+        {
+          "engine": "chromium",
+          "test": "no native alert/confirm and no runtime errors",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "single draft creation redirects automatically despite catalog lag and a busy navigation attempt",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "nested discard decision traps focus, Escape preserves student input and confirm closes only the editor",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "cancelled navigation and browser Back preserve changes; confirmed Back and Forward synchronize route and URL",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "compact dialog fits phone/desktop, light/dark and 200% text, with automated accessibility checks",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "failed save keeps the class form and allows retry without redirect",
+          "passed": true
+        },
+        {
+          "engine": "webkit",
+          "test": "no native alert/confirm and no runtime errors",
+          "passed": true
+        }
+      ]
+    }
+  },
+  "build": {
+    "passed": true,
+    "warning": "Existing bundle chunk-size warning"
+  },
+  "npmAudit": {
+    "vulnerabilities": 0
+  },
+  "screenshots": {
+    "base": "58ab0072d85b9777488e61c6fb0a2367e05b63b2",
+    "viewports": [
+      "1280x900",
+      "390x844"
+    ],
+    "fullPage": true,
+    "fixture": "Same synthetic course, class and empty/three-session schedule"
+  },
+  "humanScreenReaderTested": false,
+  "productionWritesTested": false
+}

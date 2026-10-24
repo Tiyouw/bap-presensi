@@ -1,3 +1,4 @@
+const openMeeting=require("./meeting-card-ui.cjs");
 const { chromium, webkit } = require("playwright");
 const { spawn } = require("node:child_process");
 const fs = require("node:fs"),
@@ -161,6 +162,7 @@ const withinViewport = async (selector) => {
       assert(page.url().includes("correct=p4"));
       await page.goto(base + "/kelas/k1?tab=jadwal");
     });
+    await openMeeting(page,3);
     await page
       .getByRole("link", { name: "Edit rincian 3", exact: true })
       .click();
