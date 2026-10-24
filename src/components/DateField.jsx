@@ -1,15 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import Modal from "./Modal.jsx";
 import "./DateField.css";
-
-const iso = (d) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-export const parseDate = (value) => {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return null;
-  const [y, m, d] = value.split("-").map(Number),
-    date = new Date(y, m - 1, d);
-  return y >= 1900 && y <= 9999 && iso(date) === value ? date : null;
-};
+import { localISO as iso, parseDate } from "../lib/calendarDate.js";
+export { parseDate } from "../lib/calendarDate.js";
 const months = Array.from({ length: 12 }, (_, m) =>
   new Intl.DateTimeFormat("id-ID", { month: "long" }).format(
     new Date(2026, m, 1),

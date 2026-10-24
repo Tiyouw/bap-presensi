@@ -1,8 +1,10 @@
+import ScheduleCards from "../components/ScheduleCards.jsx";
+import { additionError } from "../lib/meetingCards.js";
 import ClassTabHeading from "../components/ClassTabHeading.jsx";
 import { parseDate } from "../components/DateField.jsx";
 import FileDrop from "../components/FileDrop.jsx";
 import { confirmAction } from "../lib/appDialog.js";
-import { HelpGroup, DisabledReason } from "../components/Help.jsx";
+import { DisabledReason } from "../components/Help.jsx";
 import {
   removeCompletedDraft,
   discardStoredDraft,
@@ -20,22 +22,21 @@ import {
   usePaginatedQuery,
 } from "convex/react";
 import { api } from "../../convex/_generated/api.js";
-import { TYPES } from "../../bap-shared/management.js";
-import { meetingHadAttendance } from "../../bap-shared/control.js";
 import { Field, useTask, Feedback } from "../components/Form.jsx";
 import { Notice } from "../components/Layout.jsx";
 import { useScopedStore } from "../lib/ScopedStorage.jsx";
 import { useDraftLock } from "../lib/useDraftLock.js";
 import { useEditorGuard } from "../lib/useEditorGuard.js";
-import { navigate, linkClick } from "../lib/navigation.js";
-import { hariIni, pesanGalat } from "../lib/presensi.js";
-const historic = meetingHadAttendance;
+import { navigate } from "../lib/navigation.js";
+import { pesanGalat } from "../lib/presensi.js";
 const fresh = (data) => ({
   version: 1,
   base: data.kelas.revision,
   meetings: Object.fromEntries(
     data.pertemuan.filter((p) => !p.cancelled).map((p) => [p.id, p.revision]),
   ),
+  additions: [],
+  addRequest: null,
   selected: [],
   patches: {},
   reason: "",
@@ -43,6 +44,8 @@ const fresh = (data) => ({
   operationKey: crypto.randomUUID(),
 });
 const tracked = (d) => ({
+  additions: d.additions || [],
+  addRequest: d.addRequest || null,
   selected: d.selected,
   patches: d.patches,
   reason: d.reason,
@@ -81,6 +84,7 @@ export default function ScheduleManager({
     client = useConvex(),
     task = useTask(),
     commit = useMutation(api.scheduleBatches.commitScheduleBatch),
+    addMany = useMutation(api.meetingCommands.addMeetings),
     remove = useMutation(api.meetingCommands.deleteEmptyMeeting),
     processing = useRef(false);
   useEffect(() => () => onStepState?.({busy:false,dirty:false}), [onStepState]);
@@ -89,7 +93,6 @@ export default function ScheduleManager({
   ref.current = draft;
   const [recoveredJob, setRecoveredJob] = useState(null),
     [completedKey, setCompletedKey] = useState(null);
-  const [adding, setAdding] = useState(false);
   const recovered = useQuery(
     api.scheduleBatches.jobDetail,
     recoveredJob ? { token, jobId: recoveredJob } : "skip",
@@ -115,7 +118,7 @@ export default function ScheduleManager({
   const guard = useEditorGuard(
     tracked(draft),
     true,
-    task.busy || adding,
+    task.busy,
     completedKey === draft.operationKey
       ? "Draf ini sudah memiliki pekerjaan tersimpan. Isi lokal tetap disimpan. Tinggalkan editor?"
       : "Perubahan jadwal belum diterapkan. Draf lokal tetap disimpan jika penyimpanan tersedia. Tinggalkan editor?",
@@ -125,6 +128,7 @@ export default function ScheduleManager({
   }, []);
   useEffect(() => {
     if (
+      !(draft.additions?.length) && !draft.addRequest &&
       !draft.selected.length &&
       !Object.keys(draft.patches).length &&
       !draft.reason &&
@@ -192,7 +196,7 @@ export default function ScheduleManager({
     };
   }, [draft.operationKey, network.online]);
   const update = (fn) => {
-    if (!editor.owns() || processing.current) return;
+    if (!editor.owns() || processing.current || ref.current.addRequest) return;
     const next = fn(ref.current);
     ref.current = next;
     setDraft(next);
@@ -219,7 +223,7 @@ export default function ScheduleManager({
     canEdit =
       manage && editor.owned && data.controls.capabilities.includes("schedule"),
     stale = draft.base !== data.kelas.revision,
-    disabled = !canEdit || task.busy || adding;
+    disabled = !canEdit || task.busy || Boolean(draft.addRequest);
   const run = (fn, message) => {
     if (processing.current) return;
     processing.current = true;
@@ -241,10 +245,12 @@ export default function ScheduleManager({
   }, []);
   useEffect(() => {
     onStepState?.({
-      busy: task.busy || adding,
-      dirty: draft.selected.length > 0,
+      busy: task.busy,
+      dirty: draft.selected.length > 0 || Boolean(draft.additions?.length),
+      additions: draft.additions?.length || 0,
+      pending: Boolean(draft.addRequest),
     });
-  }, [task.busy, adding, draft.selected.length, onStepState]);
+  }, [task.busy, draft.selected.length, draft.additions?.length, draft.addRequest, onStepState]);
   useEffect(() => {
     if (finished && !task.busy && continueAfterSave)
       void navigate(`/kelas/${data.kelas.id}?tab=template`);
@@ -294,6 +300,11 @@ export default function ScheduleManager({
         id="setup-schedule"
         onSubmit={(e) => {
           e.preventDefault();
+          if (draft.additions?.length || draft.addRequest) {
+            document.getElementById("schedule-actions")?.scrollIntoView({block:"center"});
+            document.querySelector("[data-schedule-save]")?.focus({preventScroll:true});
+            return;
+          }
           if (!selected.length) {
             void navigate(`/kelas/${data.kelas.id}?tab=template`);
             return;
@@ -410,144 +421,51 @@ export default function ScheduleManager({
         </Notice>
       )}
 
-      <AddMeeting
-        token={token}
-        data={data}
-        enabled={canEdit && network.online && !task.busy}
-        onBusy={setAdding}
-      />
-      {!data.pertemuan.length && (
-        <p className="muted">
-          Belum ada pertemuan. Isi tanggal di atas dan simpan untuk menambahkan
-          pertemuan pertama.
-        </p>
-      )}
-      {data.pertemuan.length > 0 && (
-        <div className="mg-panel">
-          <div className="mg-section-heading">
-            <h3>Daftar pertemuan</h3>
-            <label className="mg-check">
-              <input
-                type="checkbox"
-                checked={showCancelled}
-                onChange={(e) => setShowCancelled(e.target.checked)}
-              />
-              <span>Sertakan sesi dibatalkan</span>
-            </label>
-          </div>
-          <div>
-            {data.pertemuan
-              .filter((p) => showCancelled || !p.cancelled)
-              .map((p) => (
-                <article className="control-schedule-row" key={p.id}>
-                  <div>
-                    <strong>Pertemuan {p.nomor}</strong>
-                    <p className="muted">
-                      {p.tipe === "REGULER" ? "Praktikum" : p.tipe} · {p.tempat}
-                      <br />
-                      {p.cancelled
-                        ? "Dibatalkan"
-                        : historic(p)
-                          ? `Riwayat revisi ${p.revision}`
-                          : "Belum ada presensi"}
-                    </p>
-                  </div>
-                  <Field
-                    label={`Tanggal pertemuan ${p.nomor}`}
-                    form="setup-schedule"
-                    type="date"
-                    value={draft.patches[p.id]?.tanggal ?? p.tanggal}
-                    required
-                    disabled={disabled || p.cancelled || historic(p)}
-                    onChange={(tanggal) => changeDate(p, tanggal)}
-                  />
-                  <div className="mg-inline-actions">
-                    {canCorrect && (
-                      <a
-                        className="button button--outline"
-                        href={`/kelas/${data.kelas.id}?tab=jadwal&correct=${p.id}`}
-                        onClick={(e) =>
-                          linkClick(
-                            e,
-                            `/kelas/${data.kelas.id}?tab=jadwal&correct=${p.id}`,
-                          )
-                        }
-                      >
-                        {p.cancelled
-                          ? "Pulihkan / lihat riwayat"
-                          : "Edit rincian " + p.nomor}
-                      </a>
-                    )}
-                    {p.revision === 0 &&
-                      p.status === "TERBUKA" &&
-                      !p.cancelled && (
-                        <button
-                          type="button"
-                          className="button button--quiet"
-                          disabled={disabled || !network.online}
-                          onClick={async () => {
-                            if (
-                              !(await confirmAction(
-                                `Hapus pertemuan kosong ${p.nomor}? Sesi dengan riwayat hanya dapat dibatalkan.`,
-                                {
-                                  title: "Hapus sesi kosong?",
-                                  confirmLabel: "Hapus sesi kosong",
-                                  danger: true,
-                                },
-                              ))
-                            )
-                              return;
-                            run(
-                              async () =>
-                                remove({
-                                  token,
-                                  kelasId: data.kelas.id,
-                                  pertemuanId: p.id,
-                                  expectedMeetingRevision: p.revision,
-                                  expectedClassRevision: data.kelas.revision,
-                                  operationKey: crypto.randomUUID(),
-                                }),
-                              "Pertemuan kosong dihapus.",
-                            );
-                          }}
-                        >
-                          Hapus sesi kosong {p.nomor}
-                        </button>
-                      )}
-                  </div>
-                </article>
-              ))}
-          </div>
-          {selected.length > 0 && (
-            <div className="schedule-save">
-              <p>{selected.length} tanggal belum disimpan.</p>
-              <Field
-                label="Catatan perubahan tanggal (opsional)"
-                maxLength="240"
-                value={draft.reason}
-                onChange={(reason) => update((d) => ({ ...d, reason }))}
-              />
-              <button
-                type="button"
-                className="button button--primary"
-                disabled={
-                  disabled ||
-                    invalidDates ||
-                  !network.online ||
-                  stale ||
-                  completedKey === draft.operationKey
-                }
-                onClick={() => {
-                  setContinueAfterSave(false);
-                  previewDates();
-                }}
-              >
-                Periksa perubahan tanggal
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+      <ScheduleCards data={data} draft={draft} update={update} canEdit={canEdit} busy={task.busy} online={network.online} stale={stale} showCancelled={showCancelled} setShowCancelled={setShowCancelled} changeDate={changeDate} canCorrect={canCorrect} invalidDates={invalidDates}
+        onPreviewDates={()=>{setContinueAfterSave(false);previewDates()}}
+        onDelete={async p=>{
+          if(!(await confirmAction(`Hapus pertemuan kosong ${p.nomor}? Sesi dengan riwayat hanya dapat dibatalkan.`,{title:"Hapus sesi kosong?",confirmLabel:"Hapus sesi kosong",danger:true})))return;
+          if(!editor.owns() || processing.current)return;
+          run(async()=>{
+            const base=latest.current.kelas.revision;
+            await remove({token,kelasId:data.kelas.id,pertemuanId:p.id,expectedMeetingRevision:p.revision,expectedClassRevision:base,operationKey:crypto.randomUUID()});
+            const d=ref.current,patches={...d.patches},meetings={...d.meetings};delete patches[p.id];delete meetings[p.id];
+            const next={...d,base:base+1,patches,meetings,selected:d.selected.filter(id=>id!==p.id)};
+            ref.current=next;setDraft(next);guard.markSaved(tracked({...next,additions:[],addRequest:null,selected:[],patches:{},reason:""}));
+            try{localStorage.setItem(key,JSON.stringify(next))}catch{setStorageError(true)}
+          },"Pertemuan kosong dihapus.");
+        }}
+        onSave={()=>{
+          if(!editor.owns() || !canEdit || !network.online || processing.current)return;
+          run(async()=>{
+            const d=ref.current;
+            let request=d.addRequest;
+            if(!request){
+              const error=additionError(latest.current.pertemuan,d.additions || []);if(error)throw Error(error.message);
+              if(!d.additions?.length)return;
+              request={expectedClassRevision:d.base,operationKey:crypto.randomUUID(),items:d.additions.map(p=>({nomor:Number(p.nomor),tanggal:p.tanggal,tempat:p.tempat.trim(),tipe:p.tipe}))};
+              const next={...d,addRequest:request};
+              // Persist the exact request before sending, so refresh/retry uses the same idempotency key.
+              try{localStorage.setItem(key,JSON.stringify(next))}catch{throw Error("Draf permintaan belum dapat disimpan di perangkat. Izinkan penyimpanan browser, lalu coba lagi; belum ada data dikirim.")}
+              ref.current=next;setDraft(next);
+            }
+            let result;
+            try{result=await addMany({token,kelasId:data.kelas.id,...request})}
+            catch(error){
+              // A server rejection is definitive. Unknown transport outcomes retain the immutable request for retry.
+              if(error.data){const next={...ref.current,addRequest:null};ref.current=next;setDraft(next);try{localStorage.setItem(key,JSON.stringify(next))}catch{setStorageError(true)}}
+              throw error;
+            }
+            const next={...ref.current,base:result.classRevision,additions:[],addRequest:null,meetings:{...ref.current.meetings,...Object.fromEntries(result.created.map(p=>[p.id,p.revision]))}};
+            ref.current=next;setDraft(next);
+            guard.markSaved(tracked({...next,selected:[],patches:{},reason:""}));
+            try{localStorage.setItem(key,JSON.stringify(next));setStorageError(false)}catch{setStorageError(true)}
+          },"Semua kartu baru tersimpan. Lanjutkan ke Template BAP setelah seluruh perubahan jadwal selesai.");
+        }} />
+      {selected.length>0 && <div className="schedule-save">
+        <p>{selected.length} tanggal belum disimpan. Periksa perubahan tanggal melalui tombol di atas setelah kartu baru disimpan.</p>
+        <Field label="Catatan perubahan tanggal (opsional)" maxLength="240" disabled={disabled} value={draft.reason} onChange={reason=>update(d=>({...d,reason}))}/>
+      </div>}
       {preview && (
         <section ref={reviewRegion} className="mg-panel" aria-label="Tinjau perubahan tanggal" style={{scrollMarginTop:80}}>
           <h3 tabIndex={-1}>{preview.result.count} sesi akan berubah</h3>
@@ -735,100 +653,6 @@ export default function ScheduleManager({
 }
 
 function BatchDiff({items}){return <div className="control-table"><table><thead><tr><th>Sesi</th><th>Sebelum</th><th>Sesudah</th></tr></thead><tbody>{items.map((i,n)=><tr key={i.pertemuanId||i.id||n}><td>{i.before.nomor}</td><td>{i.before.tanggal} · {i.before.tempat}</td><td>{i.after?.tanggal||i.patch.tanggal||i.before.tanggal} · {i.after?.tempat||i.patch.tempat||i.before.tempat}{i.skip?(i.unavailable?' · dilewati setelah review':' · sudah sesuai'):i.unavailable?' · tidak tersedia, pilih lewati':''}</td></tr>)}</tbody></table></div>}
-function AddMeeting({ token, data, enabled, onBusy }) {
-  const [form, setForm] = useState({
-      nomor: Math.max(0, ...data.pertemuan.map((p) => p.nomor)) + 1,
-      tanggal: "",
-      tempat: data.kelas.tempat,
-      tipe: "REGULER",
-    }),
-    task = useTask(),
-    add = useMutation(api.meetingCommands.addMeeting),
-    key = useRef(crypto.randomUUID()),
-    pending = useRef(null);
-  useEffect(() => {
-    onBusy?.(task.busy);
-  }, [task.busy, onBusy]);
-  const guard = useEditorGuard(form, true, task.busy),
-    set = (field, value) => {
-      pending.current = null;
-      key.current = crypto.randomUUID();
-      setForm((f) => ({ ...f, [field]: value }));
-    };
-  return (
-    <details
-      className="mg-panel"
-      open={data.pertemuan.length === 0 ? true : undefined}
-    >
-      <summary>Tambahkan satu pertemuan</summary>
-      <Feedback task={task} />
-      {task.busy && (
-        <div className="operation-progress" role="status">
-          <progress aria-label="Penyimpanan pertemuan" />
-          <span>Menyimpan pertemuan…</span>
-        </div>
-      )}
-      <fieldset disabled={!enabled || task.busy}>
-        <div className="mg-form-grid">
-          <Field
-            label="Nomor pertemuan baru"
-            type="number"
-            min="1"
-            max="1000"
-            value={form.nomor}
-            onChange={(v) => set("nomor", Number(v))}
-          />
-          <Field
-            label="Tanggal pertemuan baru"
-            type="date"
-            value={form.tanggal}
-            onChange={(v) => set("tanggal", v)}
-          />
-          <Field
-            label="Ruang pertemuan baru"
-            value={form.tempat}
-            onChange={(v) => set("tempat", v)}
-          />
-          <Field
-            label="Jenis pertemuan baru"
-            value={form.tipe}
-            options={TYPES.map((v) => ({
-              value: v,
-              label: v === "REGULER" ? "Praktikum" : v,
-            }))}
-            onChange={(v) => set("tipe", v)}
-          />
-        </div>
-        <button
-          className="button button--outline"
-          disabled={!parseDate(form.tanggal)}
-          onClick={() =>
-            task
-              .run(async () => {
-                pending.current ||= {
-                  token,
-                  kelasId: data.kelas.id,
-                  expectedClassRevision: data.kelas.revision,
-                  operationKey: key.current,
-                  data: form,
-                };
-                await add(pending.current);
-                pending.current = null;
-                guard.markSaved();
-                key.current = crypto.randomUUID();
-                const next = { ...form, nomor: form.nomor + 1, tanggal: "" };
-                setForm(next);
-                guard.markSaved(next);
-              }, "Pertemuan ditambahkan.")
-              .catch(() => {})
-          }
-        >
-          Simpan pertemuan baru
-        </button>
-      </fieldset>
-    </details>
-  );
-}
 function ScheduleJob({token,job,online,enabled}){
  const client=useConvex(),advance=useMutation(api.scheduleBatches.advanceScheduleJob),resume=useMutation(api.scheduleBatches.resumeScheduleJob),undo=useMutation(api.scheduleBatches.commitUndoJob),cancel=useMutation(api.scheduleBatches.cancelScheduleJob),task=useTask(),stop=useRef(false),running=useRef(false);
  const [review,setReview]=useState(null),[reason,setReason]=useState('Penyesuaian jadwal praktikum'),[expanded,setExpanded]=useState(false);

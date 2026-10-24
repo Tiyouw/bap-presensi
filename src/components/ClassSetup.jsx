@@ -1,4 +1,5 @@
 import { navigate } from "../lib/navigation.js";
+import ExplainButton from "./ExplainButton.jsx";
 export const SETUP_STEPS = [
   ["pengaturan", "Identitas"],
   ["mahasiswa", "Mahasiswa"],
@@ -61,18 +62,26 @@ export function SetupActions({
     busy ||
     !permitted ||
     (!online && index !== 1) ||
+    (index === 2 && (scheduleState.additions > 0 || scheduleState.pending)) ||
     (index === 2 && !checks[2]) ||
     (index === 3 && !templateState.ready) ||
     (index === 4 && !checks.every(Boolean));
   const labels = [
     "Simpan & lanjut ke Mahasiswa →",
     "Lanjut ke Jadwal →",
-    scheduleState.dirty
+    scheduleState.additions > 0 || scheduleState.pending
+      ? "Lanjut ke Template BAP →"
+      : scheduleState.dirty
       ? "Periksa tanggal & lanjut →"
       : "Lanjut ke Template BAP →",
     "Simpan template & lanjut →",
     "Aktifkan kelas",
   ];
+  const reason = busy ? "Tunggu proses penyimpanan selesai, lalu lanjutkan." : !permitted ? "Akunmu belum memiliki izin untuk langkah ini pada kelas tersebut. Hubungi Pengelola kelas." : !online && index!==1 ? "Hubungkan internet untuk menyimpan atau melanjutkan langkah ini." : index===2 && (scheduleState.additions>0 || scheduleState.pending) ? "Kartu baru masih berupa draf. Klik Simpan jadwal (atau Periksa & coba simpan lagi) terlebih dahulu agar semua pertemuan tersimpan." : index===2 ? "Tambahkan minimal satu pertemuan Praktikum dan simpan jadwal sebelum lanjut ke Template BAP." : index===3 ? "Tunggu preview template selesai dimuat. Jika ada kesalahan, perbaiki isian atau coba buat preview lagi." : "Lengkapi bagian persiapan yang belum siap sebelum mengaktifkan kelas.";
+  const resolve = !busy && permitted && online && index===2 ? () => {
+    const target=document.querySelector("[data-schedule-save], .schedule-empty, .schedule-add-card");
+    target?.scrollIntoView({block:"center"});target?.focus({preventScroll:true});
+  } : !busy && permitted && online && index===4 && !checks.every(Boolean) ? ()=>navigate(`/kelas/${id}?tab=${SETUP_STEPS[checks.findIndex(v=>!v)][0]}`) : undefined;
   return (
     <section className="mg-setup setup-flow" aria-label="Persiapan kelas">
       <div>
@@ -83,11 +92,14 @@ export function SetupActions({
         <p>{descriptions[index]}</p>
       </div>
       <div className="setup-next">
-        <button
+        <ExplainButton
           type={submit ? "submit" : "button"}
           form={submit}
           className="button button--primary"
-          disabled={disabled}
+          unavailable={disabled}
+          reason={reason}
+          onResolve={resolve}
+          resolveLabel={index===2 ? "Buka penyusunan jadwal" : "Lengkapi bagian ini"}
           aria-busy={Boolean(busy)}
           onClick={
             submit
@@ -99,9 +111,11 @@ export function SetupActions({
           }
         >
           {busy ? "Memproses…" : labels[index]}
-        </button>
+        </ExplainButton>
         {!permitted ? (
           <small>Langkah ini memerlukan izin Pengelola.</small>
+        ) : index === 2 && (scheduleState.additions>0 || scheduleState.pending) ? (
+          <small>Simpan kartu baru terlebih dahulu.</small>
         ) : index === 2 && !checks[2] ? (
           <small>Tambahkan minimal satu pertemuan praktikum.</small>
         ) : index === 3 && !templateState.ready ? (

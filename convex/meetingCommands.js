@@ -28,6 +28,26 @@ export const addMeeting=mutation({args:{...args,data:v.object({nomor:v.number(),
  await ctx.db.patch(kelas._id,{revision:kelas.revision+1});await syncMeeting(ctx,id);await syncClass(ctx,kelas._id);
  await audit(ctx,user,"PERTEMUAN_TAMBAH",`Pertemuan ${data.nomor} · ${data.tanggal}`,kelas._id,id);return{id,revision:0};
 })});
+// A draft is committed in one transaction: invalid rows cannot leave a partial schedule.
+export const addMeetings=mutation({args:{...args,items:v.array(v.object({nomor:v.number(),tanggal:v.string(),tempat:v.string(),tipe:v.string()}))},handler:async(ctx,a)=>classOperation(ctx,a,"ADD_MANY",a.items,async({kelas,user})=>{
+ if(!a.items.length||a.items.length>100)throw new ConvexError("BATAS_SESI_AKTIF");
+ const active=(await classRows(ctx,"pertemuan",kelas._id)).filter(p=>!p.cancelled);
+ if(active.length+a.items.length>100)throw new ConvexError("BATAS_SESI_AKTIF");
+ const numbers=new Set(active.map(p=>p.nomor));
+ const rows=a.items.map(item=>{
+  const row={...item,tempat:text(item.tempat,"Ruang",80)};validDate(row.tanggal);
+  if(!Number.isInteger(row.nomor)||row.nomor<1||row.nomor>1000||!TYPES.includes(row.tipe))throw new ConvexError("JADWAL_TIDAK_VALID");
+  if(numbers.has(row.nomor))throw new ConvexError("NOMOR_PERTEMUAN_DUPLIKAT");numbers.add(row.nomor);return row;
+ });
+ const created=[];
+ for(const row of rows){
+  const id=await ctx.db.insert("pertemuan",{...row,kelasId:kelas._id,status:"TERBUKA",revision:0,cancelled:false,hasAttendanceHistory:false});
+  await syncMeeting(ctx,id);created.push({id,revision:0});
+  await audit(ctx,user,"PERTEMUAN_TAMBAH",`Pertemuan ${row.nomor} · ${row.tanggal}`,kelas._id,id);
+ }
+ await ctx.db.patch(kelas._id,{revision:kelas.revision+1});await syncClass(ctx,kelas._id);
+ return{created,classRevision:kelas.revision+1};
+})});
 export const deleteEmptyMeeting=mutation({args:{...args,pertemuanId:v.id("pertemuan"),expectedMeetingRevision:v.number()},handler:async(ctx,a)=>classOperation(ctx,a,"DELETE",{id:a.pertemuanId,revision:a.expectedMeetingRevision},async({kelas,user})=>{
  const p=await ctx.db.get(a.pertemuanId);if(!p||p.kelasId!==kelas._id)throw new ConvexError("AKSES_DITOLAK");
  if(p.revision!==a.expectedMeetingRevision)throw new ConvexError("KONFLIK_REVISI");
