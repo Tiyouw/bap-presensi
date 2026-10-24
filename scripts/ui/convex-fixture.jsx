@@ -327,6 +327,12 @@ export function useAction(reference) {
         authExpired = false;
         return { token: "ui-test-token" };
       }
+      if (name === "bapNode:preview") {
+        if (!connected || generationFails) throw Error("Preview belum dapat dibuat. Periksa koneksi.");
+        const detail=controlEngine?.cache.get('kelola:detail:'+args.kelasId), course=detail?.kelas || kelas, meeting=(detail?.pertemuan||server.pertemuan).filter(p=>!p.cancelled&&p.tipe==='REGULER'&&p.status==='TERBUKA'&&!p.hasAttendanceHistory).sort((a,b)=>a.nomor-b.nomor)[0];
+        const response=await fetch('/__qa/template-preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({config:args.config||course.templateDraft,course,meeting})}),result=await response.json();
+        if(!response.ok)throw Error(result.error);return result;
+      }
       if (name === "bapNode:generate") {
         if (generationFails) {
           const error = new Error("GENERATE_GAGAL");

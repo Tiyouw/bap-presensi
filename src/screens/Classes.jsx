@@ -1,3 +1,9 @@
+import {
+  SETUP_STEPS,
+  SetupActions,
+  SetupReview,
+} from "../components/ClassSetup.jsx";
+import { showAppToast } from "../lib/appDialog.js";
 import ClassBackup from "../components/ClassBackup.jsx";
 import ClassPermissions from "../components/ClassPermissions.jsx";
 import PdfPreview from "../components/PdfPreview.jsx";
@@ -6,7 +12,13 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, usePaginatedQuery } from "convex/react";
 import { api } from "../../convex/_generated/api.js";
 import { navigate, linkClick } from "../lib/navigation.js";
-import { Field, TaskForm, useTask, Feedback, RevisionNotice } from "../components/Form.jsx";
+import {
+  Field,
+  TaskForm,
+  useTask,
+  Feedback,
+  RevisionNotice,
+} from "../components/Form.jsx";
 import { useEditorGuard } from "../lib/useEditorGuard.js";
 import { Notice } from "../components/Layout.jsx";
 import Modal from "../components/Modal.jsx";
@@ -220,18 +232,44 @@ export function ClassWorkspace({
     params = new URLSearchParams(path.split("?")[1]),
     tab = params.get("tab") || "pertemuan",
     manage = user.peran !== "OPERATOR",
-    can=cap=>data.controls?.enabled?data.controls.capabilities.includes(cap):manage,
-    scheduleView=data.controls?.enabled||manage,settingsView=["identity","lifecycle","export","delegate"].some(can),
+    can = (cap) =>
+      data.controls?.enabled
+        ? data.controls.capabilities.includes(cap)
+        : manage,
+    scheduleView = data.controls?.enabled || manage,
+    settingsView = ["identity", "lifecycle", "export", "delegate"].some(can),
     task = useTask(),
     activate = useMutation(api.kelola.activate),
     archive = useMutation(api.kelola.archive),
     [confirm, setConfirm] = useState(null);
+  const [identityBusy, setIdentityBusy] = useState(false),
+    [templateState, setTemplateState] = useState({ busy: false, ready: false }),
+    [scheduleState, setScheduleState] = useState({ busy: false, dirty: false }),
+    [activated, setActivated] = useState(false);
+  const tabNav = useRef(null);
+  useEffect(() => {
+    const nav = tabNav.current, active = nav?.querySelector('[aria-current="page"]');
+    if (active && nav.scrollWidth > nav.clientWidth) {
+      const container = nav.getBoundingClientRect(), item = active.getBoundingClientRect();
+      nav.scrollLeft += item.left - container.left - (nav.clientWidth - item.width) / 2;
+    }
+  }, [tab, c.id]);
+  useEffect(() => {
+    if (activated && !task.busy) {
+      void navigate(`/kelas/${c.id}?tab=pertemuan`).then((ok) => {
+        if (ok) {
+          setActivated(false);
+          showAppToast("Kelas aktif. Kamu dapat mulai mengisi presensi.");
+        }
+      });
+    }
+  }, [activated, task.busy]);
   const tabs = [
     ["pertemuan", "Pertemuan"],
     ["mahasiswa", "Mahasiswa"],
-    ...(scheduleView?[["jadwal","Jadwal"]]:[]),
-    ...(can("template")?[["template","Template BAP"]]:[]),
-    ...(settingsView?[["pengaturan","Pengaturan"]]:[]),
+    ...(scheduleView ? [["jadwal", "Jadwal"]] : []),
+    ...(can("template") ? [["template", "Template BAP"]] : []),
+    ...(settingsView ? [["pengaturan", "Pengaturan"]] : []),
     ["riwayat", "Riwayat"],
   ];
   const checks = [
@@ -257,8 +295,23 @@ export function ClassWorkspace({
             {c.arsip ? "Arsip" : c.draft ? "Draf kelas" : "Kelas aktif"}
           </span>
         </div>
-        <nav className="mg-class-tabs" aria-label="Bagian kelas" data-tour="class-tabs">
-          {tabs.map(([id, label]) => (
+        <nav
+          ref={tabNav}
+          className="mg-class-tabs"
+          aria-label="Bagian kelas"
+          data-tour="class-tabs"
+        >
+          {(c.draft
+            ? SETUP_STEPS.filter(
+                ([id]) =>
+                  id === "review" ||
+                  id === "mahasiswa" ||
+                  (id === "pengaturan" && settingsView) ||
+                  (id === "jadwal" && scheduleView) ||
+                  (id === "template" && can("template")),
+              )
+            : tabs
+          ).map(([id, label], index) => (
             <a
               href={`/kelas/${c.id}?tab=${id}`}
               key={id}
@@ -267,7 +320,9 @@ export function ClassWorkspace({
               className={tab === id ? "is-active" : ""}
               onClick={(e) => linkClick(e, `/kelas/${c.id}?tab=${id}`)}
             >
-              {label}
+              {c.draft
+                ? `${SETUP_STEPS.findIndex(([step]) => step === id) + 1} · ${label}`
+                : label}
             </a>
           ))}
         </nav>
@@ -287,28 +342,37 @@ export function ClassWorkspace({
             )}
           </Notice>
         )}
-        {c.draft && (
-          <section className="mg-setup">
-            <div>
-              <p className="eyebrow">Lanjutkan persiapan kelas</p>
-              <h2>{checks.filter(Boolean).length} dari 4 bagian siap</h2>
-              <ol className="mg-setup-steps" aria-label="Langkah persiapan kelas">
-                {[["pengaturan", "Identitas"], ["mahasiswa", "Mahasiswa"], ["jadwal", "Jadwal"], ["template", "Template"], ["aktifkan", "Periksa & aktifkan"]].map(([id, title], index) => <li key={id} aria-current={tab === id ? "step" : undefined} data-ready={index < 4 && checks[index]}>{index + 1} · {title}{index < 4 && checks[index] && <span className="sr-only">, siap</span>}</li>)}
-              </ol>
-            </div>
-            <button
-              className="button button--primary"
-              disabled={!can("identity") || !checks.every(Boolean)}
-              onClick={() => setConfirm("activate")}
-            >
-              Periksa & aktifkan
-            </button>
-            <DisabledReason>{!can("identity")?"Akunmu belum memiliki izin identitas untuk mengaktifkan kelas ini.":!checks.every(Boolean)?"Lengkapi dosen, mahasiswa aktif, jadwal praktikum dan template terbit sebelum aktivasi.":null}</DisabledReason>
-          </section>
+        {c.draft && !params.get("correct") && (
+          <SetupActions
+            data={data}
+            tab={tab}
+            checks={checks}
+            can={can}
+            online={network.online}
+            identityBusy={identityBusy}
+            templateState={templateState}
+            scheduleState={scheduleState}
+            activating={task.busy}
+            onActivate={() => setConfirm("activate")}
+          />
         )}
         <Feedback task={task} />
-        {params.get("correct") ? (
-          data.pertemuan.some(p=>p.id===params.get("correct")) ? <CorrectionEditor key={`${c.id}:${params.get("correct")}`} token={token} data={data} pertemuanId={params.get("correct")} network={network}/> : <Notice kind="warning">Pertemuan ini bukan bagian dari kelas yang dibuka.</Notice>
+        {(tab === "review" && c.draft) || activated ? (
+          <SetupReview data={data} checks={checks} />
+        ) : params.get("correct") ? (
+          data.pertemuan.some((p) => p.id === params.get("correct")) ? (
+            <CorrectionEditor
+              key={`${c.id}:${params.get("correct")}`}
+              token={token}
+              data={data}
+              pertemuanId={params.get("correct")}
+              network={network}
+            />
+          ) : (
+            <Notice kind="warning">
+              Pertemuan ini bukan bagian dari kelas yang dibuka.
+            </Notice>
+          )
         ) : tab === "pertemuan" ? (
           <Pertemuan
             data={{
@@ -329,30 +393,62 @@ export function ClassWorkspace({
             openImport={params.has("import")}
           />
         ) : tab === "jadwal" && scheduleView ? (
-          <Schedule key={c.id} token={token} data={data} manage={!c.arsip&&can("schedule")} network={network}/>
+          <Schedule
+            key={c.id}
+            token={token}
+            data={data}
+            manage={!c.arsip && can("schedule")}
+            network={network}
+            onStepState={setScheduleState}
+          />
         ) : tab === "template" && can("template") ? (
-          <TemplateEditor token={token} data={data} manage={!c.arsip&&can("template")} />
+          <TemplateEditor
+            token={token}
+            data={data}
+            manage={!c.arsip && can("template")}
+            onStepState={setTemplateState}
+          />
         ) : tab === "pengaturan" && settingsView ? (
           <>
             <ClassTabHeading
               title="Identitas kelas"
               description="Atur identitas kelas, dosen pengampu, asisten, dan ruang bawaan."
             />
-            <fieldset disabled={c.arsip||!can("identity")}>
+            <fieldset disabled={c.arsip || !can("identity")}>
               <ClassForm
                 key={c.id}
                 token={token}
                 catalog={catalog}
                 existing={c}
+                onBusy={setIdentityBusy}
+                onSaved={
+                  c.draft
+                    ? () => navigate(`/kelas/${c.id}?tab=mahasiswa`)
+                    : undefined
+                }
                 scopeCourse={data.controls?.enabled}
               />
-              {!data.controls?.enabled&&<CourseSettings token={token} data={data} />}
+              {!data.controls?.enabled && (
+                <CourseSettings token={token} data={data} />
+              )}
             </fieldset>
-            <DisabledReason>{c.arsip?"Pulihkan kelas arsip untuk mengubah identitas.":!can("identity")?"Akunmu belum memiliki izin identitas pada kelas ini. Hubungi Pengelola.":null}</DisabledReason>
-            {data.controls?.enabled&&can("export")&&<ClassBackup token={token} data={data}/>}
-            {data.controls?.enabled&&can("delegate")&&<ClassPermissions token={token} data={data}/>}
+            <DisabledReason>
+              {c.arsip
+                ? "Pulihkan kelas arsip untuk mengubah identitas."
+                : !can("identity")
+                  ? "Akunmu belum memiliki izin identitas pada kelas ini. Hubungi Pengelola."
+                  : null}
+            </DisabledReason>
+            {data.controls?.enabled && can("export") && (
+              <ClassBackup token={token} data={data} />
+            )}
+            {data.controls?.enabled && can("delegate") && (
+              <ClassPermissions token={token} data={data} />
+            )}
             <div className="mg-panel">
-              <HelpGroup topic="archive"><h3>Arsip kelas</h3></HelpGroup>
+              <HelpGroup topic="archive">
+                <h3>Arsip kelas</h3>
+              </HelpGroup>
               <p>
                 Arsip menjaga semua presensi dan dokumen. Kelas tetap dapat
                 dicari dengan opsi Sertakan arsip.
@@ -364,7 +460,11 @@ export function ClassWorkspace({
               >
                 {c.arsip ? "Pulihkan kelas" : "Arsipkan kelas"}
               </button>
-              <DisabledReason>{!can("lifecycle")?"Akunmu belum memiliki izin pembatalan/pemulihan pada kelas ini. Hubungi Pengelola.":null}</DisabledReason>
+              <DisabledReason>
+                {!can("lifecycle")
+                  ? "Akunmu belum memiliki izin pembatalan/pemulihan pada kelas ini. Hubungi Pengelola."
+                  : null}
+              </DisabledReason>
             </div>
           </>
         ) : tab === "riwayat" ? (
@@ -422,16 +522,19 @@ export function ClassWorkspace({
           <Feedback task={task} />
           <button
             className="button button--primary"
+            disabled={task.busy}
             onClick={() =>
               task
                 .run(async () => {
-                  if (confirm === "activate")
+                  if (confirm === "activate") {
                     await activate({ token, kelasId: c.id });
-                  else
+                    setActivated(true);
+                  } else
                     await archive({
                       token,
                       kelasId: c.id,
-                      arsip: confirm === "archive",expectedRevision:c.revision,
+                      arsip: confirm === "archive",
+                      expectedRevision: c.revision,
                     });
                   setConfirm(null);
                 })
@@ -455,7 +558,9 @@ function CourseSettings({ token, data }) {
     [kode, setKode] = useState(data.kelas.matkulKode),
     save = useMutation(api.kelola.saveCourse),
     task = useTask();
-  const [baseRevision, setBaseRevision] = useState(data.kelas.matkulRevision || 0);
+  const [baseRevision, setBaseRevision] = useState(
+    data.kelas.matkulRevision || 0,
+  );
   const guard = useEditorGuard({ nama, kode }, true, task.busy);
   return (
     <section className="mg-panel">
@@ -468,20 +573,32 @@ function CourseSettings({ token, data }) {
         task={task}
         onSubmit={() =>
           task.run(async () => {
-            const result = await save({ token, id: data.kelas.matkulId, nama, kode, expectedRevision: baseRevision });
+            const result = await save({
+              token,
+              id: data.kelas.matkulId,
+              nama,
+              kode,
+              expectedRevision: baseRevision,
+            });
             setBaseRevision(result.revision);
             guard.markSaved();
           })
         }
       >
-        <RevisionNotice base={baseRevision} current={data.kelas.matkulRevision || 0}
+        <RevisionNotice
+          base={baseRevision}
+          current={data.kelas.matkulRevision || 0}
           onReload={() => {
             setNama(data.kelas.matkulNama);
             setKode(data.kelas.matkulKode);
             setBaseRevision(data.kelas.matkulRevision || 0);
-            guard.markSaved({ nama: data.kelas.matkulNama, kode: data.kelas.matkulKode });
+            guard.markSaved({
+              nama: data.kelas.matkulNama,
+              kode: data.kelas.matkulKode,
+            });
             task.clear();
-          }} />
+          }}
+        />
         <div className="mg-form-grid">
           <Field
             label="Nama mata kuliah"
@@ -506,17 +623,32 @@ export function Documents({ token, catalog, onPrint, kelasId: initial }) {
   const [kelasId, setClass] = useState(initial || catalog.kelas[0]?.id || ""),
     [preview, setPreview] = useState(null),
     task = useTask();
-  const projected = Boolean(catalog.kelas.find(c => c.id === kelasId)?.readModelReady);
-  const legacy = useQuery(api.bap.history, kelasId && !projected ? { token, kelasId } : "skip");
-  const { results, status, loadMore } = usePaginatedQuery(api.bap.historyPage,
-    kelasId && projected ? { token, kelasId } : "skip", { initialNumItems: 30 });
-  const docs = projected ? status === "LoadingFirstPage" ? undefined : results : legacy;
+  const projected = Boolean(
+    catalog.kelas.find((c) => c.id === kelasId)?.readModelReady,
+  );
+  const legacy = useQuery(
+    api.bap.history,
+    kelasId && !projected ? { token, kelasId } : "skip",
+  );
+  const { results, status, loadMore } = usePaginatedQuery(
+    api.bap.historyPage,
+    kelasId && projected ? { token, kelasId } : "skip",
+    { initialNumItems: 30 },
+  );
+  const docs = projected
+    ? status === "LoadingFirstPage"
+      ? undefined
+      : results
+    : legacy;
   const nextPage = useRef(null);
   useEffect(() => {
     if (!projected || status !== "CanLoadMore" || !nextPage.current) return;
-    const observer = new IntersectionObserver(entries => {
-      if (entries.some(e => e.isIntersecting)) loadMore(30);
-    }, { rootMargin: "240px" });
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) loadMore(30);
+      },
+      { rootMargin: "240px" },
+    );
     observer.observe(nextPage.current);
     return () => observer.disconnect();
   }, [projected, status, loadMore, kelasId]);
@@ -531,7 +663,10 @@ export function Documents({ token, catalog, onPrint, kelasId: initial }) {
       <div className="mg-page-heading">
         <div>
           <p className="eyebrow">Dokumen & revisi tersimpan</p>
-          <h1>Arsip BAP.</h1><HelpGroup topic="documents"><span>Periksa versi dokumen sebelum mengunduh.</span></HelpGroup>
+          <h1>Arsip BAP.</h1>
+          <HelpGroup topic="documents">
+            <span>Periksa versi dokumen sebelum mengunduh.</span>
+          </HelpGroup>
           <p>Word untuk penyuntingan, PDF untuk pratinjau dan cetak.</p>
         </div>
         {kelasId && (
@@ -566,8 +701,8 @@ export function Documents({ token, catalog, onPrint, kelasId: initial }) {
             <div className="mg-list-row" key={d.id}>
               <span>
                 <strong>
-                  Pertemuan {d.nomor ?? "(nomor asal belum terverifikasi)"} · {d.format.toUpperCase()} · revisi{" "}
-                  {d.revision}
+                  Pertemuan {d.nomor ?? "(nomor asal belum terverifikasi)"} ·{" "}
+                  {d.format.toUpperCase()} · revisi {d.revision}
                 </strong>
                 <small>
                   {d.tanggal || "Tanggal asal belum terverifikasi"} · Template{" "}
@@ -615,7 +750,14 @@ export function Documents({ token, catalog, onPrint, kelasId: initial }) {
               </div>
             </div>
           ))}
-          {projected && <div ref={nextPage} aria-label="Memuat dokumen berikutnya" aria-busy={status === "LoadingMore"} style={{ minHeight: 1 }} />}
+          {projected && (
+            <div
+              ref={nextPage}
+              aria-label="Memuat dokumen berikutnya"
+              aria-busy={status === "LoadingMore"}
+              style={{ minHeight: 1 }}
+            />
+          )}
           {!docs.length && (
             <div className="empty-state">
               <h2>Belum ada dokumen</h2>

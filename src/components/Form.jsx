@@ -4,6 +4,7 @@ import { FIELD_HELP } from "../lib/helpContent.js";
 import { confirmAction } from "../lib/appDialog.js";
 import { Notice } from "./Layout.jsx";
 import { pesanGalat } from "../lib/presensi.js";
+import DateField from "./DateField.jsx";
 export function Field({
   label,
   value,
@@ -16,13 +17,22 @@ export function Field({
   required = false,
   ...props
 }) {
-  const generatedId=useId(),id=props.id||generatedId,helpId=`${id}-help`,description=[props["aria-describedby"],help?helpId:null].filter(Boolean).join(" ")||undefined;
+  const generatedId = useId(),
+    id = props.id || generatedId,
+    helpId = `${id}-help`,
+    description =
+      [props["aria-describedby"], help ? helpId : null]
+        .filter(Boolean)
+        .join(" ") || undefined;
   return (
     <div className="mg-field" data-tour={tourAnchor}>
-      <div className="help-field-label"><label htmlFor={id}>
-        {label}
-        {required && " *"}
-      </label><HelpButton topic={helpTopic||FIELD_HELP[label]}/></div>
+      <div className="help-field-label">
+        <label htmlFor={id}>
+          {label}
+          {required && " *"}
+        </label>
+        <HelpButton topic={helpTopic || FIELD_HELP[label]} />
+      </div>
       {options ? (
         <select
           aria-label={label}
@@ -43,6 +53,16 @@ export function Field({
             </option>
           ))}
         </select>
+      ) : type === "date" ? (
+        <DateField
+          label={label}
+          id={id}
+          value={value}
+          onChange={onChange}
+          required={required}
+          {...props}
+          aria-describedby={description}
+        />
       ) : (
         <input
           aria-label={label}
@@ -113,7 +133,14 @@ export function RevisionNotice({ base, current, onReload }) {
         className="button button--outline"
         onClick={async () => {
           if (
-            await confirmAction("Buang perubahan editor ini dan muat data terbaru?", { title: "Muat data terbaru?", confirmLabel: "Buang & muat terbaru", danger: true })
+            await confirmAction(
+              "Buang perubahan editor ini dan muat data terbaru?",
+              {
+                title: "Muat data terbaru?",
+                confirmLabel: "Buang & muat terbaru",
+                danger: true,
+              },
+            )
           )
             onReload();
         }}

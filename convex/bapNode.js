@@ -145,7 +145,7 @@ export const paketCetak = action({
   },
 });
 export const preview = action({
-  args: { token: v.string(), kelasId: v.id("kelas") },
+  args: { token: v.string(), kelasId: v.id("kelas"), config: v.optional(v.any()) },
   handler: async (ctx, a) => {
     const data = await ctx.runQuery(internal.bap.previewData, a),
       r = await render([documentInput(data)], "pdf", false);

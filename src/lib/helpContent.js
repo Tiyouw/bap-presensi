@@ -154,8 +154,8 @@ export const HELP_TOPICS = {
     ["presensi"],
   ),
   schedule: topic(
-    "Jadwal dan pilihan sesi",
-    "Pilih sesi yang akan diubah; sesi lain tetap memakai jadwalnya.",
+    "Jadwal dan tanggal pertemuan",
+    "Tambahkan pertemuan atau edit tanggal langsung pada barisnya, lalu periksa dan simpan.",
     [
       "Periksa nomor, tanggal, ruang dan jenis. Teori, UTS, UAS dan Libur tidak memakai BAP praktikum aktif.",
       "Sesi kosong tanpa riwayat dapat ditambah/dihapus sesuai izin. Sesi yang memiliki riwayat menggunakan pembatalan/pemulihan agar arsip tidak hilang.",
@@ -163,10 +163,10 @@ export const HELP_TOPICS = {
     ["jadwal", "kelas"],
   ),
   bulk: topic(
-    "Geser jadwal massal",
-    "Pilih sesi, geser ±hari atau isi tanggal, lalu periksa seluruh baris sebelum menyimpan.",
+    "Perubahan tanggal pertemuan",
+    "Isi tanggal pada sesi yang perlu disesuaikan, lalu periksa perbandingan sebelum menyimpan.",
     [
-      "Default pilihan menyertakan sesi mendatang tanpa riwayat. Aktifkan pilihan sesi bersejarah hanya bila memang akan dikoreksi.",
+      "Isi tanggal baru pada sesi tanpa riwayat. Untuk sesi bersejarah, buka Edit rincian lalu periksa selisih sebelum menyimpan.",
       "Perubahan kecil disimpan bersama; pekerjaan besar diproses bertahap. Hasil yang sudah selesai tetap ada bila pekerjaan dihentikan atau halaman ditutup. Lihat status tiap sesi, lalu lanjutkan/tinjau konflik; jangan menganggap semua berhasil dari satu pesan penerimaan.",
     ],
     ["jadwal"],
@@ -251,9 +251,9 @@ export const HELP_TOPICS = {
   ),
   template: topic(
     "Draf dan versi template BAP",
-    "Preview draf, lalu terbitkan versi untuk digunakan pada BAP berikutnya.",
+    "Preview muncul otomatis dari isi editor. Saat persiapan kelas, simpan template lalu lanjutkan ke tinjauan akhir.",
     [
-      "Draf template tidak otomatis mengganti versi terbit. Periksa identitas, logo, tanda tangan dan susunan dokumen pada preview sebelum menerbitkan.",
+      "Preview tidak menyimpan perubahan. Periksa identitas, logo, tanda tangan dan susunan dokumen, lalu simpan. Pada kelas aktif, Simpan draf tetap terpisah dari Terbitkan versi baru.",
       "Sesi bersejarah tetap memakai template asal. Pada fitur revisi, penerapan template lain/terbaru dipilih secara eksplisit; file BAP lama tidak ditulis ulang.",
     ],
     ["template"],

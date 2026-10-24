@@ -1,79 +1,833 @@
+import ClassTabHeading from "../components/ClassTabHeading.jsx";
+import { parseDate } from "../components/DateField.jsx";
+import FileDrop from "../components/FileDrop.jsx";
 import { confirmAction } from "../lib/appDialog.js";
 import { HelpGroup, DisabledReason } from "../components/Help.jsx";
-import {removeCompletedDraft,discardStoredDraft} from "../lib/draftStorage.js";
-import {draftEnvelope,readDraftFile,validScheduleDraft} from "../lib/draftFile.js";
-import {useEffect,useRef,useState} from "react";
-import {useConvex,useMutation,useQuery,usePaginatedQuery} from "convex/react";
-import {api} from "../../convex/_generated/api.js";
-import {TYPES} from "../../bap-shared/management.js";
-import {meetingHadAttendance} from "../../bap-shared/control.js";
-import {Field,useTask,Feedback} from "../components/Form.jsx";
-import {Notice} from "../components/Layout.jsx";
-import {useScopedStore} from "../lib/ScopedStorage.jsx";
-import {useDraftLock} from "../lib/useDraftLock.js";
-import {useEditorGuard} from "../lib/useEditorGuard.js";
-import {navigate,linkClick} from "../lib/navigation.js";
-import {hariIni,pesanGalat} from "../lib/presensi.js";
-const historic=meetingHadAttendance;
-const fresh=data=>({version:1,base:data.kelas.revision,meetings:Object.fromEntries(data.pertemuan.filter(p=>!p.cancelled).map(p=>[p.id,p.revision])),selected:[],patches:{},reason:'',includeHistorical:false,operationKey:crypto.randomUUID()});
-const tracked=d=>({selected:d.selected,patches:d.patches,reason:d.reason,includeHistorical:d.includeHistorical});
-function readDraft(key,data){try{const d=JSON.parse(localStorage.getItem(key)||'null');return validScheduleDraft(d)?d:fresh(data)}catch{return fresh(data)}}
-function exportDraft(d,scope){const url=URL.createObjectURL(new Blob([JSON.stringify(draftEnvelope("schedule",scope,null,d),null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='draf-jadwal-bap.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-export default function ScheduleManager({token,data,manage,network={online:true}}){
- const store=useScopedStore(),key=`bap.schedule.${store.scope}`,client=useConvex(),task=useTask(),commit=useMutation(api.scheduleBatches.commitScheduleBatch),remove=useMutation(api.meetingCommands.deleteEmptyMeeting),processing=useRef(false);
- const [draft,setDraft]=useState(()=>readDraft(key,data)),ref=useRef(draft);ref.current=draft;
- const [recoveredJob,setRecoveredJob]=useState(null),[completedKey,setCompletedKey]=useState(null);
- const recovered=useQuery(api.scheduleBatches.jobDetail,recoveredJob?{token,jobId:recoveredJob}:"skip");
- const [preview,setPreview]=useState(null),[days,setDays]=useState('7'),[showCancelled,setShowCancelled]=useState(false),[storageError,setStorageError]=useState(false),[discardError,setDiscardError]=useState(false);
- const latest=useRef(data);latest.current=data;
- const editor=useDraftLock(`${store.scope}:schedule`,()=>{const d=readDraft(key,latest.current);ref.current=d;setDraft(d)});
- const guard=useEditorGuard(tracked(draft),true,task.busy,completedKey===draft.operationKey?'Draf ini sudah memiliki pekerjaan tersimpan. Isi lokal tetap disimpan. Tinggalkan editor?':'Perubahan jadwal belum diterapkan. Draf lokal tetap disimpan jika penyimpanan tersedia. Tinggalkan editor?');
- useEffect(()=>{guard.markSaved(tracked(fresh(data)))},[]);
- useEffect(()=>{if(!draft.selected.length&&!Object.keys(draft.patches).length&&!draft.reason&&draft.base!==data.kelas.revision){const next={...draft,base:data.kelas.revision,meetings:fresh(data).meetings};ref.current=next;setDraft(next)}},[data.kelas.revision]);
- const {results:jobs,status:jobPageStatus,loadMore}=usePaginatedQuery(api.scheduleBatches.jobsPage,{token,kelasId:data.kelas.id},{initialNumItems:10});
- const clear=completedKey=>{const next=fresh(latest.current);ref.current=next;setDraft(next);setPreview(null);guard.markSaved(tracked(next));setStorageError(false);setDiscardError(!(completedKey?removeCompletedDraft(key,completedKey):discardStoredDraft(key,next)));};
- useEffect(()=>{const completed=jobs.find(job=>job.operationKey===ref.current.operationKey);if(completed){setCompletedKey(completed.operationKey);setRecoveredJob(completed._id);}},[jobs]);
- useEffect(()=>{if(!network.online)return;let disposed=false;const operationKey=draft.operationKey;client.query(api.scheduleBatches.findOperation,{token,kelasId:data.kelas.id,operationKey}).then(job=>{if(!disposed&&job&&ref.current.operationKey===operationKey){setRecoveredJob(job._id);setCompletedKey(operationKey);}}).catch(()=>{});return()=>{disposed=true;};},[draft.operationKey,network.online]);
- const update=fn=>{if(!editor.owns()||processing.current)return;const next=fn(ref.current);ref.current=next;setDraft(next);setPreview(null);task.clear();try{localStorage.setItem(key,JSON.stringify(next));setStorageError(false);setDiscardError(false)}catch{setStorageError(true)}};
- const canCorrect=data.controls.capabilities.some(c=>["schedule","history","identity","roster","template","lifecycle"].includes(c)),canEdit=manage&&editor.owned&&data.controls.capabilities.includes('schedule'),stale=draft.base!==data.kelas.revision,disabled=!canEdit||task.busy;
- const run=(fn,message)=>{if(processing.current)return;processing.current=true;task.run(fn,message).catch(()=>{}).finally(()=>processing.current=false)};
- const selected=draft.selected.map(id=>data.pertemuan.find(p=>p.id===id)).filter(Boolean);
- return <section className="control-schedule">
-  <div className="mg-section-heading"><div><h2>Jadwal pertemuan</h2><p>Ubah satu sesi atau geser sesi terpilih. Riwayat presensi dan BAP tetap tersimpan.</p></div></div>
-  <Feedback task={task}/>
-  <label className="mg-field"><span>Pulihkan draf jadwal dari file</span><input type="file" accept=".json" disabled={disabled||!network.online} onChange={e=>{const file=e.target.files?.[0];e.target.value="";if(!file)return;run(async()=>{const d=await readDraftFile(file,"schedule",store.scope,null),job=await client.query(api.scheduleBatches.findOperation,{token,kelasId:data.kelas.id,operationKey:d.operationKey});if(job){setRecoveredJob(job._id);task.clear();setPreview(null);return;}if(!await confirmAction("Muat file menggantikan draf jadwal pada editor ini? Unduh draf sekarang terlebih dahulu bila masih diperlukan.", {"title":"Ganti draf jadwal?","confirmLabel":"Muat draf file","danger":true}))return;if(!editor.owns())throw Error("Editor sedang dipakai tab lain.");ref.current=d;setDraft(d);setPreview(null);try{localStorage.setItem(key,JSON.stringify(d));setStorageError(false)}catch{setStorageError(true)}},"Draf diperiksa. Jika sudah diterapkan, lihat pengerjaan yang dipulihkan.");}}/></label>
-  {recovered&&!jobs.some(j=>j._id===recoveredJob)&&<section className="mg-panel"><h3>Pengerjaan dari file draf</h3><ScheduleJob token={token} job={recovered.job||recovered} online={network.online} enabled={canEdit}/></section>}
-  {!network.online&&<Notice kind="warning">Offline. Draf jadwal dapat disunting; pemeriksaan dan penyimpanan memerlukan koneksi.</Notice>}
-  {editor.ready&&!editor.owned&&<Notice kind="warning">Editor jadwal sedang dipakai tab lain atau browser belum mendukung penguncian. Halaman ini hanya membaca.</Notice>}
-  {storageError&&<Notice kind="warning">Draf belum tersimpan di perangkat. Unduh sebelum menutup halaman.<button className="button button--outline" onClick={()=>exportDraft(draft,store.scope)}>Unduh draf jadwal</button></Notice>}
-  {discardError&&<Notice kind="warning">Draf tersimpan belum berhasil dihapus. Coba Buang draf lagi sebelum menutup; perangkat dapat memuat draf lama jika penghapusan masih gagal.</Notice>}
-  {completedKey===draft.operationKey&&<Notice kind="warning">Draf ini sudah memiliki pengerjaan tersimpan. Isinya tetap dipertahankan agar perubahan baru tidak hilang. Lihat status pekerjaan, buang draf, atau gunakan isinya sebagai perubahan baru.<button className="button button--outline" disabled={disabled||!network.online} onClick={async()=>{if(await confirmAction("Gunakan isi draf ini untuk perubahan baru? Periksa selisih dengan jadwal aktif sebelum menyimpan.", {"title":"Gunakan sebagai perubahan baru?","confirmLabel":"Gunakan draf","danger":false}))update(d=>({...d,base:data.kelas.revision,meetings:fresh(data).meetings,selected:d.selected.filter(id=>data.pertemuan.some(p=>p.id===id&&!p.cancelled)),operationKey:crypto.randomUUID()}));}}>Pakai isi draf sebagai perubahan baru</button></Notice>}
-  {stale&&completedKey!==draft.operationKey&&<Notice kind="warning">Data kelas berubah. Perubahan tanggalmu tetap ada; periksa lagi dengan versi terbaru.<button className="button button--outline" disabled={disabled||!network.online} onClick={()=>update(d=>({...d,base:data.kelas.revision,meetings:fresh(data).meetings,selected:d.selected.filter(id=>data.pertemuan.some(p=>p.id===id&&!p.cancelled)),operationKey:crypto.randomUUID()}))}>Periksa dengan versi jadwal terbaru</button></Notice>}
-  <div className="mg-panel"><HelpGroup topic="bulk"><h3>Geser jadwal terpilih</h3></HelpGroup><fieldset disabled={disabled}><p className="muted">Default pilihan hanya sesi mendatang tanpa riwayat. Sertakan sesi bersejarah jika memang perlu dikoreksi.</p>
-   <label className="mg-check"><input type="checkbox" checked={draft.includeHistorical} onChange={e=>update(d=>({...d,includeHistorical:e.target.checked,selected:e.target.checked?d.selected:d.selected.filter(id=>!historic(data.pertemuan.find(p=>p.id===id)||{}))}))}/><span>Izinkan pilihan sesi bersejarah</span></label>
-   <div className="mg-inline-actions"><button className="button button--outline" onClick={()=>update(d=>({...d,selected:data.pertemuan.filter(p=>!p.cancelled&&(d.includeHistorical||!historic(p)&&p.tanggal>=hariIni())).map(p=>p.id)}))}>Pilih semua yang diizinkan</button><button className="button button--quiet" onClick={()=>update(d=>({...d,selected:[]}))}>Kosongkan pilihan</button></div>
-   <div className="mg-form-grid"><Field label="Geser berapa hari" type="number" min="-365" max="365" value={days} onChange={setDays} help="Positif mundur; negatif maju. Contoh 7 berarti satu minggu lebih lambat."/><Field label="Catatan perubahan massal" maxLength="240" value={draft.reason} onChange={reason=>update(d=>({...d,reason}))}/></div>
-   <button className="button button--outline" disabled={!selected.length||stale} onClick={()=>{const amount=Number(days);if(!Number.isInteger(amount)||Math.abs(amount)>365||!amount){run(async()=>{throw Error('Isi pergeseran hari antara -365 dan 365, selain nol.')});return;}update(d=>({...d,patches:{...d.patches,...Object.fromEntries(selected.map(p=>[p.id,{...d.patches[p.id],tanggal:new Date(Date.parse((d.patches[p.id]?.tanggal||p.tanggal)+'T00:00:00Z')+amount*86400000).toISOString().slice(0,10)}]))}}))}}>Geser tanggal pilihan</button>
-   <p className="muted">{selected.length} sesi dipilih. Tanggal baru juga bisa diisi per baris di bawah.</p>
-   </fieldset><label className="mg-check"><input type="checkbox" checked={showCancelled} onChange={e=>setShowCancelled(e.target.checked)}/><span>Sertakan sesi dibatalkan</span></label>
-   <div>{data.pertemuan.filter(p=>showCancelled||!p.cancelled).map(p=><article className="control-schedule-row" key={p.id}>
-     <label className="mg-check"><input type="checkbox" aria-label={`Pilih pertemuan ${p.nomor}`} checked={draft.selected.includes(p.id)} disabled={disabled||p.cancelled||historic(p)&&!draft.includeHistorical} onChange={e=>update(d=>({...d,selected:e.target.checked?[...d.selected,p.id]:d.selected.filter(id=>id!==p.id)}))}/><span><strong>Pertemuan {p.nomor}</strong><small>{p.tanggal} · {p.tipe==='REGULER'?'Praktikum':p.tipe}<br/>{p.cancelled?'Dibatalkan':historic(p)?`Riwayat revisi ${p.revision}`:'Belum ada presensi'}</small></span></label>
-     <Field label={`Tanggal baru pertemuan ${p.nomor}`} type="date" value={draft.patches[p.id]?.tanggal||p.tanggal} disabled={disabled||!draft.selected.includes(p.id)} onChange={tanggal=>update(d=>({...d,patches:{...d.patches,[p.id]:{...d.patches[p.id],tanggal}}}))}/>
-     <div className="mg-inline-actions">{canCorrect&&<a className="button button--outline" href={`/kelas/${data.kelas.id}?tab=jadwal&correct=${p.id}`} onClick={e=>linkClick(e,`/kelas/${data.kelas.id}?tab=jadwal&correct=${p.id}`)}>{p.cancelled?'Pulihkan / lihat riwayat':'Koreksi sesi '+p.nomor}</a>}{p.revision===0&&p.status==='TERBUKA'&&!p.cancelled&&<button className="button button--quiet" disabled={disabled||!network.online} onClick={async()=>{if(!await confirmAction(`Hapus pertemuan kosong ${p.nomor}? Sesi dengan riwayat hanya dapat dibatalkan.`, {title:"Hapus sesi kosong?",confirmLabel:"Hapus sesi kosong",danger:true}))return;run(async()=>remove({token,kelasId:data.kelas.id,pertemuanId:p.id,expectedMeetingRevision:p.revision,expectedClassRevision:data.kelas.revision,operationKey:crypto.randomUUID()}),'Pertemuan kosong dihapus.')}}>Hapus sesi kosong {p.nomor}</button>}</div>
-   </article>)}</div>
-   <div className="mg-inline-actions"><button className="button button--primary" disabled={disabled||!network.online||stale||completedKey===draft.operationKey||!selected.length} onClick={()=>run(async()=>{const args={token,kelasId:data.kelas.id,expectedClassRevision:draft.base,includeHistorical:draft.includeHistorical,reason:draft.reason,items:selected.map(p=>({pertemuanId:p.id,expectedRevision:draft.meetings[p.id],patch:draft.patches[p.id]||{}}))},result=await client.query(api.scheduleBatches.previewScheduleBatch,args);setPreview({args,result,operationKey:draft.operationKey});},'Preview perubahan massal siap.')}>Periksa perubahan massal</button><button className="button button--quiet" onClick={()=>exportDraft(draft,store.scope)}>Unduh draf jadwal</button><button className="button button--quiet" disabled={disabled} onClick={async()=>{if(editor.owns()&&!processing.current&&await confirmAction("Buang draf jadwal di perangkat ini? Jadwal yang berlaku dan pekerjaan tersimpan tidak berubah.", {"title":"Buang draf lokal?","confirmLabel":"Buang draf","danger":true})){if(!editor.owns()||processing.current)return;clear();task.clear();}}}>Buang draf jadwal</button></div>
-  <DisabledReason>{disabled?(task.busy?"Tunggu proses yang sedang berjalan selesai.":data.kelas.arsip?"Pulihkan kelas arsip sebelum mengubah jadwal.":!manage?"Akunmu belum memiliki izin jadwal pada kelas ini. Hubungi Pengelola.":"Editor jadwal hanya membaca karena dipakai tab lain atau browser belum mendukung penguncian."):!network.online?"Hubungkan internet untuk memeriksa dan menyimpan jadwal.":completedKey===draft.operationKey?"Draf ini sudah memiliki pekerjaan tersimpan. Tinjau hasilnya sebelum memilih operasi baru.":stale?"Periksa dengan versi jadwal terbaru sebelum melanjutkan.":!selected.length?"Pilih minimal satu pertemuan untuk menggeser jadwal atau memeriksa perubahan.":null}</DisabledReason><HelpGroup topic="discard"><span>Draf lokal dan pekerjaan server terpisah.</span></HelpGroup>
-  </div>
-  {preview&&<section className="mg-panel"><h3>{preview.result.count} sesi akan berubah</h3><BatchDiff items={preview.result.items}/>{preview.result.warnings.map(w=><Notice kind="warning" key={w}>{w}</Notice>)}<p>{preview.result.mode==='atomic'?'Perubahan kecil disimpan bersama dalam satu transaksi.':'Perubahan diproses bertahap. Sesi yang sudah selesai tetap tersimpan jika proses ditunda, ditutup, atau koneksi terputus; sisanya dapat dilanjutkan.'}</p><button className="button button--primary" disabled={disabled||stale||completedKey===draft.operationKey||!network.online} onClick={()=>run(async()=>{await commit({...preview.args,previewHash:preview.result.previewHash,operationKey:preview.operationKey});clear(preview.operationKey);},'Perubahan diterima. Lihat status pengerjaan di bawah.')}>Simpan perubahan {preview.result.count} sesi</button></section>}
-  <AddMeeting token={token} data={data} enabled={canEdit&&network.online}/>
-  <section className="mg-panel"><HelpGroup topic="batchRecovery"><h3>Pengerjaan jadwal & pemulihan</h3></HelpGroup><p className="muted">Pekerjaan yang belum selesai tetap ada setelah browser ditutup. Undo hanya memulihkan hasil yang belum berubah lagi.</p>{jobs.map(job=><ScheduleJob key={job._id} token={token} job={job} online={network.online} enabled={canEdit}/>) }{!jobs.length&&<p>Belum ada perubahan massal.</p>}{jobPageStatus==='CanLoadMore'&&<button className="button button--outline" onClick={()=>loadMore(10)}>Muat pekerjaan sebelumnya</button>}</section>
- </section>;
+import {
+  removeCompletedDraft,
+  discardStoredDraft,
+} from "../lib/draftStorage.js";
+import {
+  draftEnvelope,
+  readDraftFile,
+  validScheduleDraft,
+} from "../lib/draftFile.js";
+import { useEffect, useRef, useState } from "react";
+import {
+  useConvex,
+  useMutation,
+  useQuery,
+  usePaginatedQuery,
+} from "convex/react";
+import { api } from "../../convex/_generated/api.js";
+import { TYPES } from "../../bap-shared/management.js";
+import { meetingHadAttendance } from "../../bap-shared/control.js";
+import { Field, useTask, Feedback } from "../components/Form.jsx";
+import { Notice } from "../components/Layout.jsx";
+import { useScopedStore } from "../lib/ScopedStorage.jsx";
+import { useDraftLock } from "../lib/useDraftLock.js";
+import { useEditorGuard } from "../lib/useEditorGuard.js";
+import { navigate, linkClick } from "../lib/navigation.js";
+import { hariIni, pesanGalat } from "../lib/presensi.js";
+const historic = meetingHadAttendance;
+const fresh = (data) => ({
+  version: 1,
+  base: data.kelas.revision,
+  meetings: Object.fromEntries(
+    data.pertemuan.filter((p) => !p.cancelled).map((p) => [p.id, p.revision]),
+  ),
+  selected: [],
+  patches: {},
+  reason: "",
+  includeHistorical: false,
+  operationKey: crypto.randomUUID(),
+});
+const tracked = (d) => ({
+  selected: d.selected,
+  patches: d.patches,
+  reason: d.reason,
+  includeHistorical: d.includeHistorical,
+});
+function readDraft(key, data) {
+  try {
+    const d = JSON.parse(localStorage.getItem(key) || "null");
+    return validScheduleDraft(d) ? d : fresh(data);
+  } catch {
+    return fresh(data);
+  }
 }
+function exportDraft(d, scope) {
+  const url = URL.createObjectURL(
+      new Blob(
+        [JSON.stringify(draftEnvelope("schedule", scope, null, d), null, 2)],
+        { type: "application/json" },
+      ),
+    ),
+    a = document.createElement("a");
+  a.href = url;
+  a.download = "draf-jadwal-bap.json";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+export default function ScheduleManager({
+  token,
+  data,
+  manage,
+  network = { online: true },
+  onStepState,
+}) {
+  const store = useScopedStore(),
+    key = `bap.schedule.${store.scope}`,
+    client = useConvex(),
+    task = useTask(),
+    commit = useMutation(api.scheduleBatches.commitScheduleBatch),
+    remove = useMutation(api.meetingCommands.deleteEmptyMeeting),
+    processing = useRef(false);
+  useEffect(() => () => onStepState?.({busy:false,dirty:false}), [onStepState]);
+  const [draft, setDraft] = useState(() => readDraft(key, data)),
+    ref = useRef(draft);
+  ref.current = draft;
+  const [recoveredJob, setRecoveredJob] = useState(null),
+    [completedKey, setCompletedKey] = useState(null);
+  const [adding, setAdding] = useState(false);
+  const recovered = useQuery(
+    api.scheduleBatches.jobDetail,
+    recoveredJob ? { token, jobId: recoveredJob } : "skip",
+  );
+  const [preview, setPreview] = useState(null),
+    [showCancelled, setShowCancelled] = useState(false),
+    [storageError, setStorageError] = useState(false),
+    [discardError, setDiscardError] = useState(false);
+  const reviewRegion = useRef(null);
+  useEffect(() => {
+    if (preview) {
+      reviewRegion.current?.querySelector("h3")?.focus({preventScroll:true});
+      reviewRegion.current?.scrollIntoView({block:"start"});
+    }
+  }, [preview]);
+  const latest = useRef(data);
+  latest.current = data;
+  const editor = useDraftLock(`${store.scope}:schedule`, () => {
+    const d = readDraft(key, latest.current);
+    ref.current = d;
+    setDraft(d);
+  });
+  const guard = useEditorGuard(
+    tracked(draft),
+    true,
+    task.busy || adding,
+    completedKey === draft.operationKey
+      ? "Draf ini sudah memiliki pekerjaan tersimpan. Isi lokal tetap disimpan. Tinggalkan editor?"
+      : "Perubahan jadwal belum diterapkan. Draf lokal tetap disimpan jika penyimpanan tersedia. Tinggalkan editor?",
+  );
+  useEffect(() => {
+    guard.markSaved(tracked(fresh(data)));
+  }, []);
+  useEffect(() => {
+    if (
+      !draft.selected.length &&
+      !Object.keys(draft.patches).length &&
+      !draft.reason &&
+      draft.base !== data.kelas.revision
+    ) {
+      const next = {
+        ...draft,
+        base: data.kelas.revision,
+        meetings: fresh(data).meetings,
+      };
+      ref.current = next;
+      setDraft(next);
+    }
+  }, [data.kelas.revision]);
+  const {
+    results: jobs,
+    status: jobPageStatus,
+    loadMore,
+  } = usePaginatedQuery(
+    api.scheduleBatches.jobsPage,
+    { token, kelasId: data.kelas.id },
+    { initialNumItems: 10 },
+  );
+  const clear = (completedKey) => {
+    const next = fresh(latest.current);
+    ref.current = next;
+    setDraft(next);
+    setPreview(null);
+    guard.markSaved(tracked(next));
+    setStorageError(false);
+    setDiscardError(
+      !(completedKey
+        ? removeCompletedDraft(key, completedKey)
+        : discardStoredDraft(key, next)),
+    );
+  };
+  useEffect(() => {
+    const completed = jobs.find(
+      (job) => job.operationKey === ref.current.operationKey,
+    );
+    if (completed) {
+      setCompletedKey(completed.operationKey);
+      setRecoveredJob(completed._id);
+    }
+  }, [jobs]);
+  useEffect(() => {
+    if (!network.online) return;
+    let disposed = false;
+    const operationKey = draft.operationKey;
+    client
+      .query(api.scheduleBatches.findOperation, {
+        token,
+        kelasId: data.kelas.id,
+        operationKey,
+      })
+      .then((job) => {
+        if (!disposed && job && ref.current.operationKey === operationKey) {
+          setRecoveredJob(job._id);
+          setCompletedKey(operationKey);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      disposed = true;
+    };
+  }, [draft.operationKey, network.online]);
+  const update = (fn) => {
+    if (!editor.owns() || processing.current) return;
+    const next = fn(ref.current);
+    ref.current = next;
+    setDraft(next);
+    setPreview(null);
+    task.clear();
+    try {
+      localStorage.setItem(key, JSON.stringify(next));
+      setStorageError(false);
+      setDiscardError(false);
+    } catch {
+      setStorageError(true);
+    }
+  };
+  const canCorrect = data.controls.capabilities.some((c) =>
+      [
+        "schedule",
+        "history",
+        "identity",
+        "roster",
+        "template",
+        "lifecycle",
+      ].includes(c),
+    ),
+    canEdit =
+      manage && editor.owned && data.controls.capabilities.includes("schedule"),
+    stale = draft.base !== data.kelas.revision,
+    disabled = !canEdit || task.busy || adding;
+  const run = (fn, message) => {
+    if (processing.current) return;
+    processing.current = true;
+    task
+      .run(fn, message)
+      .catch(() => {})
+      .finally(() => (processing.current = false));
+  };
+  const [continueAfterSave, setContinueAfterSave] = useState(false),
+    [finished, setFinished] = useState(false),
+    [progress, setProgress] = useState(null);
+  const advance = useMutation(api.scheduleBatches.advanceScheduleJob),
+    alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
+  useEffect(() => {
+    onStepState?.({
+      busy: task.busy || adding,
+      dirty: draft.selected.length > 0,
+    });
+  }, [task.busy, adding, draft.selected.length, onStepState]);
+  useEffect(() => {
+    if (finished && !task.busy && continueAfterSave)
+      void navigate(`/kelas/${data.kelas.id}?tab=template`);
+  }, [finished, task.busy, continueAfterSave]);
+  const selected = draft.selected
+    .map((id) => data.pertemuan.find((p) => p.id === id))
+    .filter(Boolean);
+  const invalidDates = selected.some(p => !parseDate(draft.patches[p.id]?.tanggal ?? p.tanggal));
+
+  const previewDates = () =>
+    run(async () => {
+      const args = {
+          token,
+          kelasId: data.kelas.id,
+          expectedClassRevision: draft.base,
+          includeHistorical: draft.includeHistorical,
+          reason: draft.reason.trim() || "Penyesuaian tanggal pertemuan",
+          items: selected.map((p) => ({
+            pertemuanId: p.id,
+            expectedRevision: draft.meetings[p.id],
+            patch: draft.patches[p.id] || {},
+          })),
+        },
+        result = await client.query(
+          api.scheduleBatches.previewScheduleBatch,
+          args,
+        );
+      setPreview({ args, result, operationKey: draft.operationKey });
+    }, "Periksa tanggal sebelum menyimpan.");
+  const changeDate = (p, tanggal) =>
+    update((d) => {
+      const patches = { ...d.patches },
+        selected = d.selected.filter((id) => id !== p.id);
+      if (tanggal !== p.tanggal) {
+        patches[p.id] = { ...patches[p.id], tanggal };
+        selected.push(p.id);
+      } else delete patches[p.id];
+      return { ...d, patches, selected };
+    });
+  return (
+    <section className="control-schedule">
+      <ClassTabHeading
+        title="Jadwal pertemuan"
+        description="Tambahkan pertemuan, lalu isi tanggalnya. Setelah jadwal siap, lanjutkan ke Template BAP."
+      />
+      <form
+        id="setup-schedule"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!selected.length) {
+            void navigate(`/kelas/${data.kelas.id}?tab=template`);
+            return;
+          }
+          setContinueAfterSave(true);
+          previewDates();
+        }}
+      />
+      <Feedback task={task} />
+      <DisabledReason>
+        {!manage
+          ? "Akunmu belum memiliki izin jadwal pada kelas ini. Hubungi Pengelola."
+          : null}
+      </DisabledReason>
+      {task.busy && (
+        <div className="operation-progress" role="status">
+          <progress
+            aria-label="Proses jadwal"
+            max={progress?.total || 1}
+            value={progress?.applied}
+          />
+          <span>
+            {progress
+              ? `Menyimpan tanggal · ${progress.applied}/${progress.total} sesi`
+              : "Memproses jadwal…"}
+          </span>
+        </div>
+      )}
+      {!network.online && (
+        <Notice kind="warning">
+          Offline. Draf jadwal dapat disunting; pemeriksaan dan penyimpanan
+          memerlukan koneksi.
+        </Notice>
+      )}
+      {editor.ready && !editor.owned && (
+        <Notice kind="warning">
+          Editor jadwal sedang dipakai tab lain atau browser belum mendukung
+          penguncian. Halaman ini hanya membaca.
+        </Notice>
+      )}
+      {storageError && (
+        <Notice kind="warning">
+          Draf belum tersimpan di perangkat. Unduh sebelum menutup halaman.
+          <button
+            className="button button--outline"
+            onClick={() => exportDraft(draft, store.scope)}
+          >
+            Unduh draf jadwal
+          </button>
+        </Notice>
+      )}
+      {discardError && (
+        <Notice kind="warning">
+          Draf tersimpan belum berhasil dihapus. Coba Buang draf lagi sebelum
+          menutup; perangkat dapat memuat draf lama jika penghapusan masih
+          gagal.
+        </Notice>
+      )}
+      {completedKey === draft.operationKey && (
+        <Notice kind="warning">
+          Draf ini sudah memiliki pengerjaan tersimpan. Isinya tetap
+          dipertahankan agar perubahan baru tidak hilang. Lihat status
+          pekerjaan, buang draf, atau gunakan isinya sebagai perubahan baru.
+          <button
+            className="button button--outline"
+            disabled={disabled || !network.online}
+            onClick={async () => {
+              if (
+                await confirmAction(
+                  "Gunakan isi draf ini untuk perubahan baru? Periksa selisih dengan jadwal aktif sebelum menyimpan.",
+                  {
+                    title: "Gunakan sebagai perubahan baru?",
+                    confirmLabel: "Gunakan draf",
+                    danger: false,
+                  },
+                )
+              )
+                update((d) => ({
+                  ...d,
+                  base: data.kelas.revision,
+                  meetings: fresh(data).meetings,
+                  selected: d.selected.filter((id) =>
+                    data.pertemuan.some((p) => p.id === id && !p.cancelled),
+                  ),
+                  operationKey: crypto.randomUUID(),
+                }));
+            }}
+          >
+            Pakai isi draf sebagai perubahan baru
+          </button>
+        </Notice>
+      )}
+      {stale && completedKey !== draft.operationKey && (
+        <Notice kind="warning">
+          Data kelas berubah. Perubahan tanggalmu tetap ada; periksa lagi dengan
+          versi terbaru.
+          <button
+            className="button button--outline"
+            disabled={disabled || !network.online}
+            onClick={() =>
+              update((d) => ({
+                ...d,
+                base: data.kelas.revision,
+                meetings: fresh(data).meetings,
+                selected: d.selected.filter((id) =>
+                  data.pertemuan.some((p) => p.id === id && !p.cancelled),
+                ),
+                operationKey: crypto.randomUUID(),
+              }))
+            }
+          >
+            Periksa dengan versi jadwal terbaru
+          </button>
+        </Notice>
+      )}
+
+      <AddMeeting
+        token={token}
+        data={data}
+        enabled={canEdit && network.online && !task.busy}
+        onBusy={setAdding}
+      />
+      {!data.pertemuan.length && (
+        <p className="muted">
+          Belum ada pertemuan. Isi tanggal di atas dan simpan untuk menambahkan
+          pertemuan pertama.
+        </p>
+      )}
+      {data.pertemuan.length > 0 && (
+        <div className="mg-panel">
+          <div className="mg-section-heading">
+            <h3>Daftar pertemuan</h3>
+            <label className="mg-check">
+              <input
+                type="checkbox"
+                checked={showCancelled}
+                onChange={(e) => setShowCancelled(e.target.checked)}
+              />
+              <span>Sertakan sesi dibatalkan</span>
+            </label>
+          </div>
+          <div>
+            {data.pertemuan
+              .filter((p) => showCancelled || !p.cancelled)
+              .map((p) => (
+                <article className="control-schedule-row" key={p.id}>
+                  <div>
+                    <strong>Pertemuan {p.nomor}</strong>
+                    <p className="muted">
+                      {p.tipe === "REGULER" ? "Praktikum" : p.tipe} · {p.tempat}
+                      <br />
+                      {p.cancelled
+                        ? "Dibatalkan"
+                        : historic(p)
+                          ? `Riwayat revisi ${p.revision}`
+                          : "Belum ada presensi"}
+                    </p>
+                  </div>
+                  <Field
+                    label={`Tanggal pertemuan ${p.nomor}`}
+                    form="setup-schedule"
+                    type="date"
+                    value={draft.patches[p.id]?.tanggal ?? p.tanggal}
+                    required
+                    disabled={disabled || p.cancelled || historic(p)}
+                    onChange={(tanggal) => changeDate(p, tanggal)}
+                  />
+                  <div className="mg-inline-actions">
+                    {canCorrect && (
+                      <a
+                        className="button button--outline"
+                        href={`/kelas/${data.kelas.id}?tab=jadwal&correct=${p.id}`}
+                        onClick={(e) =>
+                          linkClick(
+                            e,
+                            `/kelas/${data.kelas.id}?tab=jadwal&correct=${p.id}`,
+                          )
+                        }
+                      >
+                        {p.cancelled
+                          ? "Pulihkan / lihat riwayat"
+                          : "Edit rincian " + p.nomor}
+                      </a>
+                    )}
+                    {p.revision === 0 &&
+                      p.status === "TERBUKA" &&
+                      !p.cancelled && (
+                        <button
+                          type="button"
+                          className="button button--quiet"
+                          disabled={disabled || !network.online}
+                          onClick={async () => {
+                            if (
+                              !(await confirmAction(
+                                `Hapus pertemuan kosong ${p.nomor}? Sesi dengan riwayat hanya dapat dibatalkan.`,
+                                {
+                                  title: "Hapus sesi kosong?",
+                                  confirmLabel: "Hapus sesi kosong",
+                                  danger: true,
+                                },
+                              ))
+                            )
+                              return;
+                            run(
+                              async () =>
+                                remove({
+                                  token,
+                                  kelasId: data.kelas.id,
+                                  pertemuanId: p.id,
+                                  expectedMeetingRevision: p.revision,
+                                  expectedClassRevision: data.kelas.revision,
+                                  operationKey: crypto.randomUUID(),
+                                }),
+                              "Pertemuan kosong dihapus.",
+                            );
+                          }}
+                        >
+                          Hapus sesi kosong {p.nomor}
+                        </button>
+                      )}
+                  </div>
+                </article>
+              ))}
+          </div>
+          {selected.length > 0 && (
+            <div className="schedule-save">
+              <p>{selected.length} tanggal belum disimpan.</p>
+              <Field
+                label="Catatan perubahan tanggal (opsional)"
+                maxLength="240"
+                value={draft.reason}
+                onChange={(reason) => update((d) => ({ ...d, reason }))}
+              />
+              <button
+                type="button"
+                className="button button--primary"
+                disabled={
+                  disabled ||
+                    invalidDates ||
+                  !network.online ||
+                  stale ||
+                  completedKey === draft.operationKey
+                }
+                onClick={() => {
+                  setContinueAfterSave(false);
+                  previewDates();
+                }}
+              >
+                Periksa perubahan tanggal
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+      {preview && (
+        <section ref={reviewRegion} className="mg-panel" aria-label="Tinjau perubahan tanggal" style={{scrollMarginTop:80}}>
+          <h3 tabIndex={-1}>{preview.result.count} sesi akan berubah</h3>
+          <BatchDiff items={preview.result.items} />
+          {preview.result.warnings.map((w) => (
+            <Notice kind="warning" key={w}>
+              {w}
+            </Notice>
+          ))}
+          <p>
+            Periksa tanggal sebelum dan sesudah. Riwayat presensi tetap
+            disimpan.
+          </p>
+          <button
+            type="button"
+            className="button button--primary"
+            disabled={
+              disabled ||
+              stale ||
+              completedKey === draft.operationKey ||
+              !network.online
+            }
+            onClick={() =>
+              run(async () => {
+                let result = await commit({
+                  ...preview.args,
+                  previewHash: preview.result.previewHash,
+                  operationKey: preview.operationKey,
+                });
+                const jobId = result.jobId;
+                setRecoveredJob(jobId);
+                setProgress({
+                  applied: result.applied,
+                  total: preview.result.count,
+                });
+                while (
+                  alive.current &&
+                  ["PENDING", "RUNNING"].includes(result.status)
+                ) {
+                  result = await advance({ token, jobId });
+                  setProgress({
+                    applied: result.applied,
+                    total: result.count || preview.result.count,
+                  });
+                }
+                if (result.status !== "DONE")
+                  throw Error(
+                    "Sebagian tanggal perlu ditinjau. Buka status penyimpanan di bagian Pemulihan perubahan.",
+                  );
+                clear(preview.operationKey);
+                setFinished(true);
+                setProgress(null);
+              }, "Tanggal pertemuan tersimpan.")
+            }
+          >
+            Simpan perubahan {preview.result.count} sesi
+          </button>
+        </section>
+      )}
+      <details className="mg-panel schedule-recovery">
+        <summary>Pemulihan perubahan tersimpan</summary>
+        <p className="muted">
+          Lewati bagian ini saat pertama kali membuat kelas. File draf hanya
+          tersedia jika sebelumnya kamu mengunduh draf jadwal dari aplikasi ini.
+        </p>
+        <FileDrop
+          label="Pulihkan draf jadwal dari file"
+          accept=".json"
+          disabled={disabled || !network.online}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = "";
+            if (!file) return;
+            run(async () => {
+              const d = await readDraftFile(
+                  file,
+                  "schedule",
+                  store.scope,
+                  null,
+                ),
+                job = await client.query(api.scheduleBatches.findOperation, {
+                  token,
+                  kelasId: data.kelas.id,
+                  operationKey: d.operationKey,
+                });
+              if (job) {
+                setRecoveredJob(job._id);
+                task.clear();
+                setPreview(null);
+                return;
+              }
+              if (
+                !(await confirmAction(
+                  "Muat file menggantikan draf jadwal pada editor ini? Unduh draf sekarang terlebih dahulu bila masih diperlukan.",
+                  {
+                    title: "Ganti draf jadwal?",
+                    confirmLabel: "Muat draf file",
+                    danger: true,
+                  },
+                ))
+              )
+                return;
+              if (!editor.owns())
+                throw Error("Editor sedang dipakai tab lain.");
+              ref.current = d;
+              setDraft(d);
+              setPreview(null);
+              try {
+                localStorage.setItem(key, JSON.stringify(d));
+                setStorageError(false);
+              } catch {
+                setStorageError(true);
+              }
+            }, "Draf diperiksa. Jika sudah diterapkan, lihat pengerjaan yang dipulihkan.");
+          }}
+        />
+        <div className="mg-inline-actions">
+          <button
+            type="button"
+            className="button button--quiet"
+            onClick={() => exportDraft(draft, store.scope)}
+          >
+            Unduh draf jadwal
+          </button>
+          <button
+            type="button"
+            className="button button--quiet"
+            disabled={disabled}
+            onClick={async () => {
+              if (
+                editor.owns() &&
+                !processing.current &&
+                (await confirmAction(
+                  "Buang draf jadwal di perangkat ini? Jadwal yang berlaku dan pekerjaan tersimpan tidak berubah.",
+                  {
+                    title: "Buang draf lokal?",
+                    confirmLabel: "Buang draf",
+                    danger: true,
+                  },
+                ))
+              ) {
+                if (!editor.owns() || processing.current) return;
+                clear();
+                task.clear();
+              }
+            }}
+          >
+            Buang draf jadwal
+          </button>
+        </div>
+        {recovered && !jobs.some((j) => j._id === recoveredJob) && (
+          <ScheduleJob
+            token={token}
+            job={recovered.job || recovered}
+            online={network.online}
+            enabled={canEdit}
+          />
+        )}
+        <h3>Status penyimpanan & pemulihan</h3>
+        <p className="muted">
+          Jika penyimpanan terputus, lanjutkan pekerjaan yang sama di sini.
+        </p>
+        {jobs.map((job) => (
+          <ScheduleJob
+            key={job._id}
+            token={token}
+            job={job}
+            online={network.online}
+            enabled={canEdit}
+          />
+        ))}
+        {!jobs.length && <p>Belum ada pekerjaan tersimpan.</p>}
+        {jobPageStatus === "CanLoadMore" && (
+          <button
+            type="button"
+            className="button button--outline"
+            onClick={() => loadMore(10)}
+          >
+            Muat pekerjaan sebelumnya
+          </button>
+        )}
+      </details>
+    </section>
+  );
+}
+
 function BatchDiff({items}){return <div className="control-table"><table><thead><tr><th>Sesi</th><th>Sebelum</th><th>Sesudah</th></tr></thead><tbody>{items.map((i,n)=><tr key={i.pertemuanId||i.id||n}><td>{i.before.nomor}</td><td>{i.before.tanggal} · {i.before.tempat}</td><td>{i.after?.tanggal||i.patch.tanggal||i.before.tanggal} · {i.after?.tempat||i.patch.tempat||i.before.tempat}{i.skip?(i.unavailable?' · dilewati setelah review':' · sudah sesuai'):i.unavailable?' · tidak tersedia, pilih lewati':''}</td></tr>)}</tbody></table></div>}
-function AddMeeting({token,data,enabled}){
- const [form,setForm]=useState({nomor:Math.max(0,...data.pertemuan.map(p=>p.nomor))+1,tanggal:'',tempat:data.kelas.tempat,tipe:'REGULER'}),task=useTask(),add=useMutation(api.meetingCommands.addMeeting),key=useRef(crypto.randomUUID()),pending=useRef(null);
- const guard=useEditorGuard(form,true,task.busy),set=(field,value)=>{pending.current=null;key.current=crypto.randomUUID();setForm(f=>({...f,[field]:value}));};
- return <details className="mg-panel"><summary>Tambahkan satu pertemuan</summary><Feedback task={task}/><fieldset disabled={!enabled||task.busy}><div className="mg-form-grid"><Field label="Nomor pertemuan baru" type="number" min="1" max="1000" value={form.nomor} onChange={v=>set('nomor',Number(v))}/><Field label="Tanggal pertemuan baru" type="date" value={form.tanggal} onChange={v=>set('tanggal',v)}/><Field label="Ruang pertemuan baru" value={form.tempat} onChange={v=>set('tempat',v)}/><Field label="Jenis pertemuan baru" value={form.tipe} options={TYPES.map(v=>({value:v,label:v==='REGULER'?'Praktikum':v}))} onChange={v=>set('tipe',v)}/></div><button className="button button--outline" disabled={!form.tanggal} onClick={()=>task.run(async()=>{pending.current||={token,kelasId:data.kelas.id,expectedClassRevision:data.kelas.revision,operationKey:key.current,data:form};await add(pending.current);pending.current=null;guard.markSaved();key.current=crypto.randomUUID();const next={...form,nomor:form.nomor+1,tanggal:''};setForm(next);guard.markSaved(next);},'Pertemuan ditambahkan.').catch(()=>{})}>Simpan pertemuan baru</button></fieldset></details>;
+function AddMeeting({ token, data, enabled, onBusy }) {
+  const [form, setForm] = useState({
+      nomor: Math.max(0, ...data.pertemuan.map((p) => p.nomor)) + 1,
+      tanggal: "",
+      tempat: data.kelas.tempat,
+      tipe: "REGULER",
+    }),
+    task = useTask(),
+    add = useMutation(api.meetingCommands.addMeeting),
+    key = useRef(crypto.randomUUID()),
+    pending = useRef(null);
+  useEffect(() => {
+    onBusy?.(task.busy);
+  }, [task.busy, onBusy]);
+  const guard = useEditorGuard(form, true, task.busy),
+    set = (field, value) => {
+      pending.current = null;
+      key.current = crypto.randomUUID();
+      setForm((f) => ({ ...f, [field]: value }));
+    };
+  return (
+    <details
+      className="mg-panel"
+      open={data.pertemuan.length === 0 ? true : undefined}
+    >
+      <summary>Tambahkan satu pertemuan</summary>
+      <Feedback task={task} />
+      {task.busy && (
+        <div className="operation-progress" role="status">
+          <progress aria-label="Penyimpanan pertemuan" />
+          <span>Menyimpan pertemuan…</span>
+        </div>
+      )}
+      <fieldset disabled={!enabled || task.busy}>
+        <div className="mg-form-grid">
+          <Field
+            label="Nomor pertemuan baru"
+            type="number"
+            min="1"
+            max="1000"
+            value={form.nomor}
+            onChange={(v) => set("nomor", Number(v))}
+          />
+          <Field
+            label="Tanggal pertemuan baru"
+            type="date"
+            value={form.tanggal}
+            onChange={(v) => set("tanggal", v)}
+          />
+          <Field
+            label="Ruang pertemuan baru"
+            value={form.tempat}
+            onChange={(v) => set("tempat", v)}
+          />
+          <Field
+            label="Jenis pertemuan baru"
+            value={form.tipe}
+            options={TYPES.map((v) => ({
+              value: v,
+              label: v === "REGULER" ? "Praktikum" : v,
+            }))}
+            onChange={(v) => set("tipe", v)}
+          />
+        </div>
+        <button
+          className="button button--outline"
+          disabled={!parseDate(form.tanggal)}
+          onClick={() =>
+            task
+              .run(async () => {
+                pending.current ||= {
+                  token,
+                  kelasId: data.kelas.id,
+                  expectedClassRevision: data.kelas.revision,
+                  operationKey: key.current,
+                  data: form,
+                };
+                await add(pending.current);
+                pending.current = null;
+                guard.markSaved();
+                key.current = crypto.randomUUID();
+                const next = { ...form, nomor: form.nomor + 1, tanggal: "" };
+                setForm(next);
+                guard.markSaved(next);
+              }, "Pertemuan ditambahkan.")
+              .catch(() => {})
+          }
+        >
+          Simpan pertemuan baru
+        </button>
+      </fieldset>
+    </details>
+  );
 }
 function ScheduleJob({token,job,online,enabled}){
  const client=useConvex(),advance=useMutation(api.scheduleBatches.advanceScheduleJob),resume=useMutation(api.scheduleBatches.resumeScheduleJob),undo=useMutation(api.scheduleBatches.commitUndoJob),cancel=useMutation(api.scheduleBatches.cancelScheduleJob),task=useTask(),stop=useRef(false),running=useRef(false);

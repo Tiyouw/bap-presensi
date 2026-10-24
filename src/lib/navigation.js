@@ -129,6 +129,7 @@ window.addEventListener("popstate", async (event) => {
 export function useLocation() {
   const path = useSyncExternalStore(subscribe, location);
   useEffect(() => {
+    window.scrollTo(0, 0);
     const h = document.querySelector("main h1");
     if (h) {
       h.setAttribute("tabindex", "-1");

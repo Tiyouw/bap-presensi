@@ -56,7 +56,16 @@ export async function readRosterFile(file) {
   if (file.size > 5 * 1024 * 1024) throw Error("Ukuran file maksimum 5 MB.");
   if (/\.csv$/i.test(file.name))
     return [sheetData(file.name, parseCsv(await file.text()))];
-  if (!/\.xlsx$/i.test(file.name)) throw Error("Gunakan file .xlsx atau .csv.");
+  if (/\.xls$/i.test(file.name)) {
+    const { read, utils } = await import("xlsx");
+    const workbook = read(await file.arrayBuffer(), { type: "array", cellFormula: false, sheetRows: 10002 });
+    return workbook.SheetNames.map(name => {
+      const table = utils.sheet_to_json(workbook.Sheets[name], { header: 1, raw: false, defval: "" });
+      if (table.length > 10001) throw Error("Maksimum 10.000 mahasiswa per file XLS. Pisahkan file agar seluruh data dapat diperiksa.");
+      return sheetData(name, table);
+    });
+  }
+  if (!/\.xlsx$/i.test(file.name)) throw Error("Gunakan file .xlsx, .xls atau .csv.");
   const [{ default: ExcelJS }, { normalizeXlsxNamespaces }] = await Promise.all([
       import("exceljs"), import("./xlsxNamespaces.js"),
     ]),

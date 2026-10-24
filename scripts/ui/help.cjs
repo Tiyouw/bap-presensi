@@ -162,7 +162,7 @@ const withinViewport = async (selector) => {
       await page.goto(base + "/kelas/k1?tab=jadwal");
     });
     await page
-      .getByRole("link", { name: "Koreksi sesi 3", exact: true })
+      .getByRole("link", { name: "Edit rincian 3", exact: true })
       .click();
     await page.locator('[aria-label="Tanggal pelaksanaan"]:enabled').waitFor();
     const date = page.getByLabel("Tanggal pelaksanaan", { exact: true }),
@@ -754,7 +754,7 @@ const withinViewport = async (selector) => {
         await page.goto(base + "/kelas/k1?tab=jadwal");
         await page
           .getByText(
-            "Pilih minimal satu pertemuan untuk menggeser jadwal atau memeriksa perubahan.",
+            "Tambahkan pertemuan, lalu isi tanggalnya. Setelah jadwal siap, lanjutkan ke Template BAP.",
             { exact: true },
           )
           .waitFor();
@@ -766,7 +766,7 @@ const withinViewport = async (selector) => {
           )
           .waitFor();
         assert.equal(
-          await page.getByRole("link", { name: /^Koreksi sesi / }).count(),
+          await page.getByRole("link", { name: /^Edit rincian / }).count(),
           0,
         );
         await page.goto(base + "/kelas/k1/pertemuan/p4");

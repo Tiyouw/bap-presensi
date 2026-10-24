@@ -1,0 +1,66 @@
+.file-drop-field {
+  margin: 16px 0;
+  min-width: 0;
+}
+.file-drop-field > label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.file-drop {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  border: 1px dashed var(--bap-control-border);
+  border-radius: 8px;
+  background: var(--bap-surface);
+}
+.file-drop[data-over="true"],
+.file-drop:focus-within {
+  border-style: solid;
+  outline: 2px solid var(--bap-accent);
+  outline-offset: 2px;
+  background: var(--bap-accent-soft);
+}
+.file-drop[aria-disabled="true"] {
+  opacity: 0.65;
+}
+.file-drop > div {
+  flex: 1;
+  min-width: 0;
+}
+.file-drop strong,
+.file-drop span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.file-drop strong {
+  font-size: 0.875rem;
+}
+.file-drop span {
+  font-size: 0.8125rem;
+  color: var(--bap-muted);
+  margin-top: 4px;
+}
+.file-drop > svg {
+  flex-shrink: 0;
+}
+.file-drop-error {
+  color: var(--bap-a-text);
+  font-size: 0.875rem;
+  margin: 8px 0 0;
+}
+.file-drop-error:empty {
+  display: none;
+}
+@media (max-width: 480px) {
+  .file-drop {
+    flex-wrap: wrap;
+    padding: 16px;
+  }
+  .file-drop > button {
+    width: 100%;
+  }
+}
